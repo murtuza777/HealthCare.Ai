@@ -1,29 +1,31 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+
+interface AuthRequest {
+  email: string;
+  password: string;
+  name?: string;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { email, password } = await request.json();
+  const body = await request.json() as AuthRequest;
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: body.email,
+      password: body.password,
     });
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    return NextResponse.json({ session: data.session });
+    return NextResponse.json({ user: data.user });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
