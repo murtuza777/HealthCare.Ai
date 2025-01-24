@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "npx tailwindcss init -p"
+    "postinstall": "npx tailwindcss init -p",
+    "pages:build": "next build",
+    "pages:deploy": "npx wrangler pages deploy .next/static"
   },
   "dependencies": {
     "@react-three/drei": "^9.80.0",
