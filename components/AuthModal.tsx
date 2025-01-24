@@ -1,135 +1,92 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultMode?: 'login' | 'signup';
 }
 
-export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function AuthModal({ isOpen, onClose, defaultMode = 'login' }: AuthModalProps) {
+  const [mode, setMode] = useState(defaultMode);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
-    confirmPassword: '',
   });
-  const [error, setError] = useState('');
-  const [isSupabaseConnected, setIsSupabaseConnected] = useState(false);
-
-  useEffect(() => {
-    setIsSupabaseConnected(!!supabase);
-  }, []);
 
   if (!isOpen) return null;
 
-  if (!isSupabaseConnected) {
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          <div className="text-center space-y-4">
-            <AlertCircle className="w-12 h-12 text-[var(--warning)] mx-auto" />
-            <h2 className="text-2xl font-bold text-[var(--primary)]">Connection Required</h2>
-            <p className="text-gray-600">
-              Please connect to Supabase using the "Connect to Supabase" button in the top right corner before attempting to sign in or register.
-            </p>
-            <button
-              onClick={onClose}
-              className="auth-button bg-[var(--primary)]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
-
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      setIsLoading(false);
-      return;
-    }
-
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
+    setError('');
 
     try {
-      if (isLogin) {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (signInError) throw signInError;
-      } else {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
-              full_name: formData.name,
+              name: formData.name,
             },
           },
         });
-
-        if (signUpError) throw signUpError;
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (error) throw error;
       }
-
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg max-w-md w-full relative">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         >
-          <X className="w-6 h-6" />
+          <X className="h-6 w-6" />
         </button>
 
-        <h2 className="text-2xl font-bold text-[var(--primary)] mb-6">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
+        <h2 className="text-2xl font-bold mb-6 text-center">
+          {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h2>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {mode === 'signup' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+                Name
               </label>
               <input
                 type="text"
-                className="auth-input"
-                placeholder="John Doe"
+                required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Enter your name"
               />
             </div>
           )}
@@ -140,10 +97,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </label>
             <input
               type="email"
-              className="auth-input"
-              placeholder="you@example.com"
+              required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Enter your email"
             />
           </div>
 
@@ -153,55 +111,66 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </label>
             <input
               type="password"
-              className="auth-input"
-              placeholder="••••••••"
+              required
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Enter your password"
             />
           </div>
-
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                className="auth-input"
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              />
-            </div>
-          )}
-
-          {error && (
-            <p className="text-[var(--danger)] text-sm">{error}</p>
-          )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="auth-button bg-[var(--primary)]"
+            className={`w-full py-3 px-4 rounded-md text-white font-medium ${
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-red-600 hover:bg-red-700'
+            }`}
           >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-            ) : (
-              isLogin ? 'Sign In' : 'Create Account'
-            )}
+            {isLoading
+              ? 'Loading...'
+              : mode === 'login'
+              ? 'Sign In'
+              : 'Create Account'}
           </button>
-
-          <p className="text-center text-sm text-gray-600">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-[var(--secondary)] hover:underline font-medium"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
         </form>
+
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+            className="text-sm text-red-600 hover:text-red-700"
+          >
+            {mode === 'login'
+              ? "Don't have an account? Sign up"
+              : 'Already have an account? Sign in'}
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+              className="w-full flex items-center justify-center py-3 px-4 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <img
+                src="https://www.google.com/favicon.ico"
+                alt="Google"
+                className="h-5 w-5 mr-2"
+              />
+              Google
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

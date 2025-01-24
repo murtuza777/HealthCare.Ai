@@ -1,16 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import HeartAnimation from '@/components/HeartAnimation';
 import LoadingAnimation from '@/components/LoadingAnimation';
+import AuthModal from '@/components/AuthModal';
+import { supabase } from '@/lib/supabase';
 
 export default function HomeClient() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const handleAuthClick = (mode: 'login' | 'signup') => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
 
   if (isLoading) {
     return <LoadingAnimation />;
@@ -18,7 +41,6 @@ export default function HomeClient() {
 
   return (
     <main className="relative min-h-screen bg-gradient-to-br from-gray-50 to-white overflow-hidden">
-      {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
@@ -31,8 +53,17 @@ export default function HomeClient() {
               <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
               <a href="#about" className="text-gray-600 hover:text-gray-900 transition-colors">About</a>
               <a href="#contact" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-              <button className="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors">
-                Get Started
+              <button 
+                onClick={() => handleAuthClick('login')}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Login
+              </button>
+              <button 
+                onClick={() => handleAuthClick('signup')}
+                className="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Sign Up
               </button>
             </div>
           </div>
@@ -53,18 +84,23 @@ export default function HomeClient() {
                 and personalized insights powered by artificial intelligence.
               </p>
               <div className="flex space-x-4">
-                <button className="px-8 py-4 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all transform hover:scale-105">
+                <button 
+                  onClick={() => handleAuthClick('signup')}
+                  className="px-8 py-4 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all transform hover:scale-105"
+                >
                   Start Monitoring
                 </button>
-                <button className="px-8 py-4 border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition-all">
+                <a 
+                  href="#features"
+                  className="px-8 py-4 border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition-all"
+                >
                   Learn More
-                </button>
+                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Heart Animation */}
         <HeartAnimation />
       </section>
 
@@ -117,11 +153,20 @@ export default function HomeClient() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of users who trust HeartCare.AI for their cardiac monitoring needs.
           </p>
-          <button className="px-8 py-4 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors">
+          <button 
+            onClick={() => handleAuthClick('signup')}
+            className="px-8 py-4 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors"
+          >
             Get Started Now
           </button>
         </div>
       </section>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        defaultMode={authMode}
+      />
     </main>
   );
 }
