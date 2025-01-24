@@ -22,7 +22,7 @@ An advanced cardiac monitoring and health management platform powered by AI.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/HeartCare.AI.git
+git clone https://github.com/murtuza777/HeartCare.AI.git
 ```
 
 2. Install dependencies:
