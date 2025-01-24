@@ -13,55 +13,113 @@
   }
 }
 
-/* Heart Animation - 70 BPM */
+/* Loading Animation */
+.loading-pulse {
+  animation: loading-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+}
+
+/* Heart Animation */
 .animate-heartbeat {
-  animation: heartbeat 0.857s cubic-bezier(0.4, 0, 0.6, 1) infinite; /* 70 BPM = 0.857s per beat */
+  animation: heartbeat 0.857s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   transform-origin: center;
+  will-change: transform;
 }
 
 @keyframes heartbeat {
   0% {
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
   15% {
-    transform: scale(1.06) translateY(-1px);
+    transform: scale(1.05);
   }
   30% {
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
   45% {
-    transform: scale(1.08) translateY(-2px);
+    transform: scale(1.07);
   }
   60% {
-    transform: scale(1) translateY(0);
+    transform: scale(1);
   }
 }
 
-/* ECG Animations - 70 BPM */
-.animate-ecg-1 {
-  animation: ecg-slide 3.428s linear infinite; /* 4 beats shown = 3.428s */
+/* ECG Animation */
+.ecg-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: ecg-draw 2s linear infinite;
 }
 
-.animate-ecg-2 {
-  animation: ecg-slide 3.428s linear infinite;
-  animation-delay: -1.143s;
-}
-
-.animate-ecg-3 {
-  animation: ecg-slide 3.428s linear infinite;
-  animation-delay: -2.286s;
-}
-
-@keyframes ecg-slide {
+@keyframes ecg-draw {
   from {
-    transform: translateX(0);
+    stroke-dashoffset: 1000;
   }
   to {
-    transform: translateX(-171.4px); /* Adjusted for 70 BPM */
+    stroke-dashoffset: 0;
   }
 }
 
-/* Medical Grid Background */
+/* Smooth Scroll Behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e11d48;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #be123c;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-red-800;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-6 py-3 bg-red-600 text-white rounded-full 
+         hover:bg-red-700 transition-all duration-300 
+         transform hover:scale-105 focus:outline-none 
+         focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 border-2 border-red-600 text-red-600 
+         rounded-full hover:bg-red-50 transition-all duration-300 
+         focus:outline-none focus:ring-2 focus:ring-red-500 
+         focus:ring-offset-2;
+}
+
+/* Card Hover Effects */
+.hover-card {
+  @apply transition-all duration-300 transform hover:scale-105 
+         hover:shadow-xl rounded-xl overflow-hidden;
+}
+
+/* Background Grid */
 .bg-grid {
   background-image: 
     linear-gradient(to right, rgba(220, 38, 38, 0.05) 1px, transparent 1px),
@@ -69,48 +127,64 @@
   background-size: 20px 20px;
 }
 
-/* Heart Components */
-.heart-base {
-  filter: drop-shadow(0 0 8px rgba(220, 38, 38, 0.4));
+/* Animated Background */
+.animated-bg {
+  background: linear-gradient(
+    120deg,
+    #ffffff 0%,
+    #fee2e2 50%,
+    #ffffff 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientBG 15s ease infinite;
 }
 
-/* Blood Flow Animations */
-.coronary-arteries path {
-  animation: blood-flow 0.857s ease-in-out infinite;
-}
-
-.pulmonary-veins path {
-  animation: blood-flow 0.857s ease-in-out infinite;
-  animation-delay: -0.429s;
-}
-
-.pulmonary-arteries path {
-  animation: blood-flow 0.857s ease-in-out infinite;
-  animation-delay: -0.214s;
-}
-
-@keyframes blood-flow {
-  0%, 100% {
-    opacity: 0.6;
-    stroke-width: 0.6;
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
   }
   50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Glass Effect */
+.glass {
+  @apply bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg;
+}
+
+/* Fade In Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
     opacity: 1;
-    stroke-width: 0.8;
+    transform: translateY(0);
   }
 }
 
-/* Valve Animations */
-.heart-valves path {
-  animation: valve-movement 0.857s ease-in-out infinite;
+/* Loading Spinner */
+.loading-spinner {
+  border: 4px solid rgba(220, 38, 38, 0.1);
+  border-left-color: #dc2626;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
 }
 
-@keyframes valve-movement {
-  0%, 100% {
-    transform: scaleY(1);
-  }
-  15%, 45% {
-    transform: scaleY(0.8);
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -123,10 +197,6 @@
 .auth-button {
   @apply w-full px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 
          hover:translate-y-[-2px] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 * {
