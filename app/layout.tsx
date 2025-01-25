@@ -7,8 +7,8 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'HeartCare.AI - Advanced Heart Health Monitoring',
-  description: 'AI-powered heart health monitoring and management platform',
+  title: 'Healthcare.AI - Your Personal Health Companion',
+  description: 'Healthcare.AI helps you monitor and manage your health with advanced AI technology',
 }
 
 export default function RootLayout({

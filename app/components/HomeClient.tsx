@@ -1,39 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, ReactNode } from 'react';
 import HeartAnimation from '@/components/HeartAnimation';
 import LoadingAnimation from '@/components/LoadingAnimation';
-import AuthModal from '@/components/AuthModal';
-import { supabase } from '@/lib/supabase';
 
-export default function HomeClient() {
+interface HomeClientProps {
+  children: ReactNode;
+}
+
+export default function HomeClient({ children }: HomeClientProps) {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        router.push('/dashboard');
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [router]);
-
-  const handleAuthClick = (mode: 'login' | 'signup') => {
-    setAuthMode(mode);
-    setIsAuthModalOpen(true);
-  };
 
   if (isLoading) {
     return <LoadingAnimation />;
@@ -44,129 +25,29 @@ export default function HomeClient() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
-                HeartCare.AI
-              </span>
+            <div className="flex items-center">
+              <span className="text-2xl font-bold text-red-600">Healthcare.AI</span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-              <a href="#about" className="text-gray-600 hover:text-gray-900 transition-colors">About</a>
-              <a href="#contact" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-              <button 
-                onClick={() => handleAuthClick('login')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+            <div>
+              <a
+                href="/login"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
               >
-                Login
-              </button>
-              <button 
-                onClick={() => handleAuthClick('signup')}
-                className="px-4 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                Sign Up
-              </button>
+                Get Started
+              </a>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="pt-20 pb-16 lg:pt-32">
-            <div className="lg:w-1/2">
-              <h1 className="text-5xl font-bold leading-tight mb-6">
-                Advanced Cardiac Care
-                <span className="block text-red-600 mt-2">Powered by AI</span>
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Experience the future of heart health monitoring with real-time analysis
-                and personalized insights powered by artificial intelligence.
-              </p>
-              <div className="flex space-x-4">
-                <button 
-                  onClick={() => handleAuthClick('signup')}
-                  className="px-8 py-4 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all transform hover:scale-105"
-                >
-                  Start Monitoring
-                </button>
-                <a 
-                  href="#features"
-                  className="px-8 py-4 border-2 border-red-600 text-red-600 rounded-full hover:bg-red-50 transition-all"
-                >
-                  Learn More
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="relative pt-32 pb-16 sm:pt-40">
         <HeartAnimation />
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Advanced Features</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Our cutting-edge technology provides comprehensive heart health monitoring
-              and analysis for better cardiac care.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Real-time Monitoring",
-                description: "Continuous heart rhythm analysis with instant alerts for any irregularities.",
-                icon: "🫀"
-              },
-              {
-                title: "AI Analysis",
-                description: "Advanced algorithms process your heart data to provide actionable insights.",
-                icon: "🤖"
-              },
-              {
-                title: "Expert Support",
-                description: "Direct connection to cardiac specialists for professional guidance.",
-                icon: "👨‍⚕️"
-              }
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="relative p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow group"
-              >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-              </div>
-            ))}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            {children}
           </div>
         </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative py-20 bg-gradient-to-br from-red-600 to-red-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Take Control of Your Heart Health?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of users who trust HeartCare.AI for their cardiac monitoring needs.
-          </p>
-          <button 
-            onClick={() => handleAuthClick('signup')}
-            className="px-8 py-4 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors"
-          >
-            Get Started Now
-          </button>
-        </div>
-      </section>
-
-      <AuthModal 
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        defaultMode={authMode}
-      />
+      </div>
     </main>
   );
 }
