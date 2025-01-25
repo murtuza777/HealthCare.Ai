@@ -2,102 +2,95 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPaperPlane, FaHeart } from 'react-icons/fa';
+import { FaPaperPlane, FaHeart, FaPhone, FaExclamationTriangle } from 'react-icons/fa';
 import ChatMessage from './ChatMessage';
+import { Message, HealthProfile, HealthMetrics, Symptom } from '../utils/types';
+import { generateResponse } from '../utils/chatUtils';
+import { getExerciseRecommendations, getDietRecommendations, getRiskAssessment } from '../utils/api';
 
-interface Message {
-  text: string;
-  isBot: boolean;
-}
-
-const INITIAL_MESSAGE = `Hello! I'm your HeartGuard AI assistant. I can help you with:
+const INITIAL_MESSAGE: Message = {
+  id: 'initial',
+  text: `Hello! I'm your HeartGuard AI assistant. I can help you with:
 
 1. Post-heart attack recovery guidance
 2. Heart attack prevention strategies
 3. Risk assessment and predictions
 4. Lifestyle recommendations
+5. Medication management
 
-What would you like to know about?`;
+How can I assist you today?`,
+  isBot: true,
+  timestamp: new Date(),
+  type: 'quick_replies',
+  quickReplies: [
+    'Check My Heart Health',
+    'Review My Medications',
+    'Track My Symptoms',
+    'Get Exercise Tips',
+    'Emergency Help'
+  ]
+};
 
-const SAMPLE_RESPONSES: { [key: string]: string } = {
-  recovery: `Here's your post-heart attack recovery plan:
+// Sample health metrics - In a real app, this would come from real-time monitoring
+const sampleMetrics: HealthMetrics = {
+  heartRate: 72,
+  bloodPressureSystolic: 120,
+  bloodPressureDiastolic: 80,
+  cholesterol: 180,
+  weight: 70,
+  lastUpdated: new Date()
+};
 
-1. **Medication Management**
-   - Take prescribed medications regularly
-   - Keep track of side effects
-   - Don't skip doses
+// Sample symptoms - In a real app, this would come from user input
+const sampleSymptoms: Symptom[] = [
+  {
+    type: 'chest pain',
+    severity: 3,
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    description: 'Mild discomfort while walking',
+    duration: 10,
+    accompaniedBy: ['shortness of breath']
+  }
+];
 
-2. **Physical Activity**
-   - Start with short walks
-   - Gradually increase activity
-   - Follow cardiac rehabilitation program
-
-3. **Lifestyle Changes**
-   - Quit smoking
-   - Maintain a heart-healthy diet
-   - Manage stress levels
-
-4. **Regular Monitoring**
-   - Track blood pressure
-   - Monitor heart rate
-   - Record any symptoms
-
-Would you like more specific information about any of these areas?`,
-
-  prevention: `Here are key strategies for preventing heart attacks:
-
-1. **Healthy Diet**
-   - Reduce saturated fats
-   - Increase fruits and vegetables
-   - Limit salt intake
-   - Choose whole grains
-
-2. **Regular Exercise**
-   - Aim for 150 minutes/week
-   - Include cardio activities
-   - Add strength training
-   - Stay active daily
-
-3. **Lifestyle Habits**
-   - Maintain healthy weight
-   - Quit smoking
-   - Limit alcohol
-   - Manage stress
-
-4. **Regular Check-ups**
-   - Monitor blood pressure
-   - Check cholesterol levels
-   - Track blood sugar
-   - Annual heart screenings
-
-Would you like more details about any of these prevention strategies?`,
-
-  risk: `I'll help assess your heart attack risk factors:
-
-**Common Risk Factors:**
-1. High blood pressure
-2. High cholesterol
-3. Smoking
-4. Obesity
-5. Diabetes
-6. Family history
-7. Age and gender
-8. Physical inactivity
-
-Would you like to:
-1. Learn more about any risk factor
-2. Get a basic risk assessment
-3. Receive personalized prevention tips
-
-Please let me know your choice!`,
+// Sample user profile - In a real app, this would come from your backend
+const sampleProfile: HealthProfile = {
+  hasHeartCondition: true,
+  hadHeartAttack: true,
+  lastHeartAttack: new Date('2024-12-01'),
+  medications: [
+    {
+      name: 'Aspirin',
+      dosage: '81mg',
+      frequency: 'Once daily',
+      timeOfDay: ['Morning'],
+      startDate: new Date('2024-12-01'),
+    },
+    {
+      name: 'Metoprolol',
+      dosage: '25mg',
+      frequency: 'Twice daily',
+      timeOfDay: ['Morning', 'Evening'],
+      startDate: new Date('2024-12-01'),
+    }
+  ],
+  allergies: ['Penicillin'],
+  conditions: ['Hypertension', 'High Cholesterol'],
+  familyHistory: ['Father - Heart Attack at 60'],
+  lifestyle: {
+    smoker: false,
+    alcoholConsumption: 'light',
+    exerciseFrequency: 3,
+    diet: 'Mediterranean',
+    stressLevel: 6
+  }
 };
 
 export default function HeartGuardChat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { text: INITIAL_MESSAGE, isBot: true }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isEmergencyMode, setIsEmergencyMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -108,59 +101,127 @@ export default function HeartGuardChat() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (isEmergencyMode) {
+      // Add emergency warning sound or visual effects
+      document.body.style.backgroundColor = 'rgba(254, 226, 226, 0.5)';
+      return () => {
+        document.body.style.backgroundColor = '';
+      };
+    }
+  }, [isEmergencyMode]);
+
+  const handleSendMessage = async (text: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      isBot: false,
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      // Get AI response with all context
+      const response = await generateResponse(
+        text,
+        sampleProfile,
+        sampleMetrics,
+        sampleSymptoms,
+        messages
+      );
+
+      setIsEmergencyMode(response.isEmergency);
+      setMessages(prev => [...prev, ...response.messages]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: "I'm having trouble processing your request. Please try again or contact your healthcare provider if this is urgent.",
+        isBot: true,
+        timestamp: new Date(),
+        type: 'text'
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { text: userMessage, isBot: false }]);
-    setIsTyping(true);
+    await handleSendMessage(userMessage);
+  };
 
-    // Simulate AI response based on keywords
-    setTimeout(() => {
-      let response = '';
-      const lowerInput = userMessage.toLowerCase();
+  const handleQuickReply = async (reply: string) => {
+    await handleSendMessage(reply);
+  };
 
-      if (lowerInput.includes('recovery') || lowerInput.includes('after heart attack')) {
-        response = SAMPLE_RESPONSES.recovery;
-      } else if (lowerInput.includes('prevent') || lowerInput.includes('prevention')) {
-        response = SAMPLE_RESPONSES.prevention;
-      } else if (lowerInput.includes('risk') || lowerInput.includes('chance')) {
-        response = SAMPLE_RESPONSES.risk;
-      } else {
-        response = "I understand you're asking about heart health. Could you please specify if you'd like information about:\n\n1. Post-heart attack recovery\n2. Heart attack prevention\n3. Risk assessment";
-      }
+  const handleEmergencyCall = () => {
+    window.location.href = 'tel:911';
+  };
 
-      setMessages(prev => [...prev, { text: response, isBot: true }]);
-      setIsTyping(false);
-    }, 1000);
+  const handleDoctorCall = () => {
+    // In a real app, this would use the actual doctor's number from the user's profile
+    window.location.href = 'tel:+1234567890';
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-lg shadow-lg">
+    <div className={`flex flex-col h-[600px] bg-white rounded-lg shadow-lg transition-all duration-300
+                    ${isEmergencyMode ? 'ring-2 ring-red-500' : ''}`}>
       {/* Chat Header */}
       <div className="flex items-center space-x-2 p-4 border-b">
         <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-          <FaHeart className="w-5 h-5 text-red-600" />
+          <FaHeart className={`w-5 h-5 text-red-600 ${isEmergencyMode ? 'animate-pulse' : ''}`} />
         </div>
         <div>
           <h3 className="font-semibold text-gray-800">HeartGuard AI Assistant</h3>
           <p className="text-sm text-gray-500">Always here to help</p>
+        </div>
+        <div className="ml-auto flex items-center space-x-2">
+          {isEmergencyMode && (
+            <motion.button
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleEmergencyCall}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg 
+                       hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              <FaExclamationTriangle className="w-4 h-4" />
+              <span>Emergency Call</span>
+            </motion.button>
+          )}
+          <button 
+            onClick={handleDoctorCall}
+            className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+          >
+            <FaPhone className="w-4 h-4" />
+            <span>Call Doctor</span>
+          </button>
         </div>
       </div>
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <AnimatePresence>
-          {messages.map((message, index) => (
+          {messages.map((message) => (
             <ChatMessage
-              key={index}
-              message={message.text}
-              isBot={message.isBot}
+              key={message.id}
+              message={message}
+              onQuickReplyClick={handleQuickReply}
+              onCallEmergency={handleEmergencyCall}
+              onCallDoctor={handleDoctorCall}
             />
           ))}
         </AnimatePresence>
+        
         {isTyping && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -184,14 +245,20 @@ export default function HeartGuardChat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            placeholder={isEmergencyMode ? 'Emergency mode active - Please follow instructions above' : 'Type your message...'}
+            className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 
+                      ${isEmergencyMode ? 'border-red-300 focus:ring-red-500' : 'focus:ring-red-500'}`}
+            disabled={isEmergencyMode}
           />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             type="submit"
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            disabled={isEmergencyMode}
+            className={`px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2
+                      ${isEmergencyMode 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'}`}
           >
             <FaPaperPlane className="w-5 h-5" />
           </motion.button>
