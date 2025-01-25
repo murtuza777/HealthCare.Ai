@@ -2,19 +2,21 @@ name = "heartcare-ai"
 compatibility_date = "2024-01-25"
 
 [build]
-command = "npm run build"
-output_dir = "out"
+command = "npm install && npm run build"
+cwd = "/"
+dist = "out"
 
-[env.production]
-vars = { ENVIRONMENT = "production" }
+[build.upload]
+format = "directory"
 
 [site]
 bucket = "./out"
 
-[pages]
-build_output_directory = "out"
-include = ["/*"]
-exclude = ["/api/*"]
+[env.production]
+name = "heartcare-ai-production"
+
+[pages_build_output_dir]
+value = "out"
 
 [vars]
 NEXT_PUBLIC_SUPABASE_URL = ""
