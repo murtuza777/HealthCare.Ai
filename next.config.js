@@ -1,17 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  target: 'serverless',
-  output: 'export',
-  images: {
-    unoptimized: true,
-    domains: ['www.google.com'],
-  },
+  reactStrictMode: false,
+  swcMinify: false,
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true
   },
   eslint: {
-    ignoreDuringBuilds: true,
-  },
+    ignoreDuringBuilds: true
+  }
 }
 
 module.exports = nextConfig
