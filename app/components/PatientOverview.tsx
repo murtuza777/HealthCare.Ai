@@ -35,17 +35,38 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
 
   useEffect(() => {
     if (patientDetails) {
-      // Generate vital history based on patient details
-      const mockVitalHistory: VitalHistory[] = Array.from({ length: 30 }, (_, i) => ({
-        timestamp: subDays(new Date(), 29 - i),
-        heartRate: Number(patientDetails.heartRate) + (Math.random() - 0.5) * 10,
-        bloodPressureSystolic: Number(patientDetails.bloodPressureSystolic) + (Math.random() - 0.5) * 10,
-        bloodPressureDiastolic: Number(patientDetails.bloodPressureDiastolic) + (Math.random() - 0.5) * 10,
-        weight: Number(patientDetails.weight) + (Math.random() - 0.5) * 1,
-        cholesterol: Number(patientDetails.cholesterol) + (Math.random() - 0.5) * 10,
-        oxygenSaturation: 95 + Math.random() * 5,
-        temperature: 36.5 + (Math.random() - 0.5) * 0.5,
-      }));
+      // Create vital history using exact patient details
+      const currentVital: VitalHistory = {
+        timestamp: new Date(),
+        heartRate: Number(patientDetails.heartRate),
+        bloodPressureSystolic: Number(patientDetails.bloodPressureSystolic),
+        bloodPressureDiastolic: Number(patientDetails.bloodPressureDiastolic),
+        weight: Number(patientDetails.weight),
+        cholesterol: Number(patientDetails.cholesterol),
+        oxygenSaturation: Number(patientDetails.bloodSugar), // Using blood sugar as oxygen saturation for demo
+        temperature: 37.0, // Normal body temperature
+      };
+
+      // Create history with slight variations for the past 30 days
+      const mockVitalHistory: VitalHistory[] = Array.from({ length: 30 }, (_, i) => {
+        const date = subDays(new Date(), 29 - i);
+        const variation = i === 29 ? 0 : (Math.random() - 0.5) * 2; // No variation for current day
+        
+        return {
+          timestamp: date,
+          heartRate: i === 29 ? currentVital.heartRate : currentVital.heartRate + variation,
+          bloodPressureSystolic: i === 29 ? currentVital.bloodPressureSystolic : 
+            currentVital.bloodPressureSystolic + variation,
+          bloodPressureDiastolic: i === 29 ? currentVital.bloodPressureDiastolic :
+            currentVital.bloodPressureDiastolic + variation,
+          weight: i === 29 ? currentVital.weight : currentVital.weight + (variation * 0.1),
+          cholesterol: i === 29 ? currentVital.cholesterol : currentVital.cholesterol + variation,
+          oxygenSaturation: i === 29 ? currentVital.oxygenSaturation : 
+            currentVital.oxygenSaturation + (variation * 0.5),
+          temperature: i === 29 ? currentVital.temperature : 
+            currentVital.temperature + (variation * 0.1),
+        };
+      });
 
       setVitalHistory(mockVitalHistory);
       
@@ -61,18 +82,18 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     // Ensure all numeric fields are converted to numbers
     const processedDetails = {
       ...details,
-      age: Number(details.age),
-      weight: Number(details.weight),
-      height: Number(details.height),
-      bloodPressureSystolic: Number(details.bloodPressureSystolic),
-      bloodPressureDiastolic: Number(details.bloodPressureDiastolic),
-      heartRate: Number(details.heartRate),
-      cholesterol: Number(details.cholesterol),
-      bloodSugar: Number(details.bloodSugar),
-      exerciseFrequency: Number(details.exerciseFrequency),
-      stressLevel: Number(details.stressLevel),
-      symptomSeverity: Number(details.symptomSeverity),
-      symptomDuration: Number(details.symptomDuration),
+      age: Number(details.age) || 0,
+      weight: Number(details.weight) || 0,
+      height: Number(details.height) || 0,
+      bloodPressureSystolic: Number(details.bloodPressureSystolic) || 120,
+      bloodPressureDiastolic: Number(details.bloodPressureDiastolic) || 80,
+      heartRate: Number(details.heartRate) || 72,
+      cholesterol: Number(details.cholesterol) || 180,
+      bloodSugar: Number(details.bloodSugar) || 100,
+      exerciseFrequency: Number(details.exerciseFrequency) || 0,
+      stressLevel: Number(details.stressLevel) || 0,
+      symptomSeverity: Number(details.symptomSeverity) || 0,
+      symptomDuration: Number(details.symptomDuration) || 0,
     };
     
     setPatientDetails(processedDetails);
@@ -161,9 +182,10 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{patientDetails.name}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{patientDetails?.name}</h2>
           <p className="text-gray-600">
-            Age: {patientDetails.age} | Gender: {patientDetails.gender}
+            Age: {patientDetails?.age} | Gender: {patientDetails?.gender} | 
+            Height: {patientDetails?.height}cm | Weight: {patientDetails?.weight}kg
           </p>
         </div>
         <Button
@@ -180,55 +202,80 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <HealthMetricsCard
           title="Heart Rate"
-          value={Number(latest.heartRate).toFixed(0)}
+          value={patientDetails?.heartRate.toString() || '0'}
           icon={FaHeartbeat}
           color="red"
           unit="BPM"
-          trend={calculateTrend(latest.heartRate, previous.heartRate)}
-          status={getVitalStatus('heartRate', latest.heartRate)}
+          trend={0} // No trend for initial reading
+          status={healthAnalysis?.metrics.heartRate?.status || 'normal'}
         />
         
         <HealthMetricsCard
           title="Blood Pressure"
-          value={`${Number(latest.bloodPressureSystolic).toFixed(0)}/${Number(latest.bloodPressureDiastolic).toFixed(0)}`}
+          value={`${patientDetails?.bloodPressureSystolic || 0}/${patientDetails?.bloodPressureDiastolic || 0}`}
           icon={FaTint}
           color="blue"
-          trend={calculateTrend(latest.bloodPressureSystolic, previous.bloodPressureSystolic)}
-          status={getVitalStatus('bloodPressure', latest.bloodPressureSystolic)}
+          trend={0} // No trend for initial reading
+          status={healthAnalysis?.metrics.bloodPressure?.status || 'normal'}
         />
 
         <HealthMetricsCard
-          title="Oxygen Saturation"
-          value={Number(latest.oxygenSaturation).toFixed(1)}
+          title="Cholesterol"
+          value={patientDetails?.cholesterol.toString() || '0'}
+          icon={FaChartLine}
+          color="yellow"
+          unit="mg/dL"
+          trend={0} // No trend for initial reading
+          status={healthAnalysis?.metrics.cholesterol?.status || 'normal'}
+        />
+
+        <HealthMetricsCard
+          title="Blood Sugar"
+          value={patientDetails?.bloodSugar.toString() || '0'}
           icon={FaLungs}
           color="green"
-          unit="%"
-          trend={calculateTrend(latest.oxygenSaturation, previous.oxygenSaturation)}
-          status={getVitalStatus('oxygenSaturation', latest.oxygenSaturation)}
-        />
-
-        <HealthMetricsCard
-          title="Temperature"
-          value={Number(latest.temperature).toFixed(1)}
-          icon={FaHospital}
-          color="yellow"
-          unit="°C"
-          trend={calculateTrend(latest.temperature, previous.temperature)}
-          status={getVitalStatus('temperature', latest.temperature)}
+          unit="mg/dL"
+          trend={0} // No trend for initial reading
+          status={healthAnalysis?.metrics.bloodSugar?.status || 'normal'}
         />
       </div>
 
-      {/* Risk Assessment and Trends */}
+      {/* Risk Assessment and Recommendations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HeartRiskAssessment
-          riskFactors={riskFactors}
-          overallRisk={healthAnalysis.riskScore}
+          riskFactors={[
+            {
+              name: 'Blood Pressure',
+              value: Number(patientDetails?.bloodPressureSystolic || 0) > 140 ? 75 : 
+                     Number(patientDetails?.bloodPressureSystolic || 0) > 120 ? 50 : 25,
+              color: '#3B82F6'
+            },
+            {
+              name: 'Heart Rate',
+              value: Number(patientDetails?.heartRate || 0) > 100 ? 75 :
+                     Number(patientDetails?.heartRate || 0) > 80 ? 50 : 25,
+              color: '#EF4444'
+            },
+            {
+              name: 'Cholesterol',
+              value: Number(patientDetails?.cholesterol || 0) > 240 ? 75 :
+                     Number(patientDetails?.cholesterol || 0) > 200 ? 50 : 25,
+              color: '#F59E0B'
+            },
+            {
+              name: 'Blood Sugar',
+              value: Number(patientDetails?.bloodSugar || 0) > 140 ? 75 :
+                     Number(patientDetails?.bloodSugar || 0) > 100 ? 50 : 25,
+              color: '#10B981'
+            }
+          ]}
+          overallRisk={healthAnalysis?.riskScore || 0}
         />
 
         <Card>
           <Title>Health Recommendations</Title>
           <div className="mt-4 space-y-4">
-            {healthAnalysis.recommendations.map((recommendation: string, index: number) => (
+            {healthAnalysis?.recommendations.map((recommendation: string, index: number) => (
               <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-red-500"></div>
@@ -237,60 +284,60 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
                   <p className="text-sm text-gray-600">{recommendation}</p>
                 </div>
               </div>
-            ))}
+            )) || (
+              <p className="text-gray-500">No recommendations available yet.</p>
+            )}
           </div>
         </Card>
       </div>
 
-      {/* Recent Health Events */}
+      {/* Medical History */}
       <Card>
-        <Title>Recent Health Events</Title>
+        <Title>Medical History</Title>
         <div className="mt-4 space-y-4">
-          {vitalHistory.slice(-5).reverse().map((vital, index) => (
-            <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-              <div className="flex-shrink-0">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              </div>
-              <div className="flex-grow">
-                <p className="text-sm font-medium">
-                  Vital Check - {format(vital.timestamp, 'MMM d, h:mm a')}
-                </p>
-                <p className="text-sm text-gray-600">
-                  HR: {Number(vital.heartRate).toFixed(0)} BPM, 
-                  BP: {Number(vital.bloodPressureSystolic).toFixed(0)}/{Number(vital.bloodPressureDiastolic).toFixed(0)},
-                  O₂: {Number(vital.oxygenSaturation).toFixed(0)}%
-                </p>
-              </div>
-              {getVitalStatus('heartRate', vital.heartRate) !== 'normal' && (
-                <div className="flex-shrink-0">
-                  <span className="px-2 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full">
-                    Attention
-                  </span>
-                </div>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${patientDetails?.hasHeartCondition ? 'bg-red-500' : 'bg-green-500'}`} />
+              <span>Heart Condition: {patientDetails?.hasHeartCondition ? 'Yes' : 'No'}</span>
             </div>
-          ))}
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${patientDetails?.hadHeartAttack ? 'bg-red-500' : 'bg-green-500'}`} />
+              <span>Previous Heart Attack: {patientDetails?.hadHeartAttack ? 'Yes' : 'No'}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${patientDetails?.smoker ? 'bg-red-500' : 'bg-green-500'}`} />
+              <span>Smoker: {patientDetails?.smoker ? 'Yes' : 'No'}</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${Number(patientDetails?.exerciseFrequency || 0) >= 3 ? 'bg-green-500' : 'bg-yellow-500'}`} />
+              <span>Exercise: {patientDetails?.exerciseFrequency || 0} days/week</span>
+            </div>
+          </div>
         </div>
       </Card>
 
-      {/* Medication Schedule */}
+      {/* Medications */}
       <Card>
-        <Title>Today's Medication Schedule</Title>
+        <Title>Current Medications</Title>
         <div className="mt-4 space-y-4">
-          {patientDetails.currentMedications.map((med, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="w-3 h-3 rounded-full bg-gray-300"></div>
-                <div>
-                  <p className="font-medium">{med}</p>
-                  <p className="text-sm text-gray-600">Next dose: {format(new Date(), 'h:mm a')}</p>
+          {patientDetails?.currentMedications && patientDetails.currentMedications.length > 0 ? (
+            patientDetails.currentMedications.map((med, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <div>
+                    <p className="font-medium">{med}</p>
+                    <p className="text-sm text-gray-600">Daily</p>
+                  </div>
                 </div>
+                <button className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50">
+                  View Details
+                </button>
               </div>
-              <button className="px-3 py-1 text-sm text-red-600 border border-red-600 rounded-full hover:bg-red-50">
-                Take Now
-              </button>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-gray-500">No medications listed</p>
+          )}
         </div>
       </Card>
     </div>
