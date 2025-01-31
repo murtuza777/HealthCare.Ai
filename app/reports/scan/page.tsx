@@ -6,6 +6,8 @@ import { Upload } from 'lucide-react';
 export default function ScanReportsPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedResult, setProcessedResult] = useState<{ success: boolean; message: string; error?: string; data: { fileName: string; processedDate: string; type: string; size: number } } | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -43,11 +45,56 @@ export default function ScanReportsPage() {
     }
   };
 
+  const processReport = async () => {
+    if (!uploadedFile) return;
+
+    setIsProcessing(true);
+    try {
+      // Create a FormData instance to send the file
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+
+      // In a real application, you would send this to your backend
+      // For now, we'll simulate processing
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
+
+      setProcessedResult({
+        success: true,
+        message: 'Report processed successfully',
+        data: {
+          fileName: uploadedFile.name,
+          processedDate: new Date().toLocaleString(),
+          type: uploadedFile.type,
+          size: uploadedFile.size
+        }
+      });
+    } catch (error) {
+      setProcessedResult({
+        success: false,
+        message: 'Failed to process report. Please try again.',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        data: {
+          fileName: uploadedFile.name,
+          processedDate: new Date().toLocaleString(),
+          type: uploadedFile.type,
+          size: uploadedFile.size
+        }
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Scan Reports</h2>
-        <p className="text-gray-600">Upload your medical reports for digital storage and analysis</p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="flex items-center space-x-3 mb-8">
+        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+          <Upload className="w-5 h-5 text-red-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">Scan Reports</h1>
+          <p className="text-gray-600">Upload and digitize your medical reports</p>
+        </div>
       </div>
 
       <div
@@ -82,10 +129,43 @@ export default function ScanReportsPage() {
           <h4 className="font-medium text-gray-900">Uploaded File:</h4>
           <p className="text-gray-600">{uploadedFile.name}</p>
           <div className="mt-4">
-            <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-              Process Report
+            <button 
+              onClick={processReport}
+              disabled={isProcessing}
+              className={`px-4 py-2 text-white rounded-md ${
+                isProcessing 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
+            >
+              {isProcessing ? 'Processing...' : 'Process Report'}
             </button>
           </div>
+        </div>
+      )}
+
+      {processedResult && (
+        <div className={`max-w-2xl mx-auto mt-4 p-4 rounded-lg ${
+          processedResult.success ? 'bg-green-50' : 'bg-red-50'
+        }`}>
+          <h4 className={`font-medium ${
+            processedResult.success ? 'text-green-900' : 'text-red-900'
+          }`}>
+            {processedResult.success ? 'Success!' : 'Error'}
+          </h4>
+          <p className={`${
+            processedResult.success ? 'text-green-700' : 'text-red-700'
+          }`}>
+            {processedResult.message}
+          </p>
+          {processedResult.success && (
+            <div className="mt-4 text-sm text-gray-600">
+              <p>File: {processedResult.data.fileName}</p>
+              <p>Processed: {processedResult.data.processedDate}</p>
+              <p>Type: {processedResult.data.type}</p>
+              <p>Size: {Math.round(processedResult.data.size / 1024)} KB</p>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import PatientOverview from '../components/PatientOverview';
-import HeartGuardChat from '../components/HeartGuardChat';
+import HealthGuardianChat from '../components/HealthGuardianChat';
 import Link from 'next/link';
 import { 
   FileText, 
@@ -147,7 +147,7 @@ export default function DashboardPage() {
           {activeTab === 'overview' ? (
             <PatientOverview patientId="123" />
           ) : activeTab === 'chat' ? (
-            <HeartGuardChat />
+            <HealthGuardianChat />
           ) : activeTab === 'heartguard' ? (
             <div className="bg-white rounded-lg shadow">
               <div className="p-6">
@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
                   {/* AI Assistant Section - Full Width */}
                   <div className="lg:col-span-2">
-                    <HeartGuardChat />
+                    <HealthGuardianChat />
                   </div>
                 </div>
               </div>
