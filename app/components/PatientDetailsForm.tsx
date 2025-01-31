@@ -3,42 +3,43 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Title, Button } from "@tremor/react";
+import { ReactNode } from 'react';
 
 export interface PatientDetails {
-  // Personal Information
   name: string;
   age: number;
-  gender: string;
   weight: number;
   height: number;
-
-  // Medical History
-  hasHeartCondition: boolean;
-  hadHeartAttack: boolean;
-  lastHeartAttack?: Date;
-  familyHistoryOfHeartDisease: boolean;
-  
-  // Current Health Metrics
   bloodPressureSystolic: number;
   bloodPressureDiastolic: number;
   heartRate: number;
   cholesterol: number;
   bloodSugar: number;
-  
-  // Lifestyle Factors
+  hasHeartCondition: boolean;
+  hadHeartAttack: boolean;
+  lastHeartAttack?: string;
+  currentMedications: Array<{
+    name: string;
+    dosage: string;
+    frequency: string;
+    timeOfDay: string;
+    startDate: string;
+  }>;
+  allergies: string;
+  conditions: string;
+  familyHistory: string;
   smoker: boolean;
   alcoholConsumption: string;
   exerciseFrequency: number;
+  diet: string;
   stressLevel: number;
-  
-  // Medications
-  currentMedications: string[];
-  allergies: string[];
-  
-  // Symptoms
-  currentSymptoms: string[];
-  symptomSeverity: number;
-  symptomDuration: number;
+  currentSymptoms?: Array<{
+    type: string;
+    severity: number;
+    description: string;
+    duration: number;
+    accompaniedBy: string;
+  }>;
 }
 
 interface PatientDetailsFormProps {
@@ -50,27 +51,26 @@ export default function PatientDetailsForm({ onSubmit, initialData }: PatientDet
   const [formData, setFormData] = useState<PatientDetails>({
     name: initialData?.name || '',
     age: initialData?.age || 0,
-    gender: initialData?.gender || '',
     weight: initialData?.weight || 0,
     height: initialData?.height || 0,
-    hasHeartCondition: initialData?.hasHeartCondition || false,
-    hadHeartAttack: initialData?.hadHeartAttack || false,
-    lastHeartAttack: initialData?.lastHeartAttack,
-    familyHistoryOfHeartDisease: initialData?.familyHistoryOfHeartDisease || false,
     bloodPressureSystolic: initialData?.bloodPressureSystolic || 120,
     bloodPressureDiastolic: initialData?.bloodPressureDiastolic || 80,
     heartRate: initialData?.heartRate || 72,
     cholesterol: initialData?.cholesterol || 180,
     bloodSugar: initialData?.bloodSugar || 100,
+    hasHeartCondition: initialData?.hasHeartCondition || false,
+    hadHeartAttack: initialData?.hadHeartAttack || false,
+    lastHeartAttack: initialData?.lastHeartAttack,
+    currentMedications: initialData?.currentMedications || [],
+    allergies: initialData?.allergies || '',
+    conditions: initialData?.conditions || '',
+    familyHistory: initialData?.familyHistory || '',
     smoker: initialData?.smoker || false,
     alcoholConsumption: initialData?.alcoholConsumption || 'none',
     exerciseFrequency: initialData?.exerciseFrequency || 0,
+    diet: initialData?.diet || '',
     stressLevel: initialData?.stressLevel || 0,
-    currentMedications: initialData?.currentMedications || [],
-    allergies: initialData?.allergies || [],
     currentSymptoms: initialData?.currentSymptoms || [],
-    symptomSeverity: initialData?.symptomSeverity || 0,
-    symptomDuration: initialData?.symptomDuration || 0,
   });
 
   const [step, setStep] = useState(1);
@@ -121,25 +121,21 @@ export default function PatientDetailsForm({ onSubmit, initialData }: PatientDet
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Gender</label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700">Weight (kg)</label>
                 <input
                   type="number"
                   name="weight"
                   value={formData.weight}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Height (cm)</label>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                 />
@@ -185,7 +181,7 @@ export default function PatientDetailsForm({ onSubmit, initialData }: PatientDet
                   <input
                     type="date"
                     name="lastHeartAttack"
-                    value={formData.lastHeartAttack?.toISOString().split('T')[0]}
+                    value={formData.lastHeartAttack}
                     onChange={handleInputChange}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                   />
@@ -288,10 +284,16 @@ export default function PatientDetailsForm({ onSubmit, initialData }: PatientDet
                 <input
                   type="text"
                   name="currentSymptoms"
-                  value={formData.currentSymptoms.join(', ')}
+                  value={formData.currentSymptoms?.map(s => s.type).join(', ') || ''}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    currentSymptoms: e.target.value.split(',').map(s => s.trim())
+                    currentSymptoms: e.target.value ? e.target.value.split(',').map(s => ({
+                      type: s.trim(),
+                      severity: 0,
+                      description: '',
+                      duration: 0,
+                      accompaniedBy: ''
+                    })) : []
                   }))}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                 />
@@ -303,10 +305,16 @@ export default function PatientDetailsForm({ onSubmit, initialData }: PatientDet
                 <input
                   type="text"
                   name="currentMedications"
-                  value={formData.currentMedications.join(', ')}
+                  value={formData.currentMedications.map(m => m.name).join(', ')}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
-                    currentMedications: e.target.value.split(',').map(s => s.trim())
+                    currentMedications: e.target.value.split(',').map(s => ({
+                      name: s.trim(),
+                      dosage: '',
+                      frequency: '',
+                      timeOfDay: '',
+                      startDate: ''
+                    }))
                   }))}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                 />
