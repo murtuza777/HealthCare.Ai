@@ -5,6 +5,16 @@ export interface HealthMetrics {
   cholesterol: number;
   weight: number;
   lastUpdated: Date;
+  vitalHistory?: Array<{
+    timestamp: Date;
+    heartRate: number;
+    bloodPressureSystolic: number;
+    bloodPressureDiastolic: number;
+    weight: number;
+    cholesterol: number;
+    oxygenSaturation: number;
+    temperature: number;
+  }>;
 }
 
 export interface EmergencyContact {
@@ -33,10 +43,20 @@ export interface Symptom {
 }
 
 export interface HealthProfile {
+  name: string;
+  age: number;
+  height: number;
+  weight: number;
   hasHeartCondition: boolean;
   hadHeartAttack: boolean;
   lastHeartAttack?: Date;
-  medications: Medication[];
+  medications: Array<{
+    name: string;
+    dosage: string;
+    frequency: string;
+    timeOfDay: string[];
+    startDate: Date;
+  }>;
   allergies: string[];
   conditions: string[];
   familyHistory: string[];
@@ -54,7 +74,13 @@ export interface Message {
   text: string;
   isBot: boolean;
   timestamp: Date;
-  type: 'text' | 'quick_replies' | 'emergency' | 'metrics' | 'assessment';
+  type: 'text' | 'quick_replies' | 'emergency';
   quickReplies?: string[];
-  metadata?: any;
+  metadata?: {
+    riskLevel?: string;
+    actions?: Array<{
+      type: string;
+      details: string;
+    }>;
+  };
 }
