@@ -7,27 +7,32 @@ import ChatMessage from './ChatMessage';
 import { Message, HealthProfile, HealthMetrics, Symptom } from '../utils/types';
 import { generateResponse } from '../utils/chatUtils';
 import { getExerciseRecommendations, getDietRecommendations, getRiskAssessment } from '../utils/api';
+import { usePatient } from '../context/PatientContext';
 
 const INITIAL_MESSAGE: Message = {
   id: 'initial',
-  text: `Hello! I'm your HeartGuard AI assistant. I can help you with:
+  text: `Hello! I'm your Health Guardian AI assistant. I can help you with:
 
-1. Post-heart attack recovery guidance
-2. Heart attack prevention strategies
-3. Risk assessment and predictions
-4. Lifestyle recommendations
-5. Medication management
+1. Personalized health recommendations
+2. Lifestyle and wellness guidance
+3. Medication management
+4. Symptom assessment
+5. Diet and exercise planning
+6. Mental health support
+7. General health queries
+
+To get started, please make sure your health profile is up to date in the Overview section. This helps me provide more accurate and personalized advice.
 
 How can I assist you today?`,
   isBot: true,
   timestamp: new Date(),
   type: 'quick_replies',
   quickReplies: [
-    'Check My Heart Health',
-    'Review My Medications',
-    'Track My Symptoms',
-    'Get Exercise Tips',
-    'Emergency Help'
+    '🏥 Start Health Assessment',
+    '🤒 Describe Symptoms',
+    '💊 Medication Help',
+    '🥗 Diet & Exercise',
+    '🧘‍♂️ Mental Health'
   ]
 };
 
@@ -86,12 +91,15 @@ const sampleProfile: HealthProfile = {
   }
 };
 
-export default function HeartGuardChat() {
+export default function HealthGuardianChat() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isEmergencyMode, setIsEmergencyMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Get real patient data from context
+  const { healthProfile, healthMetrics, symptoms } = usePatient();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -103,7 +111,6 @@ export default function HeartGuardChat() {
 
   useEffect(() => {
     if (isEmergencyMode) {
-      // Add emergency warning sound or visual effects
       document.body.style.backgroundColor = 'rgba(254, 226, 226, 0.5)';
       return () => {
         document.body.style.backgroundColor = '';
@@ -112,6 +119,19 @@ export default function HeartGuardChat() {
   }, [isEmergencyMode]);
 
   const handleSendMessage = async (text: string) => {
+    // Check if profile data is available
+    if (!healthProfile || !healthMetrics) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: "To provide personalized advice, I need your health information. Please update your health profile in the Overview section first.",
+        isBot: true,
+        timestamp: new Date(),
+        type: 'text',
+        quickReplies: ['📋 Update Profile', '❓ General Help', '👨‍⚕️ Contact Support']
+      }]);
+      return;
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -124,12 +144,81 @@ export default function HeartGuardChat() {
     setIsTyping(true);
 
     try {
-      // Get AI response with all context
+      // Handle greeting messages specially
+      if (isGreeting(text.toLowerCase())) {
+        const greetingResponse: Message = {
+          id: Date.now().toString(),
+          text: `Hello! I'm here to help you with your health concerns. I see from your profile that you ${
+            healthProfile.conditions.length > 0 
+              ? `are managing ${healthProfile.conditions.join(' and ')}.` 
+              : 'have no major health conditions recorded.'
+          }
+
+How are you feeling today?
+
+I can provide:
+• Personalized health assessments
+• Symptom analysis and recommendations
+• Medication guidance
+• Diet and exercise advice
+• Mental health support
+• General medical information
+
+Please feel free to describe how you're feeling or ask any health-related questions.`,
+          isBot: true,
+          timestamp: new Date(),
+          type: 'quick_replies',
+          quickReplies: [
+            "😊 I'm feeling well",
+            "😐 Not feeling great",
+            "🤒 Have symptoms",
+            "❓ Health question",
+            "📋 Start assessment"
+          ]
+        };
+
+        setMessages(prev => [...prev, greetingResponse]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Handle quick reply selections
+      if (text.includes('Start Health Assessment')) {
+        const assessmentResponse: Message = {
+          id: Date.now().toString(),
+          text: `I'll help you with a comprehensive health assessment. Based on your profile, let's focus on what's most relevant for you.
+
+Current Health Overview:
+• Blood Pressure: ${healthMetrics.bloodPressureSystolic}/${healthMetrics.bloodPressureDiastolic}
+• Heart Rate: ${healthMetrics.heartRate} BPM
+• Weight: ${healthMetrics.weight} kg
+${healthProfile.conditions.length > 0 ? `• Conditions: ${healthProfile.conditions.join(', ')}` : ''}
+${healthProfile.medications.length > 0 ? `• Medications: ${healthProfile.medications.map(m => m.name).join(', ')}` : ''}
+
+Please tell me about any specific concerns or symptoms you're experiencing.`,
+          isBot: true,
+          timestamp: new Date(),
+          type: 'quick_replies',
+          quickReplies: [
+            "🤒 Describe Symptoms",
+            "💊 Review Medications",
+            "🏃‍♂️ Discuss Lifestyle",
+            "👨‍👩‍👦 Family History",
+            "📝 General Health"
+          ]
+        };
+
+        setMessages(prev => [...prev, assessmentResponse]);
+        setIsTyping(false);
+        return;
+      }
+
+      // For all other messages, use the AI response with real patient data
       const response = await generateResponse(
         text,
-        sampleProfile,
-        sampleMetrics,
-        sampleSymptoms,
+        healthProfile,
+        healthMetrics,
+        symptoms,
         messages
       );
 
@@ -139,14 +228,26 @@ export default function HeartGuardChat() {
       console.error('Error getting AI response:', error);
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
-        text: "I'm having trouble processing your request. Please try again or contact your healthcare provider if this is urgent.",
+        text: "I apologize for the technical difficulty. Please try rephrasing your question, or let me know if you'd like to start a health assessment.",
         isBot: true,
         timestamp: new Date(),
-        type: 'text'
+        type: 'quick_replies',
+        quickReplies: [
+          "🔄 Try Again",
+          "📋 New Assessment",
+          "👨‍⚕️ Contact Support",
+          "❓ Ask Differently",
+          "🏥 Emergency Help"
+        ]
       }]);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const isGreeting = (text: string): boolean => {
+    const greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings'];
+    return greetings.some(greeting => text.includes(greeting));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,7 +281,7 @@ export default function HeartGuardChat() {
           <FaHeart className={`w-5 h-5 text-red-600 ${isEmergencyMode ? 'animate-pulse' : ''}`} />
         </div>
         <div>
-          <h3 className="font-semibold text-gray-800">HeartGuard AI Assistant</h3>
+          <h3 className="font-semibold text-gray-800">Health Guardian AI</h3>
           <p className="text-sm text-gray-500">Always here to help</p>
         </div>
         <div className="ml-auto flex items-center space-x-2">
