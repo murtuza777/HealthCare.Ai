@@ -77,20 +77,21 @@ html {
 
 /* Modern Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #e11d48;
-  border-radius: 5px;
+  background: linear-gradient(to bottom, #3b82f6, #9333ea, #ec4899);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #be123c;
+  background: linear-gradient(to bottom, #2563eb, #7e22ce, #db2777);
 }
 
 /* Gradient Text */
@@ -207,4 +208,89 @@ html {
   .text-balance {
     text-wrap: balance;
   }
+
+  .animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 15s ease infinite;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes gradient-x {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(147, 51, 234, 0.2),
+                0 0 20px rgba(147, 51, 234, 0.2),
+                0 0 60px rgba(147, 51, 234, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.4),
+                0 0 40px rgba(147, 51, 234, 0.4),
+                0 0 80px rgba(147, 51, 234, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(147, 51, 234, 0.2),
+                0 0 20px rgba(147, 51, 234, 0.2),
+                0 0 60px rgba(147, 51, 234, 0.2);
+  }
+}
+
+/* Selection Styling */
+::selection {
+  background: rgba(147, 51, 234, 0.2);
+  color: #fff;
+}
+
+/* Custom Utilities */
+.glass-effect {
+  backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(17, 25, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.5),
+               0 0 20px rgba(147, 51, 234, 0.3),
+               0 0 30px rgba(147, 51, 234, 0.2);
+}
+
+.hover-glow {
+  transition: all 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4),
+              0 0 20px rgba(147, 51, 234, 0.3),
+              0 0 30px rgba(147, 51, 234, 0.2);
+  transform: translateY(-2px);
 }
