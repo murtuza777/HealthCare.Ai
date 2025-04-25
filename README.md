@@ -1,14 +1,38 @@
-# HeartCare.AI
+# Healthcare.AI
 
-An advanced cardiac monitoring and health management platform powered by AI.
+An advanced health monitoring and management platform powered by AI for early disease detection and patient health management.
 
-## Features
+## Key Features
 
-- Real-time heart monitoring with AI-powered analysis
-- Anatomically accurate heart visualization
-- Professional ECG display with medical-grade accuracy
-- Secure patient data management
-- Responsive and modern user interface
+1. **Patient Overview Dashboard**
+   - Track and visualize vital health metrics
+   - Receive personalized health insights and advice based on your data
+   - Monitor trends and changes in your health status
+   - Input and manage health data including vitals, conditions, and medications
+
+2. **HeartGuard AI Assistant**
+   - Intelligent AI-powered health chat
+   - Personalized health advice based on patient data
+   - Medication guidance and symptom assessment
+   - Utilizes reports and health profile data for accurate recommendations
+
+3. **Reports Management System**
+   - Securely store medical reports and test results
+   - Share reports with healthcare providers via QR codes
+   - Scan and digitize paper reports
+   - Manage patient identification and secure sharing
+
+4. **Caretaker Management**
+   - Set up reminders for medications, exercises, and appointments
+   - Assign and manage caretakers for patient monitoring
+   - Configure notifications for health events
+   - Coordinate care among multiple care providers
+
+5. **Health Timeline**
+   - Comprehensive view of health history and events
+   - Filter and search through past health records
+   - Track interactions with healthcare system
+   - Identify patterns and trends in health data
 
 ## Tech Stack
 
@@ -22,7 +46,7 @@ An advanced cardiac monitoring and health management platform powered by AI.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/murtuza777/HeartCare.AI.git
+git clone https://github.com/murtuza777/Healthcare.AI.git
 ```
 
 2. Install dependencies:
@@ -47,17 +71,27 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ## Project Structure
 
 ```
-heartcare.ai/
+healthcare.ai/
 ├── app/                    # Next.js app directory
 │   ├── layout.tsx         # Root layout
 │   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
-├── components/            # React components
-│   └── HeartAnimation.tsx # Heart visualization
+│   ├── globals.css        # Global styles
+│   ├── dashboard/         # Dashboard pages
+│   ├── reports/           # Reports management
+│   └── components/        # UI components
+├── components/            # Shared React components
 ├── lib/                   # Utility functions
 │   └── supabase.ts       # Supabase client
 └── public/               # Static assets
 ```
+
+## Use Cases
+
+- **Early Disease Detection**: The system analyzes patient data to detect potential health issues early
+- **Medication Management**: Helps patients stay on top of their medication schedules
+- **Remote Monitoring**: Allows healthcare providers to monitor patients remotely
+- **Health Trends Analysis**: Identify long-term patterns in health data
+- **Care Coordination**: Facilitates communication between patients, caretakers, and healthcare providers
 
 ## Contributing
 

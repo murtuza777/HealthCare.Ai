@@ -120,191 +120,224 @@ function getMedicationAdvice(profile: HealthProfile): string {
 
 export async function generateResponse(
   userMessage: string,
-  healthProfile: HealthProfile,
-  currentMetrics: HealthMetrics,
-  recentSymptoms: Symptom[],
-  chatHistory: Message[]
+  healthProfile: HealthProfile | null,
+  healthMetrics: HealthMetrics | null,
+  symptoms: Symptom[],
+  messageHistory: Message[]
 ): Promise<ChatResponse> {
-  try {
-    // Analyze health data
-    const healthRisks = calculateHealthRisks(healthProfile, currentMetrics);
-    const preventiveRecommendations = getPreventiveRecommendations(healthRisks, healthProfile);
-    const lifestyleAdvice = getLifestyleAdvice(healthProfile);
-    const medicationAdvice = getMedicationAdvice(healthProfile);
-
-    // Determine if this is a symptom-related query
-    const isSymptomQuery = userMessage.toLowerCase().includes('symptom') || 
-                          userMessage.toLowerCase().includes('feel') ||
-                          userMessage.toLowerCase().includes('pain');
-
-    // Determine if this is a medication-related query
-    const isMedicationQuery = userMessage.toLowerCase().includes('medication') || 
-                            userMessage.toLowerCase().includes('medicine') ||
-                            userMessage.toLowerCase().includes('pill');
-
-    // Determine if this is a lifestyle-related query
-    const isLifestyleQuery = userMessage.toLowerCase().includes('exercise') || 
-                            userMessage.toLowerCase().includes('diet') ||
-                            userMessage.toLowerCase().includes('stress');
-
-    let response = '';
-    let quickReplies: string[] = [];
-    let isEmergency = false;
-
-    // Check for emergency symptoms
-    const emergencySymptoms = recentSymptoms.some(s => 
-      (s.type.includes('chest pain') && s.severity > 7) ||
-      (s.type.includes('breathing') && s.severity > 8) ||
-      (s.type.includes('unconscious'))
-    );
-
-    if (emergencySymptoms) {
-      response = `⚠️ Based on your reported symptoms, I recommend immediate medical attention. Please contact emergency services or go to the nearest emergency room.
-
-Key concerns:
-${recentSymptoms.filter(s => s.severity > 7).map(s => `• ${s.type} (Severity: ${s.severity}/10)`).join('\n')}
-
-While waiting for medical help:
-• Stay calm and seated
-• Take slow, deep breaths
-• Have someone stay with you
-• Have your medical history and medication list ready`;
-
-      isEmergency = true;
-      quickReplies = [
-        '🚑 Call Emergency',
-        '📍 Find ER',
-        '❤️ Track Vitals',
-        '📋 Show History',
-        '👨‍⚕️ Contact Doctor'
-      ];
-    } else if (isSymptomQuery) {
-      response = `Based on your symptoms and health profile, here's my assessment:
-
-${recentSymptoms.map(s => `• ${s.type} (Severity: ${s.severity}/10): ${s.description}`).join('\n')}
-
-Recommendations:
-${preventiveRecommendations.join('\n')}
-
-Lifestyle Modifications:
-${lifestyleAdvice.join('\n')}
-
-${medicationAdvice}
-
-Continue monitoring your symptoms and schedule a follow-up with your primary care physician if they persist or worsen.`;
-
-      quickReplies = [
-        '🤒 Update Symptoms',
-        '📊 Track Progress',
-        '💊 Medication Help',
-        '🏥 Find Doctor',
-        '❓ More Info'
-      ];
-    } else if (isMedicationQuery) {
-      response = `Regarding your medications:
-
-${medicationAdvice}
-
-Important reminders:
-• Always take medications as prescribed
-• Keep track of any side effects
-• Don't skip doses
-• Store medications properly
-• Refill prescriptions on time
-
-Would you like to:
-• Set up medication reminders
-• Learn about potential interactions
-• Track side effects
-• Schedule a medication review`;
-
-      quickReplies = [
-        '⏰ Set Reminders',
-        '❗ Side Effects',
-        '🔄 Refill Info',
-        '📋 Med Review',
-        '👨‍⚕️ Ask Doctor'
-      ];
-    } else if (isLifestyleQuery) {
-      response = `Based on your health profile, here are personalized lifestyle recommendations:
-
-Exercise:
-• Current activity: ${healthProfile.lifestyle.exerciseFrequency} days/week
-• Target: 5 days/week of moderate activity
-• Start with activities you enjoy
-• Gradually increase intensity
-
-Diet:
-• Focus on balanced meals
-• Include plenty of fruits and vegetables
-• Stay hydrated
-• Monitor portion sizes
-
-Stress Management:
-• Practice relaxation techniques
-• Maintain regular sleep schedule
-• Consider mindfulness activities
-• Take regular breaks
-
-${healthRisks.length > 0 ? '\nHealth Risks to Address:\n' + healthRisks.map(risk => `• ${risk}`).join('\n') : ''}
-
-Would you like a detailed plan for any of these areas?`;
-
-      quickReplies = [
-        '🏃‍♂️ Exercise Plan',
-        '🥗 Diet Tips',
-        '🧘‍♂️ Stress Help',
-        '😴 Sleep Tips',
-        '📊 Track Progress'
-      ];
-    } else {
-      response = `I'm here to help you maintain optimal health. Based on your profile, here are key points to focus on:
-
-Health Status:
-• BP: ${currentMetrics.bloodPressureSystolic}/${currentMetrics.bloodPressureDiastolic}
-• Heart Rate: ${currentMetrics.heartRate} BPM
-• Cholesterol: ${currentMetrics.cholesterol} mg/dL
-
-${healthRisks.length > 0 ? '\nAreas to Monitor:\n' + healthRisks.map(risk => `• ${risk}`).join('\n') : ''}
-
-${preventiveRecommendations.length > 0 ? '\nRecommendations:\n' + preventiveRecommendations.join('\n') : ''}
-
-How can I assist you today?`;
-
-      quickReplies = [
-        '🏥 Health Check',
-        '💊 Medications',
-        '🤒 Symptoms',
-        '🥗 Lifestyle',
-        '📋 Prevention'
-      ];
-    }
-
-    return {
-      messages: [{
+  // In a real application, this would call an AI service
+  // For development, we'll use mock responses based on user input
+  
+  // Default response
+  let response: ChatResponse = {
+    messages: [
+      {
         id: Date.now().toString(),
-        text: response,
+        text: "I'm analyzing your health data to provide personalized guidance. How else can I assist you today?",
         isBot: true,
         timestamp: new Date(),
-        type: 'quick_replies',
-        quickReplies
-      }],
-      isEmergency
+        type: 'text'
+      }
+    ],
+    isEmergency: false
+  };
+  
+  // Check for emergency keywords
+  const emergencyKeywords = ['emergency', 'pain', 'chest pain', 'severe', 'attack', 'breathing', 'can\'t breathe'];
+  const isEmergency = emergencyKeywords.some(keyword => userMessage.toLowerCase().includes(keyword));
+  
+  if (isEmergency) {
+    response = {
+      messages: [
+        {
+          id: Date.now().toString(),
+          text: "Based on what you've described, this may require immediate medical attention. Please contact emergency services (911/999/112) or go to the nearest emergency room right away.",
+          isBot: true,
+          timestamp: new Date(),
+          type: 'emergency',
+          metadata: {
+            riskLevel: 'high',
+            actions: [
+              { type: 'call', details: 'emergency' }
+            ]
+          }
+        }
+      ],
+      isEmergency: true
     };
-  } catch (error) {
-    console.error('Error generating response:', error);
-    return {
-      messages: [{
-        id: Date.now().toString(),
-        text: "I apologize, but I'm having trouble analyzing your health data right now. If you're experiencing any concerning symptoms, please contact your healthcare provider.",
-        isBot: true,
-        timestamp: new Date(),
-        type: 'text',
-        quickReplies: ['Contact Healthcare Provider', 'Try Again', 'Get Emergency Contacts']
-      }],
+  }
+  // Check for medicine-related questions
+  else if (userMessage.toLowerCase().includes('medicine') || userMessage.toLowerCase().includes('medication')) {
+    if (healthProfile && healthProfile.medications.length > 0) {
+      const medicationList = healthProfile.medications.map(med => 
+        `${med.name} (${med.dosage}, ${med.frequency}, ${med.timeOfDay.join(', ')})`
+      ).join('\n• ');
+      
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: `Your current medications are:\n\n• ${medicationList}\n\nRemember to take your medications as prescribed. Would you like me to set up reminders for any of these medications?`,
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Set Medication Reminders', 'Side Effects Information', 'Medication Schedule']
+          }
+        ],
+        isEmergency: false
+      };
+    } else {
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: "I don't see any medications listed in your health profile. Would you like to add your current medications?",
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Add Medications', 'Not Taking Any Medications']
+          }
+        ],
+        isEmergency: false
+      };
+    }
+  }
+  // Check for exercise-related questions
+  else if (userMessage.toLowerCase().includes('exercise') || userMessage.toLowerCase().includes('activity')) {
+    response = {
+      messages: [
+        {
+          id: Date.now().toString(),
+          text: `Based on your health profile, I recommend ${healthProfile?.lifestyle?.exerciseFrequency === 0 ? 'starting with' : 'maintaining'} at least 150 minutes of moderate-intensity exercise per week.\n\nSome suitable activities might include:\n• Walking\n• Swimming\n• Cycling\n• Low-impact aerobics\n\nWould you like a personalized exercise plan?`,
+          isBot: true,
+          timestamp: new Date(),
+          type: 'quick_replies',
+          quickReplies: ['Get Exercise Plan', 'Exercise Benefits', 'Recommend Activities']
+        }
+      ],
       isEmergency: false
     };
   }
+  // Check for diet-related questions
+  else if (userMessage.toLowerCase().includes('diet') || userMessage.toLowerCase().includes('food') || userMessage.toLowerCase().includes('eat')) {
+    let dietRecommendation = "A balanced diet is essential for heart health. ";
+    
+    if (healthProfile?.hasHeartCondition || (healthMetrics?.bloodPressureSystolic !== undefined && healthMetrics.bloodPressureSystolic > 130)) {
+      dietRecommendation += "I recommend the DASH or Mediterranean diet, which emphasizes:\n• Vegetables, fruits, and whole grains\n• Lean proteins like fish and poultry\n• Limited red meat and processed foods\n• Reduced sodium intake";
+    } else {
+      dietRecommendation += "For general health, focus on:\n• Plenty of fruits and vegetables\n• Whole grains\n• Lean proteins\n• Healthy fats from sources like olive oil and avocados\n• Limited processed foods and added sugars";
+    }
+    
+    response = {
+      messages: [
+        {
+          id: Date.now().toString(),
+          text: dietRecommendation + "\n\nWould you like more specific dietary recommendations?",
+          isBot: true,
+          timestamp: new Date(),
+          type: 'quick_replies',
+          quickReplies: ['Detailed Diet Plan', 'Heart-Healthy Foods', 'Foods to Avoid']
+        }
+      ],
+      isEmergency: false
+    };
+  }
+  // Check for symptom-related questions
+  else if (userMessage.toLowerCase().includes('symptom') || userMessage.toLowerCase().includes('feeling')) {
+    if (symptoms.length > 0) {
+      const recentSymptoms = symptoms.slice(0, 3).map(s => 
+        `• ${s.type} (${s.severity}/10, ${s.duration} minutes, ${new Date(s.timestamp).toLocaleDateString()})`
+      ).join('\n');
+      
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: `I see you've reported these recent symptoms:\n\n${recentSymptoms}\n\nWould you like me to analyze these symptoms or would you like to report a new symptom?`,
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Analyze My Symptoms', 'Report New Symptom', 'Track Symptom History']
+          }
+        ],
+        isEmergency: false
+      };
+    } else {
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: "I don't see any symptoms in your records. Would you like to report a new symptom?",
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Report New Symptom', 'I Feel Fine', 'General Health Check']
+          }
+        ],
+        isEmergency: false
+      };
+    }
+  }
+  // General health assessment request
+  else if (userMessage.toLowerCase().includes('health') || userMessage.toLowerCase().includes('assessment')) {
+    if (healthProfile && healthMetrics) {
+      let healthStatus = "";
+      
+      // Blood pressure assessment
+      if (healthMetrics?.bloodPressureSystolic > 140 || healthMetrics?.bloodPressureDiastolic > 90) {
+        healthStatus += "• Your blood pressure is elevated and needs attention.\n";
+      } else {
+        healthStatus += "• Your blood pressure is in a normal range.\n";
+      }
+      
+      // Heart rate assessment
+      if (healthMetrics?.heartRate > 100) {
+        healthStatus += "• Your resting heart rate is elevated.\n";
+      } else {
+        healthStatus += "• Your heart rate is in a healthy range.\n";
+      }
+      
+      // Cholesterol assessment
+      if (healthMetrics?.cholesterol > 200) {
+        healthStatus += "• Your cholesterol levels are above recommended levels.\n";
+      } else {
+        healthStatus += "• Your cholesterol levels are in a good range.\n";
+      }
+      
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: `Based on your latest health metrics:\n\n${healthStatus}\nWhat specific aspect of your health would you like to focus on?`,
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Heart Health', 'Blood Pressure', 'Cholesterol', 'Weight Management']
+          }
+        ],
+        isEmergency: false
+      };
+    } else {
+      response = {
+        messages: [
+          {
+            id: Date.now().toString(),
+            text: "To provide a health assessment, I'll need more information about your health profile and current metrics. Would you like to update your health profile now?",
+            isBot: true,
+            timestamp: new Date(),
+            type: 'quick_replies',
+            quickReplies: ['Update Health Profile', 'General Health Tips']
+          }
+        ],
+        isEmergency: false
+      };
+    }
+  }
+  
+  // Add a random delay to simulate AI processing
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+  
+  return response;
 }
 
 function formatDoctorResponse(analysis: string): string {
@@ -362,7 +395,7 @@ Remember, your mental well-being is just as important as your physical health. I
 
 function generateContextualQuickReplies(assessment: any): string[] {
   const replies: string[] = [];
-  const riskLevel = assessment.riskLevel.toLowerCase();
+  const riskLevel = assessment.riskLevel?.toLowerCase();
   const hasEmergency = assessment.needsEmergencyCare;
   const hasMentalHealthSuggestions = assessment.mentalHealthSuggestions?.length > 0;
 

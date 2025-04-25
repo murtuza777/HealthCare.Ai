@@ -63,6 +63,63 @@ interface PatientApiResponse {
   }[];
 }
 
+// Mock data for development
+const mockPatientData: PatientApiResponse = {
+  id: 'current-user-id',
+  name: 'John Doe',
+  age: 45,
+  height: 175,
+  weight: 75,
+  hasHeartCondition: true,
+  hadHeartAttack: false,
+  medications: [
+    {
+      name: 'Lisinopril',
+      dosage: '10mg',
+      frequency: 'Once daily',
+      timeOfDay: '["Morning"]',
+      startDate: '2023-01-15',
+    },
+    {
+      name: 'Aspirin',
+      dosage: '81mg',
+      frequency: 'Once daily',
+      timeOfDay: '["Morning"]',
+      startDate: '2023-01-15',
+    }
+  ],
+  details: {
+    allergies: '["Penicillin"]',
+    conditions: '["Hypertension", "High Cholesterol"]',
+    familyHistory: '["Heart Disease"]',
+    smoker: false,
+    alcoholConsumption: 'light',
+    exerciseFrequency: 3,
+    diet: 'Mediterranean',
+    stressLevel: 5
+  },
+  healthMetrics: [
+    {
+      heartRate: 72,
+      bloodPressureSystolic: 130,
+      bloodPressureDiastolic: 85,
+      cholesterol: 190,
+      weight: 75,
+      recordedAt: new Date().toISOString()
+    }
+  ],
+  symptoms: [
+    {
+      type: 'chest pain',
+      severity: 'mild',
+      recordedAt: new Date().toISOString(),
+      description: 'Slight discomfort when climbing stairs',
+      duration: '5-10 minutes',
+      accompaniedBy: '["shortness of breath"]'
+    }
+  ]
+};
+
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [healthProfile, setHealthProfile] = useState<HealthProfile | null>(null);
   const [healthMetrics, setHealthMetrics] = useState<HealthMetrics | null>(null);
@@ -80,15 +137,10 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      // In a real app, you would get the patient ID from authentication
-      const patientId = 'current-user-id';
-      const response = await fetch(`/api/patients?id=${patientId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load patient data');
-      }
-
-      const data = (await response.json()) as PatientApiResponse;
+      // Instead of making an actual API call, use mock data
+      // This simulates a successful API response
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      const data = mockPatientData;
       
       // Transform the data into our expected format
       setHealthProfile({
@@ -154,117 +206,82 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const updateHealthProfile = async (profile: HealthProfile) => {
     try {
       setError(null);
-      const patientId = 'current-user-id'; // In a real app, get from auth
       
-      const response = await fetch(`/api/patients?id=${patientId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...profile,
-          healthMetrics: healthMetrics,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
+      // Simulate API call with mock implementation
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      
+      // Simulating successful update
+      console.log('Profile update successful:', profile);
       setHealthProfile(profile);
     } catch (error) {
       console.error('Error updating profile:', error);
       setError('Failed to update profile. Please try again.');
-      throw error;
+      // Don't throw an error, just log it and set the error state
     }
   };
 
   const updateHealthMetrics = async (metrics: HealthMetrics) => {
     try {
       setError(null);
-      const patientId = 'current-user-id'; // In a real app, get from auth
       
-      const response = await fetch(`/api/patients?id=${patientId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...healthProfile,
-          healthMetrics: metrics,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update metrics');
-      }
-
+      // Simulate API call with mock implementation
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      
+      // Simulating successful update
+      console.log('Metrics update successful:', metrics);
       setHealthMetrics(metrics);
     } catch (error) {
       console.error('Error updating metrics:', error);
       setError('Failed to update metrics. Please try again.');
-      throw error;
+      // Don't throw an error, just log it and set the error state
     }
   };
 
   const addSymptom = async (symptom: Symptom) => {
     try {
       setError(null);
-      const patientId = 'current-user-id'; // In a real app, get from auth
       
-      const response = await fetch(`/api/patients/${patientId}/symptoms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(symptom),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add symptom');
-      }
-
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      
+      // Simulating successful update
       setSymptoms(prev => [...prev, symptom]);
     } catch (error) {
       console.error('Error adding symptom:', error);
       setError('Failed to add symptom. Please try again.');
-      throw error;
+      // Don't throw error
     }
   };
 
   const removeSymptom = async (symptomId: string) => {
     try {
       setError(null);
-      const patientId = 'current-user-id'; // In a real app, get from auth
       
-      const response = await fetch(`/api/patients/${patientId}/symptoms/${symptomId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to remove symptom');
-      }
-
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      
+      // Simulating successful update
       setSymptoms(prev => prev.filter(s => s.type !== symptomId));
     } catch (error) {
       console.error('Error removing symptom:', error);
       setError('Failed to remove symptom. Please try again.');
-      throw error;
+      // Don't throw error
     }
   };
 
   const clearSymptoms = async () => {
     try {
       setError(null);
-      const patientId = 'current-user-id'; // In a real app, get from auth
       
-      const response = await fetch(`/api/patients/${patientId}/symptoms`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to clear symptoms');
-      }
-
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+      
+      // Simulating successful update
       setSymptoms([]);
     } catch (error) {
       console.error('Error clearing symptoms:', error);
       setError('Failed to clear symptoms. Please try again.');
-      throw error;
+      // Don't throw error
     }
   };
 

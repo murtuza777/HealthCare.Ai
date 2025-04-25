@@ -11,10 +11,14 @@ interface RiskFactor {
 
 interface HeartRiskAssessmentProps {
   riskFactors: RiskFactor[];
-  overallRisk: number;
 }
 
-export default function HeartRiskAssessment({ riskFactors, overallRisk }: HeartRiskAssessmentProps) {
+export default function HeartRiskAssessment({ riskFactors }: HeartRiskAssessmentProps) {
+  // Calculate overall risk as average of all risk factors
+  const overallRisk = Math.round(
+    riskFactors.reduce((acc, factor) => acc + factor.value, 0) / riskFactors.length
+  );
+
   const getRiskLevel = (risk: number) => {
     if (risk <= 30) return 'Low Risk';
     if (risk <= 60) return 'Moderate Risk';

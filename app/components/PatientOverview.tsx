@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, Title, BarList, Button } from "@tremor/react";
 import { Line } from 'react-chartjs-2';
 import { format, subDays } from 'date-fns';
-import { FaHeartbeat, FaWeight, FaTint, FaChartLine, FaLungs, FaHospital, FaUserPlus } from 'react-icons/fa';
+import { FaHeartbeat, FaWeight, FaTint, FaChartLine, FaLungs, FaHospital, FaUserPlus, FaUserMd, FaClipboardList } from 'react-icons/fa';
 import HealthMetricsCard from './HealthMetricsCard';
 import HeartRiskAssessment from './HeartRiskAssessment';
 import PatientDetailsForm, { PatientDetails } from './PatientDetailsForm';
@@ -32,6 +32,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [healthAnalysis, setHealthAnalysis] = useState<any>(null);
+  const [showPersonalizedAdvice, setShowPersonalizedAdvice] = useState(false);
   const { healthProfile, healthMetrics, symptoms, updateHealthProfile, updateHealthMetrics } = usePatient();
 
   useEffect(() => {
@@ -92,6 +93,97 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
       console.error('Error saving patient details:', error);
       setError('Failed to save patient details. Please try again.');
     }
+  };
+
+  // Generate personalized advice based on patient data
+  const getPersonalizedAdvice = () => {
+    if (!healthProfile || !healthMetrics) return [];
+    
+    const advice = [];
+    
+    // Blood pressure advice
+    if (healthMetrics.bloodPressureSystolic > 140 || healthMetrics.bloodPressureDiastolic > 90) {
+      advice.push({
+        title: "High Blood Pressure Alert",
+        description: "Your blood pressure readings are elevated. Consider reducing sodium intake, increasing physical activity, and consulting with your physician.",
+        icon: FaTint,
+        severity: "high"
+      });
+    } else if (healthMetrics.bloodPressureSystolic > 120 || healthMetrics.bloodPressureDiastolic > 80) {
+      advice.push({
+        title: "Elevated Blood Pressure",
+        description: "Your blood pressure is slightly elevated. Monitor closely and consider lifestyle modifications.",
+        icon: FaTint,
+        severity: "medium"
+      });
+    }
+    
+    // Heart rate advice
+    if (healthMetrics.heartRate > 100) {
+      advice.push({
+        title: "Elevated Heart Rate",
+        description: "Your resting heart rate is higher than normal. Consider stress reduction techniques and consult with your healthcare provider.",
+        icon: FaHeartbeat,
+        severity: "medium"
+      });
+    }
+    
+    // Cholesterol advice
+    if (healthMetrics.cholesterol > 240) {
+      advice.push({
+        title: "High Cholesterol Alert",
+        description: "Your cholesterol levels are significantly elevated. Consider dietary changes, exercise, and medication review with your doctor.",
+        icon: FaClipboardList,
+        severity: "high"
+      });
+    } else if (healthMetrics.cholesterol > 200) {
+      advice.push({
+        title: "Borderline High Cholesterol",
+        description: "Your cholesterol is slightly elevated. Focus on heart-healthy foods and regular exercise.",
+        icon: FaClipboardList,
+        severity: "medium"
+      });
+    }
+    
+    // Weight advice
+    const bmi = healthMetrics.weight / ((healthProfile.height / 100) * (healthProfile.height / 100));
+    if (bmi > 30) {
+      advice.push({
+        title: "Weight Management",
+        description: "Your BMI indicates obesity. Consider working with a nutritionist and increasing physical activity.",
+        icon: FaWeight,
+        severity: "high"
+      });
+    } else if (bmi > 25) {
+      advice.push({
+        title: "Weight Consideration",
+        description: "Your BMI indicates overweight. Small changes to diet and activity can help manage weight.",
+        icon: FaWeight,
+        severity: "medium"
+      });
+    }
+    
+    // Heart condition specific advice
+    if (healthProfile.hasHeartCondition) {
+      advice.push({
+        title: "Heart Condition Management",
+        description: "With your heart condition, regular monitoring and medication adherence are crucial. Schedule regular check-ups.",
+        icon: FaUserMd,
+        severity: "high"
+      });
+    }
+    
+    // Add generic advice if nothing specific
+    if (advice.length === 0) {
+      advice.push({
+        title: "Maintaining Good Health",
+        description: "Your metrics look good! Continue with your healthy lifestyle and regular check-ups.",
+        icon: FaHospital,
+        severity: "low"
+      });
+    }
+    
+    return advice;
   };
 
   if (loading) {
@@ -213,6 +305,8 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     }
   ];
 
+  const personalizedAdvice = getPersonalizedAdvice();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -249,20 +343,21 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
           value={`${healthMetrics.bloodPressureSystolic}/${healthMetrics.bloodPressureDiastolic}`}
           icon={FaTint}
           color="blue"
+          unit="mmHg"
           trend={0}
           status={healthAnalysis?.metrics.bloodPressure?.status || 'normal'}
         />
-
+        
         <HealthMetricsCard
           title="Cholesterol"
           value={healthMetrics.cholesterol.toString()}
           icon={FaChartLine}
-          color="yellow"
+          color="amber"
           unit="mg/dL"
           trend={0}
           status={healthAnalysis?.metrics.cholesterol?.status || 'normal'}
         />
-
+        
         <HealthMetricsCard
           title="Weight"
           value={healthMetrics.weight.toString()}
@@ -274,81 +369,103 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
         />
       </div>
 
-      {/* Risk Assessment and Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <HeartRiskAssessment
-          riskFactors={riskFactors}
-          overallRisk={healthAnalysis?.riskScore || 0}
-        />
-
+      {/* Risk Assessment and Health Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <Card>
-          <Title>Health Recommendations</Title>
+          <Title>Heart Health Risk Assessment</Title>
+          <HeartRiskAssessment riskFactors={riskFactors} />
+        </Card>
+        
+        <Card>
+          <div className="flex justify-between items-center">
+            <Title>Health Summary</Title>
+            <Button 
+              size="xs" 
+              variant="light"
+              onClick={() => setShowPersonalizedAdvice(!showPersonalizedAdvice)}
+            >
+              {showPersonalizedAdvice ? 'Hide Advice' : 'View Advice'}
+            </Button>
+          </div>
           <div className="mt-4 space-y-4">
-            {healthAnalysis?.recommendations.map((recommendation: string, index: number) => (
-              <div key={index} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                </div>
-                <div className="flex-grow">
-                  <p className="text-sm text-gray-600">{recommendation}</p>
-                </div>
+            {healthAnalysis && (
+              <div>
+                <p className="text-lg font-medium text-gray-700">
+                  {healthAnalysis.riskLevel === 'low' && '✅ Your health metrics indicate a low risk profile.'}
+                  {healthAnalysis.riskLevel === 'moderate' && '⚠️ Your health metrics indicate a moderate risk profile.'}
+                  {healthAnalysis.riskLevel === 'high' && '❗ Your health metrics indicate a high risk profile.'}
+                </p>
+                <p className="text-gray-600 mt-2">{healthAnalysis.summary}</p>
               </div>
-            )) || (
-              <p className="text-gray-500">No recommendations available yet.</p>
             )}
           </div>
         </Card>
       </div>
 
-      {/* Medical History */}
-      <Card>
-        <Title>Medical History</Title>
-        <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${healthProfile.hasHeartCondition ? 'bg-red-500' : 'bg-green-500'}`} />
-              <span>Heart Condition: {healthProfile.hasHeartCondition ? 'Yes' : 'No'}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${healthProfile.hadHeartAttack ? 'bg-red-500' : 'bg-green-500'}`} />
-              <span>Previous Heart Attack: {healthProfile.hadHeartAttack ? 'Yes' : 'No'}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${healthProfile.lifestyle.smoker ? 'bg-red-500' : 'bg-green-500'}`} />
-              <span>Smoker: {healthProfile.lifestyle.smoker ? 'Yes' : 'No'}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${healthProfile.lifestyle.exerciseFrequency >= 3 ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              <span>Exercise: {healthProfile.lifestyle.exerciseFrequency} days/week</span>
-            </div>
+      {/* Personalized Advice Section */}
+      {showPersonalizedAdvice && personalizedAdvice.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-900">Personalized Health Advice</h3>
+            <Button
+              size="xs"
+              variant="light"
+              onClick={() => setShowPersonalizedAdvice(false)}
+            >
+              Hide
+            </Button>
+          </div>
+          <div className="space-y-4">
+            {personalizedAdvice.map((advice, index) => (
+              <div 
+                key={index} 
+                className={`p-4 rounded-lg flex items-start space-x-4 ${
+                  advice.severity === 'high' ? 'bg-red-50' : 
+                  advice.severity === 'medium' ? 'bg-amber-50' : 'bg-green-50'
+                }`}
+              >
+                <div className={`p-2 rounded-full ${
+                  advice.severity === 'high' ? 'bg-red-100 text-red-600' : 
+                  advice.severity === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
+                }`}>
+                  <advice.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-medium">{advice.title}</h4>
+                  <p className="text-gray-600 text-sm mt-1">{advice.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-gray-500">
+              Note: This advice is generated based on your health data. Always consult with a healthcare professional before making significant changes to your health regimen.
+            </p>
           </div>
         </div>
-      </Card>
+      )}
 
       {/* Medications */}
-      <Card>
-        <Title>Current Medications</Title>
-        <div className="mt-4 space-y-4">
-          {healthProfile.medications && healthProfile.medications.length > 0 ? (
-            healthProfile.medications.map((med, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <div>
-                    <p className="font-medium">{med.name}</p>
-                    <p className="text-sm text-gray-600">{med.frequency} - {med.dosage}</p>
-                  </div>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Medications</h3>
+        {healthProfile.medications.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {healthProfile.medications.map((med, index) => (
+              <div key={index} className="border rounded-lg p-4">
+                <h4 className="font-medium">{med.name}</h4>
+                <div className="mt-2 space-y-1 text-sm text-gray-600">
+                  <p>Dosage: {med.dosage}</p>
+                  <p>Frequency: {med.frequency}</p>
+                  <p>Time of Day: {med.timeOfDay.join(', ')}</p>
+                  <p>Started: {format(new Date(med.startDate), 'MMM dd, yyyy')}</p>
                 </div>
-                <button className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50">
-                  View Details
-                </button>
               </div>
-            ))
-          ) : (
-            <p className="text-gray-500">No medications listed</p>
-          )}
-        </div>
-      </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600">No medications recorded.</p>
+        )}
+      </div>
     </div>
   );
 }
