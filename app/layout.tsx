@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import { AuthProvider } from './context/AuthContext'
 import { PatientProvider } from './context/PatientContext'
 import { Suspense } from 'react'
+import LoadingAnimation from './components/LoadingAnimation'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 function Loading() {
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+      <LoadingAnimation text="INITIALIZING HEALTHCARE.AI" fullScreen={true} />
     </div>
   );
 }
@@ -30,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased min-h-screen`}>
         <Suspense fallback={<Loading />}>
           <AuthProvider>
             <PatientProvider>

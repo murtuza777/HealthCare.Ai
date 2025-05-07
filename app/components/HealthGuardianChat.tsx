@@ -14,6 +14,7 @@ import {
   Symptom as SupabaseSymptom,
   Medication as SupabaseMedication
 } from '../utils/supabase';
+import LoadingAnimation from './LoadingAnimation';
 
 // Create conversion functions between Supabase and local data models
 const convertHealthProfile = (profile: SupabaseHealthProfile | null): any => {
@@ -337,106 +338,122 @@ Please tell me about any specific concerns or symptoms you're experiencing.`,
     window.location.href = "tel:+1234567890"; // Replace with actual doctor's number
   };
 
+  // If data is not ready, show loading animation
+  if (!dataReady && isLoading) {
+    return (
+      <div className="h-full min-h-[400px] flex items-center justify-center">
+        <LoadingAnimation text="INITIALIZING AI" />
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-[750px]">
-      <div className="bg-red-600 text-white p-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <FaHeart className="mr-2" />
-          <h2 className="text-xl font-semibold">HeartGuard AI</h2>
+    <div className="relative">
+      <motion.div
+        className={`backdrop-blur-md bg-white/5 border rounded-xl overflow-hidden p-6 transition-all duration-300 ${
+          isEmergencyMode ? 'border-red-500 shadow-red-900/50' : 'border-white/10 shadow-xl'
+        }`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <FaHeart className={`w-5 h-5 ${isEmergencyMode ? 'text-red-500 animate-heartbeat' : 'text-white'}`} />
+            <h2 className="text-xl font-semibold text-white">Health Guardian AI</h2>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <button 
-            className="bg-white text-red-600 rounded-full p-2"
-            onClick={handleDoctorCall}
-            title="Call your doctor"
-          >
-            <FaPhone className="w-4 h-4" />
-          </button>
-          <button 
-            className="bg-white text-red-600 rounded-full p-2"
-            onClick={handleEmergencyCall}
-            title="Emergency call"
-          >
-            <FaExclamationTriangle className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Emergency Mode Banner */}
-      {isEmergencyMode && (
-        <div className="bg-red-100 border-l-4 border-red-500 p-4 flex items-center">
-          <FaExclamationTriangle className="text-red-500 mr-3" />
-          <div>
-            <p className="font-bold text-red-700">Potential Emergency Detected</p>
-            <p className="text-red-600 text-sm">
-              Based on your symptoms, immediate medical attention may be required.
-              <button 
-                onClick={handleEmergencyCall}
-                className="ml-2 underline font-medium"
+        
+        <div className="flex flex-col h-[600px]">
+          {/* Emergency Mode Banner */}
+          <AnimatePresence>
+            {isEmergencyMode && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="bg-red-900/30 border border-red-500/30 text-white px-4 py-3 rounded-lg mb-4 flex items-center"
               >
-                Call Emergency Services
-              </button>
-            </p>
-          </div>
-        </div>
-      )}
+                <FaExclamationTriangle className="text-red-500 mr-2" />
+                <div className="flex-1">
+                  <p className="font-medium">Emergency mode activated</p>
+                  <p className="text-sm text-gray-300">If this is a life-threatening emergency, please call emergency services immediately.</p>
+                </div>
+                <div className="flex space-x-2">
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleEmergencyCall}
+                    className="bg-red-600 text-white px-3 py-1 rounded-full text-sm flex items-center"
+                  >
+                    <FaPhone className="mr-1" /> Emergency
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDoctorCall}
+                    className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm flex items-center"
+                  >
+                    <FaPhone className="mr-1" /> Doctor
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      {/* Chat Messages */}
-      <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
-        <AnimatePresence>
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChatMessage 
-                message={message} 
-                onQuickReplyClick={handleQuickReply}
-                onCallEmergency={handleEmergencyCall}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        
-        {isTyping && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-gray-200 text-gray-700 rounded-lg py-2 px-4 max-w-xs">
-              <div className="flex space-x-1 items-center">
-                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          {/* Chat Messages Area */}
+          <div className="flex-1 overflow-y-auto px-1 py-2 space-y-4 mb-4 custom-scrollbar bg-black/30 backdrop-blur-md rounded-lg">
+            <AnimatePresence initial={false}>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ChatMessage 
+                    message={message}
+                    onQuickReplyClick={handleQuickReply}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {isTyping && (
+              <div className="flex items-center space-x-2 px-4 py-2 bg-white/5 backdrop-blur-sm rounded-lg shadow-sm max-w-[80%] border border-white/10">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse delay-75"></div>
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse delay-150"></div>
               </div>
-            </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
 
-      {/* Input Area */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message here..."
-            className="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className={`bg-red-600 text-white p-2 rounded-lg ${
-              !input.trim() ? 'opacity-50' : 'hover:bg-red-700'
-            }`}
-          >
-            <FaPaperPlane />
-          </button>
+          {/* Message Input Area */}
+          <form onSubmit={handleSubmit} className="flex space-x-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 px-4 py-2 border border-white/20 rounded-full bg-white/5 backdrop-blur-md text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300 placeholder-gray-400"
+            />
+            <motion.button
+              type="submit"
+              disabled={!input.trim()}
+              whileHover={input.trim() ? { scale: 1.05 } : undefined}
+              whileTap={input.trim() ? { scale: 0.95 } : undefined}
+              className={`p-2 rounded-full ${
+                input.trim()
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+              } transition-colors duration-300`}
+            >
+              <FaPaperPlane className="w-5 h-5" />
+            </motion.button>
+          </form>
         </div>
-      </form>
+      </motion.div>
     </div>
   );
 }

@@ -11,6 +11,8 @@ import HeartRiskAssessment from './HeartRiskAssessment';
 import PatientDetailsForm, { PatientDetails } from './PatientDetailsForm';
 import { analyzeHealthData } from '../utils/healthAnalysis';
 import { usePatient } from '../context/PatientContext';
+import LoadingAnimation from './LoadingAnimation';
+import { motion } from 'framer-motion';
 
 /**
  * PatientOverview Component
@@ -437,24 +439,6 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     }
   };
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-      },
-    },
-  };
-
   // Calculate risk factors for Heart Risk Assessment
   const calculateRiskFactors = () => {
     if (!healthMetrics) return [];
@@ -490,7 +474,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+        <LoadingAnimation text="LOADING PATIENT DATA" />
       </div>
     );
   }
@@ -499,18 +483,18 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <Title>Update Patient Details</Title>
+          <Title className="text-white">Update Patient Details</Title>
           <Button
             size="sm"
-            variant="secondary"
             onClick={() => setShowForm(false)}
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
             icon={FaUserPlus}
           >
             Cancel
           </Button>
         </div>
         {error && (
-          <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+          <div className="p-4 bg-red-900/50 text-red-200 rounded-lg border border-red-500/30">
             {error}
           </div>
         )}
@@ -553,20 +537,26 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
   if (!healthProfile || !healthMetrics) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 p-8">
-        <FaUserPlus className="w-16 h-16 text-red-500" />
-        <Title>Welcome to Your Health Profile</Title>
-        <p className="text-gray-600 text-center max-w-md">
+        <motion.div
+          animate={{ scale: [0.9, 1, 0.9], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <FaUserPlus className="w-16 h-16 text-red-500" />
+        </motion.div>
+        <Title className="text-white">Welcome to Your Health Profile</Title>
+        <p className="text-gray-300 text-center max-w-md">
           Please take a moment to set up your health profile. This will help us provide 
           personalized health recommendations and better monitor your well-being.
         </p>
-        <Button
-          size="lg"
-          variant="primary"
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowForm(true)}
-          icon={FaUserPlus}
+          className="bg-gradient-to-r from-red-600 to-red-500 text-white px-6 py-3 rounded-full flex items-center space-x-2 hover:from-red-700 hover:to-red-600 transition-all duration-300"
         >
-          Set Up Health Profile
-        </Button>
+          <FaUserPlus />
+          <span>Set Up Health Profile</span>
+        </motion.button>
       </div>
     );
   }
@@ -574,221 +564,339 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
   const personalizedAdvice = getPersonalizedAdvice();
   const riskFactors = calculateRiskFactors();
 
+  // Update chart options for dark theme
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.7)',
+        }
+      },
+      x: {
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
+        ticks: {
+          color: 'rgba(255, 255, 255, 0.7)',
+        }
+      }
+    },
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-white">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-black">{healthProfile?.name || "Patient"}</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-white">{healthProfile?.name || "Patient"}</h2>
+          <p className="text-gray-300">
             Age: {healthProfile?.age || "N/A"} | Height: {healthProfile?.height || "N/A"}cm | Weight: {healthMetrics?.weight || "N/A"}kg
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="secondary"
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowForm(true)}
-          icon={FaUserPlus}
+          className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-full flex items-center space-x-2"
         >
-          Update Details
-        </Button>
+          <FaUserPlus className="w-4 h-4" />
+          <span>Update Details</span>
+        </motion.button>
       </div>
 
       {/* Current Vitals */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <HealthMetricsCard
-          title="Heart Rate"
-          value={healthMetrics?.heart_rate?.toString() || "75"}
-          icon={FaHeartbeat}
-          color="red"
-          unit="BPM"
-          trend={0}
-          status={healthAnalysis?.metrics?.heartRate?.status || 'normal'}
-        />
-        
-        <HealthMetricsCard
-          title="Blood Pressure"
-          value={`${healthMetrics?.blood_pressure_systolic || 120}/${healthMetrics?.blood_pressure_diastolic || 80}`}
-          icon={FaTint}
-          color="blue"
-          unit="mmHg"
-          trend={0}
-          status={healthAnalysis?.metrics?.bloodPressure?.status || 'normal'}
-        />
-
-        <HealthMetricsCard
-          title="Glucose"
-          value={(healthMetrics?.glucose || 5.5).toString()}
-          icon={FaChartLine}
-          color="amber"
-          unit="mmol/L"
-          trend={0}
-          status={healthAnalysis?.metrics?.glucose?.status || 'normal'}
-        />
-
-        <HealthMetricsCard
-          title="Weight"
-          value={healthMetrics?.weight?.toString() || "70"}
-          icon={FaWeight}
-          color="green"
-          unit="kg"
-          trend={0}
-          status={healthAnalysis?.metrics?.weight?.status || 'normal'}
-        />
+        {[
+          {
+            title: "Heart Rate",
+            value: healthMetrics?.heart_rate?.toString() || "75",
+            icon: FaHeartbeat,
+            color: "red" as const,
+            unit: "BPM",
+            status: healthAnalysis?.metrics?.heartRate?.status || 'normal'
+          },
+          {
+            title: "Blood Pressure",
+            value: `${healthMetrics?.blood_pressure_systolic || 120}/${healthMetrics?.blood_pressure_diastolic || 80}`,
+            icon: FaTint,
+            color: "blue" as const,
+            unit: "mmHg",
+            status: healthAnalysis?.metrics?.bloodPressure?.status || 'normal'
+          },
+          {
+            title: "Glucose",
+            value: (healthMetrics?.glucose || 5.5).toString(),
+            icon: FaChartLine,
+            color: "amber" as const,
+            unit: "mmol/L",
+            status: healthAnalysis?.metrics?.glucose?.status || 'normal'
+          },
+          {
+            title: "Weight",
+            value: healthMetrics?.weight?.toString() || "70",
+            icon: FaWeight,
+            color: "green" as const,
+            unit: "kg",
+            status: healthAnalysis?.metrics?.weight?.status || 'normal'
+          }
+        ].map((metric, index) => (
+          <motion.div
+            key={index}
+            className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+            whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.1 }}
+          >
+            <HealthMetricsCard
+              title={metric.title}
+              value={metric.value}
+              icon={metric.icon}
+              color={metric.color}
+              unit={metric.unit}
+              status={metric.status}
+            />
+          </motion.div>
+        ))}
       </div>
 
       {/* Trend Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <Card>
-          <Title>Heart Rate Trend</Title>
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-white">Heart Rate Trend</h3>
           <div className="h-64 mt-4">
             <Line data={prepareChartData('heartRate')} options={chartOptions} />
           </div>
-        </Card>
-
-        <Card>
-          <Title>Blood Pressure Trend</Title>
+        </motion.div>
+        
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-white">Blood Pressure Trend</h3>
           <div className="h-64 mt-4">
             <Line data={prepareChartData('bloodPressureSystolic')} options={chartOptions} />
           </div>
-        </Card>
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <Card>
-          <Title>Glucose Trend</Title>
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-white">Glucose Trend</h3>
           <div className="h-64 mt-4">
             <Line data={prepareChartData('glucose')} options={chartOptions} />
           </div>
-        </Card>
+        </motion.div>
 
-        <Card>
-          <Title>Weight Trend</Title>
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.5 }}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-white">Weight Trend</h3>
           <div className="h-64 mt-4">
             <Line data={prepareChartData('weight')} options={chartOptions} />
           </div>
-        </Card>
+        </motion.div>
       </div>
 
       {/* Risk Assessment and Health Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <Card>
-          <Title>Heart Health Risk Assessment</Title>
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.6 }}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-white">Heart Health Risk Assessment</h3>
           <HeartRiskAssessment riskFactors={riskFactors} />
-        </Card>
+        </motion.div>
 
-        <Card>
+        <motion.div
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.7 }}
+        >
           <div className="flex justify-between items-center">
-            <Title>Health Summary</Title>
-            <Button 
-              size="xs" 
-              variant="light"
+            <h3 className="text-xl font-semibold text-white">Health Summary</h3>
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowPersonalizedAdvice(!showPersonalizedAdvice)}
+              className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-sm rounded-full"
             >
               {showPersonalizedAdvice ? 'Hide Advice' : 'View Advice'}
-            </Button>
+            </motion.button>
           </div>
           <div className="mt-4 space-y-4">
             {healthAnalysis && (
               <div>
-                <p className="text-lg font-medium text-gray-700">
+                <p className="text-lg font-medium text-white">
                   {healthAnalysis.riskLevel === 'low' && '✅ Your health metrics indicate a low risk profile.'}
                   {healthAnalysis.riskLevel === 'moderate' && '⚠️ Your health metrics indicate a moderate risk profile.'}
                   {healthAnalysis.riskLevel === 'high' && '❗ Your health metrics indicate a high risk profile.'}
                 </p>
-                <p className="text-gray-600 mt-2">{healthAnalysis.summary}</p>
+                <p className="text-gray-300 mt-2">{healthAnalysis.summary}</p>
               </div>
             )}
           </div>
-        </Card>
+        </motion.div>
       </div>
 
       {/* Personalized Advice Section */}
       {showPersonalizedAdvice && personalizedAdvice.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <motion.div 
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-6 shadow-xl mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-gray-900">Personalized Health Advice</h3>
-            <Button
-              size="xs"
-              variant="light"
+            <h3 className="text-xl font-semibold text-white">Personalized Health Advice</h3>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setShowPersonalizedAdvice(false)}
+              className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-sm rounded-full"
             >
               Hide
-            </Button>
+            </motion.button>
           </div>
           <div className="space-y-4">
             {personalizedAdvice.map((advice, index) => (
-              <div 
+              <motion.div 
                 key={index} 
                 className={`p-4 rounded-lg flex items-start space-x-4 ${
-                  advice.severity === 'high' ? 'bg-red-50' : 
-                  advice.severity === 'medium' ? 'bg-amber-50' : 'bg-green-50'
+                  advice.severity === 'high' ? 'bg-red-900/30 border border-red-500/30' : 
+                  advice.severity === 'medium' ? 'bg-amber-900/30 border border-amber-500/30' : 
+                  'bg-green-900/30 border border-green-500/30'
                 }`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
               >
                 <div className={`p-2 rounded-full ${
-                  advice.severity === 'high' ? 'bg-red-100 text-red-600' : 
-                  advice.severity === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
+                  advice.severity === 'high' ? 'bg-red-900/50 text-red-400' : 
+                  advice.severity === 'medium' ? 'bg-amber-900/50 text-amber-400' : 
+                  'bg-green-900/50 text-green-400'
                 }`}>
                   <advice.icon className="w-5 h-5" />
-            </div>
+                </div>
                 <div>
-                  <h4 className="font-medium">{advice.title}</h4>
-                  <p className="text-gray-600 text-sm mt-1">{advice.description}</p>
-            </div>
-            </div>
+                  <h4 className="font-medium text-white">{advice.title}</h4>
+                  <p className="text-gray-300 text-sm mt-1">{advice.description}</p>
+                </div>
+              </motion.div>
             ))}
-            </div>
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">
+          </div>
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <p className="text-sm text-gray-400">
               Note: This advice is generated based on your health data. Always consult with a healthcare professional before making significant changes to your health regimen.
             </p>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Medications */}
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Current Medications</h3>
+      <motion.div 
+        className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-6 shadow-xl mt-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.8 }}
+      >
+        <h3 className="text-xl font-semibold text-white mb-4">Current Medications</h3>
         {healthProfile?.medications && healthProfile.medications.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {healthProfile.medications.map((med: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
-                <h4 className="font-medium">{med.name}</h4>
-                <div className="mt-2 space-y-1 text-sm text-gray-600">
+              <motion.div 
+                key={index} 
+                className="border border-white/10 bg-white/5 rounded-lg p-4"
+                whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.8 + (index * 0.1) }}
+              >
+                <h4 className="font-medium text-white">{med.name}</h4>
+                <div className="mt-2 space-y-1 text-sm text-gray-300">
                   <p>Dosage: {med.dosage}</p>
                   <p>Frequency: {med.frequency}</p>
                   <p>Time of Day: {Array.isArray(med.time_of_day) ? med.time_of_day.join(', ') : med.time_of_day}</p>
                   <p>Started: {med.start_date ? format(new Date(med.start_date), 'MMM dd, yyyy') : 'N/A'}</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-600">No medications recorded.</p>
+          <p className="text-gray-300">No medications recorded.</p>
         )}
-      </div>
+      </motion.div>
 
       {/* Recent Symptoms */}
       {symptoms && symptoms.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Recent Symptoms</h3>
+        <motion.div 
+          className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-6 shadow-xl mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.9 }}
+        >
+          <h3 className="text-xl font-semibold text-white mb-4">Recent Symptoms</h3>
           <div className="space-y-4">
             {symptoms.slice(0, 3).map((symptom: any, index: number) => (
-              <div key={index} className="border rounded-lg p-4">
+              <motion.div 
+                key={index} 
+                className="border border-white/10 bg-white/5 rounded-lg p-4"
+                whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)" }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.9 + (index * 0.1) }}
+              >
                 <div className="flex justify-between">
-                  <h4 className="font-medium">{symptom.type}</h4>
-                  <span className="text-sm text-gray-500">
+                  <h4 className="font-medium text-white">{symptom.type}</h4>
+                  <span className="text-sm text-gray-400">
                     {symptom.timestamp ? format(new Date(symptom.timestamp), 'MMM dd, yyyy') : 'N/A'}
                   </span>
                 </div>
-                <div className="mt-2 space-y-1 text-sm text-gray-600">
+                <div className="mt-2 space-y-1 text-sm text-gray-300">
                   <p>Severity: {symptom.severity}/10</p>
                   {symptom.description && <p>Description: {symptom.description}</p>}
                   {symptom.duration && <p>Duration: {symptom.duration} hours</p>}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
