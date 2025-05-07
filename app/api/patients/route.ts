@@ -101,7 +101,7 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+      }
 
 // Endpoint to handle symptoms
 export async function DELETE(request: NextRequest) {

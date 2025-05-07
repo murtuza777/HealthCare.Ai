@@ -207,11 +207,11 @@ export async function generateResponse(
     response = {
       messages: [
         {
-          id: Date.now().toString(),
+        id: Date.now().toString(),
           text: `Based on your health profile, I recommend ${healthProfile?.lifestyle?.exerciseFrequency === 0 ? 'starting with' : 'maintaining'} at least 150 minutes of moderate-intensity exercise per week.\n\nSome suitable activities might include:\n• Walking\n• Swimming\n• Cycling\n• Low-impact aerobics\n\nWould you like a personalized exercise plan?`,
-          isBot: true,
-          timestamp: new Date(),
-          type: 'quick_replies',
+        isBot: true,
+        timestamp: new Date(),
+        type: 'quick_replies',
           quickReplies: ['Get Exercise Plan', 'Exercise Benefits', 'Recommend Activities']
         }
       ],
@@ -231,10 +231,10 @@ export async function generateResponse(
     response = {
       messages: [
         {
-          id: Date.now().toString(),
+        id: Date.now().toString(),
           text: dietRecommendation + "\n\nWould you like more specific dietary recommendations?",
-          isBot: true,
-          timestamp: new Date(),
+        isBot: true,
+        timestamp: new Date(),
           type: 'quick_replies',
           quickReplies: ['Detailed Diet Plan', 'Heart-Healthy Foods', 'Foods to Avoid']
         }
@@ -329,9 +329,9 @@ export async function generateResponse(
             quickReplies: ['Update Health Profile', 'General Health Tips']
           }
         ],
-        isEmergency: false
-      };
-    }
+      isEmergency: false
+    };
+  }
   }
   
   // Add a random delay to simulate AI processing

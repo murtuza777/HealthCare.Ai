@@ -4,10 +4,93 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPaperPlane, FaHeart, FaPhone, FaExclamationTriangle } from 'react-icons/fa';
 import ChatMessage from './ChatMessage';
-import { Message, HealthProfile, HealthMetrics, Symptom } from '../utils/types';
+import { Message } from '../utils/types';
 import { generateResponse } from '../utils/chatUtils';
 import { getExerciseRecommendations, getDietRecommendations, getRiskAssessment } from '../utils/api';
 import { usePatient } from '../context/PatientContext';
+import {
+  HealthProfile as SupabaseHealthProfile,
+  HealthMetrics as SupabaseHealthMetrics,
+  Symptom as SupabaseSymptom,
+  Medication as SupabaseMedication
+} from '../utils/supabase';
+
+// Create conversion functions between Supabase and local data models
+const convertHealthProfile = (profile: SupabaseHealthProfile | null): any => {
+  if (!profile) return {
+    name: "User",
+    age: 0,
+    height: 0,
+    weight: 0,
+    hasHeartCondition: false,
+    hadHeartAttack: false,
+    medications: [],
+    allergies: [],
+    conditions: [],
+    familyHistory: [],
+    lifestyle: {
+      smoker: false,
+      alcoholConsumption: 'light' as 'light',
+      exerciseFrequency: 0,
+      diet: '',
+      stressLevel: 0
+    }
+  };
+  
+  return {
+    name: profile.user_id,
+    age: profile.age || 0,
+    height: profile.height || 0,
+    weight: profile.weight || 0,
+    hasHeartCondition: profile.has_heart_condition || false,
+    hadHeartAttack: profile.had_heart_attack || false,
+    lastHeartAttack: profile.last_heart_attack,
+    medications: [], // Will be provided separately
+    allergies: profile.allergies || [],
+    conditions: profile.conditions || [],
+    familyHistory: profile.family_history || [],
+    lifestyle: profile.lifestyle || {
+      smoker: false,
+      alcoholConsumption: 'light' as 'light',
+      exerciseFrequency: 0,
+      diet: '',
+      stressLevel: 0
+    }
+  };
+};
+
+const convertHealthMetrics = (metrics: SupabaseHealthMetrics | null): any => {
+  if (!metrics) return {
+    heartRate: 70,
+    bloodPressureSystolic: 120,
+    bloodPressureDiastolic: 80,
+    cholesterol: 180,
+    weight: 70,
+    lastUpdated: new Date()
+  };
+  
+  return {
+    heartRate: metrics.heart_rate || 70,
+    bloodPressureSystolic: metrics.blood_pressure_systolic || 120,
+    bloodPressureDiastolic: metrics.blood_pressure_diastolic || 80,
+    cholesterol: metrics.cholesterol || 180,
+    weight: metrics.weight || 70,
+    lastUpdated: metrics.recorded_at || new Date()
+  };
+};
+
+const convertSymptoms = (symptoms: SupabaseSymptom[]): any[] => {
+  if (!symptoms || !Array.isArray(symptoms)) return [];
+  
+  return symptoms.map(symptom => ({
+    type: symptom.type || '',
+    severity: symptom.severity || 0,
+    timestamp: symptom.timestamp || new Date(),
+    description: symptom.description || '',
+    duration: symptom.duration || 0,
+    accompaniedBy: symptom.accompanied_by || []
+  }));
+};
 
 const INITIAL_MESSAGE: Message = {
   id: 'initial',
@@ -36,59 +119,10 @@ How can I assist you today?`,
   ]
 };
 
-// Sample health metrics - In a real app, this would come from real-time monitoring
-const sampleMetrics: HealthMetrics = {
-  heartRate: 72,
-  bloodPressureSystolic: 120,
-  bloodPressureDiastolic: 80,
-  cholesterol: 180,
-  weight: 70,
-  lastUpdated: new Date()
-};
-
-// Sample symptoms - In a real app, this would come from user input
-const sampleSymptoms: Symptom[] = [
-  {
-    type: 'chest pain',
-    severity: 3,
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    description: 'Mild discomfort while walking',
-    duration: 10,
-    accompaniedBy: ['shortness of breath']
-  }
-];
-
-// Sample user profile - In a real app, this would come from your backend
-const sampleProfile: HealthProfile = {
-  hasHeartCondition: true,
-  hadHeartAttack: true,
-  lastHeartAttack: new Date('2024-12-01'),
-  medications: [
-    {
-      name: 'Aspirin',
-      dosage: '81mg',
-      frequency: 'Once daily',
-      timeOfDay: ['Morning'],
-      startDate: new Date('2024-12-01'),
-    },
-    {
-      name: 'Metoprolol',
-      dosage: '25mg',
-      frequency: 'Twice daily',
-      timeOfDay: ['Morning', 'Evening'],
-      startDate: new Date('2024-12-01'),
-    }
-  ],
-  allergies: ['Penicillin'],
-  conditions: ['Hypertension', 'High Cholesterol'],
-  familyHistory: ['Father - Heart Attack at 60'],
-  lifestyle: {
-    smoker: false,
-    alcoholConsumption: 'light',
-    exerciseFrequency: 3,
-    diet: 'Mediterranean',
-    stressLevel: 6
-  }
+// Function to check if a message is a greeting
+const isGreeting = (text: string): boolean => {
+  const greetings = ['hi', 'hello', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening'];
+  return greetings.some(greeting => text.includes(greeting));
 };
 
 export default function HealthGuardianChat() {
@@ -96,10 +130,40 @@ export default function HealthGuardianChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isEmergencyMode, setIsEmergencyMode] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get real patient data from context
-  const { healthProfile, healthMetrics, symptoms } = usePatient();
+  const { healthProfile, healthMetrics, symptoms, medications, isLoading } = usePatient();
+  
+  // Convert Supabase models to local models for the AI chat functionality
+  const convertedProfile = convertHealthProfile(healthProfile);
+  const convertedMetrics = convertHealthMetrics(healthMetrics);
+  const convertedSymptoms = convertSymptoms(symptoms);
+  
+  // Check if data is ready for use
+  useEffect(() => {
+    if (!isLoading) {
+      try {
+        // If profile exists, add medications
+        if (convertedProfile && medications) {
+          convertedProfile.medications = medications.map(med => ({
+            name: med.name || '',
+            dosage: med.dosage || '',
+            frequency: med.frequency || '',
+            timeOfDay: Array.isArray(med.time_of_day) ? med.time_of_day : [],
+            startDate: med.start_date || new Date()
+          }));
+        }
+        setDataReady(true);
+      } catch (error) {
+        console.error('Error preparing data for HealthGuardianChat:', error);
+        // Create default data if there's an error
+        convertedProfile.medications = [];
+        setDataReady(true);
+      }
+    }
+  }, [isLoading, healthProfile, healthMetrics, symptoms, medications]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -119,40 +183,40 @@ export default function HealthGuardianChat() {
   }, [isEmergencyMode]);
 
   const handleSendMessage = async (text: string) => {
-    // Check if profile data is available
-    if (!healthProfile || !healthMetrics) {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        text: "To provide personalized advice, I need your health information. Please update your health profile in the Overview section first.",
-        isBot: true,
-        timestamp: new Date(),
-        type: 'text',
-        quickReplies: ['📋 Update Profile', '❓ General Help', '👨‍⚕️ Contact Support']
-      }]);
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      isBot: false,
-      timestamp: new Date(),
-      type: 'text'
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
-
     try {
+      // Check if profile data is available
+      if (!dataReady) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: "I'm still loading your health data. Please wait a moment or continue with general health questions.",
+          isBot: true,
+          timestamp: new Date(),
+          type: 'quick_replies',
+          quickReplies: ['❓ General Health', '🏥 Common Questions', '⏱️ Wait for Data']
+        }]);
+        return;
+      }
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text,
+        isBot: false,
+        timestamp: new Date(),
+        type: 'text'
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      setIsTyping(true);
+
       // Handle greeting messages specially
       if (isGreeting(text.toLowerCase())) {
+        const conditionsMessage = (convertedProfile.conditions && convertedProfile.conditions.length > 0)
+          ? `are managing ${convertedProfile.conditions.join(' and ')}.`
+          : 'have no major health conditions recorded.';
+          
         const greetingResponse: Message = {
           id: Date.now().toString(),
-          text: `Hello! I'm here to help you with your health concerns. I see from your profile that you ${
-            healthProfile.conditions.length > 0 
-              ? `are managing ${healthProfile.conditions.join(' and ')}.` 
-              : 'have no major health conditions recorded.'
-          }
+          text: `Hello! I'm here to help you with your health concerns. I see from your profile that you ${conditionsMessage}
 
 How are you feeling today?
 
@@ -184,16 +248,24 @@ Please feel free to describe how you're feeling or ask any health-related questi
 
       // Handle quick reply selections
       if (text.includes('Start Health Assessment')) {
+        const conditionsSection = (convertedProfile.conditions && convertedProfile.conditions.length > 0)
+          ? `• Conditions: ${convertedProfile.conditions.join(', ')}`
+          : '';
+        
+        const medicationsSection = (convertedProfile.medications && convertedProfile.medications.length > 0)
+          ? `• Medications: ${convertedProfile.medications.map((m: any) => m.name).join(', ')}`
+          : '';
+          
         const assessmentResponse: Message = {
           id: Date.now().toString(),
           text: `I'll help you with a comprehensive health assessment. Based on your profile, let's focus on what's most relevant for you.
 
 Current Health Overview:
-• Blood Pressure: ${healthMetrics.bloodPressureSystolic}/${healthMetrics.bloodPressureDiastolic}
-• Heart Rate: ${healthMetrics.heartRate} BPM
-• Weight: ${healthMetrics.weight} kg
-${healthProfile.conditions.length > 0 ? `• Conditions: ${healthProfile.conditions.join(', ')}` : ''}
-${healthProfile.medications.length > 0 ? `• Medications: ${healthProfile.medications.map(m => m.name).join(', ')}` : ''}
+• Blood Pressure: ${convertedMetrics.bloodPressureSystolic}/${convertedMetrics.bloodPressureDiastolic}
+• Heart Rate: ${convertedMetrics.heartRate} BPM
+• Weight: ${convertedMetrics.weight} kg
+${conditionsSection}
+${medicationsSection}
 
 Please tell me about any specific concerns or symptoms you're experiencing.`,
           isBot: true,
@@ -216,9 +288,9 @@ Please tell me about any specific concerns or symptoms you're experiencing.`,
       // For all other messages, use the AI response with real patient data
       const response = await generateResponse(
         text,
-        healthProfile,
-        healthMetrics,
-        symptoms,
+        convertedProfile,
+        convertedMetrics,
+        convertedSymptoms,
         messages
       );
 
@@ -245,18 +317,12 @@ Please tell me about any specific concerns or symptoms you're experiencing.`,
     }
   };
 
-  const isGreeting = (text: string): boolean => {
-    const greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings'];
-    return greetings.some(greeting => text.includes(greeting));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    await handleSendMessage(userMessage);
+    if (input.trim()) {
+      await handleSendMessage(input);
+      setInput('');
+    }
   };
 
   const handleQuickReply = async (reply: string) => {
@@ -264,105 +330,111 @@ Please tell me about any specific concerns or symptoms you're experiencing.`,
   };
 
   const handleEmergencyCall = () => {
-    window.location.href = 'tel:911';
+    window.location.href = "tel:911";
   };
 
   const handleDoctorCall = () => {
-    // In a real app, this would use the actual doctor's number from the user's profile
-    window.location.href = 'tel:+1234567890';
+    window.location.href = "tel:+1234567890"; // Replace with actual doctor's number
   };
 
   return (
-    <div className={`flex flex-col h-[600px] bg-white rounded-lg shadow-lg transition-all duration-300
-                    ${isEmergencyMode ? 'ring-2 ring-red-500' : ''}`}>
-      {/* Chat Header */}
-      <div className="flex items-center space-x-2 p-4 border-b">
-        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-          <FaHeart className={`w-5 h-5 text-red-600 ${isEmergencyMode ? 'animate-pulse' : ''}`} />
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-[750px]">
+      <div className="bg-red-600 text-white p-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <FaHeart className="mr-2" />
+          <h2 className="text-xl font-semibold">HeartGuard AI</h2>
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-800">Health Guardian AI</h3>
-          <p className="text-sm text-gray-500">Always here to help</p>
-        </div>
-        <div className="ml-auto flex items-center space-x-2">
-          {isEmergencyMode && (
-            <motion.button
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleEmergencyCall}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg 
-                       hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-              <FaExclamationTriangle className="w-4 h-4" />
-              <span>Emergency Call</span>
-            </motion.button>
-          )}
+        <div className="flex space-x-3">
           <button 
+            className="bg-white text-red-600 rounded-full p-2"
             onClick={handleDoctorCall}
-            className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+            title="Call your doctor"
           >
             <FaPhone className="w-4 h-4" />
-            <span>Call Doctor</span>
+          </button>
+          <button 
+            className="bg-white text-red-600 rounded-full p-2"
+            onClick={handleEmergencyCall}
+            title="Emergency call"
+          >
+            <FaExclamationTriangle className="w-4 h-4" />
           </button>
         </div>
       </div>
 
+      {/* Emergency Mode Banner */}
+      {isEmergencyMode && (
+        <div className="bg-red-100 border-l-4 border-red-500 p-4 flex items-center">
+          <FaExclamationTriangle className="text-red-500 mr-3" />
+          <div>
+            <p className="font-bold text-red-700">Potential Emergency Detected</p>
+            <p className="text-red-600 text-sm">
+              Based on your symptoms, immediate medical attention may be required.
+              <button 
+                onClick={handleEmergencyCall}
+                className="ml-2 underline font-medium"
+              >
+                Call Emergency Services
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
         <AnimatePresence>
           {messages.map((message) => (
-            <ChatMessage
+            <motion.div
               key={message.id}
-              message={message}
-              onQuickReplyClick={handleQuickReply}
-              onCallEmergency={handleEmergencyCall}
-              onCallDoctor={handleDoctorCall}
-            />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChatMessage 
+                message={message} 
+                onQuickReplyClick={handleQuickReply}
+                onCallEmergency={handleEmergencyCall}
+              />
+            </motion.div>
           ))}
         </AnimatePresence>
         
         {isTyping && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center space-x-2 text-gray-500"
-          >
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+          <div className="flex justify-start mb-4">
+            <div className="bg-gray-200 text-gray-700 rounded-lg py-2 px-4 max-w-xs">
+              <div className="flex space-x-1 items-center">
+                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-gray-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         )}
+        
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Chat Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t">
-        <div className="flex space-x-4">
+      {/* Input Area */}
+      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
+        <div className="flex space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isEmergencyMode ? 'Emergency mode active - Please follow instructions above' : 'Type your message...'}
-            className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 
-                      ${isEmergencyMode ? 'border-red-300 focus:ring-red-500' : 'focus:ring-red-500'}`}
-            disabled={isEmergencyMode}
+            placeholder="Type your message here..."
+            className="flex-grow p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             type="submit"
-            disabled={isEmergencyMode}
-            className={`px-4 py-2 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2
-                      ${isEmergencyMode 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'}`}
+            disabled={!input.trim()}
+            className={`bg-red-600 text-white p-2 rounded-lg ${
+              !input.trim() ? 'opacity-50' : 'hover:bg-red-700'
+            }`}
           >
-            <FaPaperPlane className="w-5 h-5" />
-          </motion.button>
+            <FaPaperPlane />
+          </button>
         </div>
       </form>
     </div>
