@@ -61,7 +61,7 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8"
           >
             <motion.a
-              href="/login"
+              href="/auth/login"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="group relative inline-flex items-center px-12 py-4 text-lg font-medium text-white bg-gradient-to-r from-red-600 to-red-500 rounded-full overflow-hidden shadow-lg hover:shadow-red-500/50 transition-all duration-300"

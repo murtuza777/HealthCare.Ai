@@ -109,7 +109,7 @@ export default function HomeClient({ children }: HomeClientProps) {
                     whileTap={{ scale: 0.95 }}
                   >
                     <a
-                      href="/login"
+                      href="/auth/login"
                       className="inline-flex items-center px-4 py-2 border border-red-600 text-sm font-medium rounded-full text-white hover:bg-red-600/10 transition-all duration-300"
                     >
                       Get Started
