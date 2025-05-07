@@ -119,34 +119,47 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         console.log('PatientContext: Safety timeout triggered - forcing loading to complete');
         
         // Set reasonable defaults if data wasn't loaded
-        if (!healthProfile) {
+        if (!healthProfile && user) {
           console.log('PatientContext: Creating default health profile after timeout');
-          if (user) {
-            setHealthProfile({
-              user_id: user.id,
-              age: 30,
-              height: 170,
-              weight: 70
-            } as any);
-            
-            setHealthMetrics({
-              user_id: user.id,
-              heart_rate: 75,
-              blood_pressure_systolic: 120,
-              blood_pressure_diastolic: 80,
-              weight: 70,
-              glucose: 5.5,
-              recorded_at: new Date()
-            } as any);
-          }
+          setHealthProfile({
+            user_id: user.id,
+            age: 30,
+            height: 170,
+            weight: 70
+          } as any);
+          
+          setHealthMetrics({
+            user_id: user.id,
+            heart_rate: 75,
+            blood_pressure_systolic: 120,
+            blood_pressure_diastolic: 80,
+            weight: 70,
+            glucose: 5.5,
+            recorded_at: new Date()
+          } as any);
         }
         
         setIsLoading(false);
       }
-    }, 10000); // Increase to 10 seconds
+    }, 8000); // 8 seconds should be enough
     
     return () => clearTimeout(safetyTimeout);
   }, [isLoading, user, healthProfile]);
+
+  // Wait for auth to be ready before fetching patient data
+  useEffect(() => {
+    if (!authLoading) {
+      if (user) {
+        console.log('PatientContext: Auth is ready, user is authenticated. Fetching patient data...');
+        refreshPatientData();
+      } else {
+        console.log('PatientContext: Auth is ready, no user authenticated. Setting loading to false.');
+        setIsLoading(false);
+      }
+    } else {
+      console.log('PatientContext: Auth still loading, waiting...');
+    }
+  }, [authLoading, user?.id]);
 
   // Set up real-time subscriptions
   useEffect(() => {

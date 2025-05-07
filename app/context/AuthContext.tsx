@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient, UserProfile, getCurrentUser, getUserProfile } from '../utils/supabase';
@@ -29,8 +29,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const supabase = getSupabaseClient();
+	const isInitialized = useRef(false);
+	const authTimeout = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
+		// Safety timeout to prevent infinite loading state
+		authTimeout.current = setTimeout(() => {
+			if (isLoading) {
+				console.log('AuthContext: Safety timeout triggered - forcing loading to complete');
+				setIsLoading(false);
+			}
+		}, 5000);
+
+		return () => {
+			if (authTimeout.current) {
+				clearTimeout(authTimeout.current);
+			}
+		};
+	}, [isLoading]);
+
+	useEffect(() => {
+		// Prevent duplicate initialization
+		if (isInitialized.current) return;
+		isInitialized.current = true;
+
 		const getInitialSession = async () => {
 			try {
 				console.log('AuthContext: Checking initial auth session');
@@ -98,13 +120,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 					console.log('AuthContext: User authenticated:', session.user.id);
 					setUser(session.user);
 					
-					// Fetch user profile
-					try {
-						const userProfile = await getUserProfile(session.user.id);
-						console.log('AuthContext: User profile fetched:', userProfile ? 'success' : 'not found');
-						setProfile(userProfile);
-					} catch (profileError) {
-						console.error('AuthContext: Error fetching user profile on auth change:', profileError);
+					// Fetch user profile if the user or user ID changed
+					if (!user || user.id !== session.user.id) {
+						try {
+							const userProfile = await getUserProfile(session.user.id);
+							console.log('AuthContext: User profile fetched:', userProfile ? 'success' : 'not found');
+							setProfile(userProfile);
+						} catch (profileError) {
+							console.error('AuthContext: Error fetching user profile on auth change:', profileError);
+						}
 					}
 				} else {
 					console.log('AuthContext: User not authenticated');
@@ -131,12 +155,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		return () => {
 			console.log('AuthContext: Cleaning up auth subscription');
 			subscription?.unsubscribe();
+			if (authTimeout.current) {
+				clearTimeout(authTimeout.current);
+			}
 		};
-	}, [supabase, router]);
+	}, [supabase, router, user]);
 
 	const signOut = async () => {
 		console.log('AuthContext: Signing out user');
 		await supabase.auth.signOut();
+		setUser(null);
+		setProfile(null);
 		router.push('/auth/login');
 	};
 
