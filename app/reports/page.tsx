@@ -3,43 +3,37 @@
 import { 
   FileText, 
   QrCode, 
-  Share2, 
-  UserSquare2, 
-  ScanLine
+  Scan,
+  Upload,
+  FolderOpen
 } from 'lucide-react';
 import FeatureCard from '@/app/components/FeatureCard';
 
 export default function ReportsPage() {
   const features = [
     {
-      icon: ScanLine,
-      title: "Scan Reports",
-      description: "Upload and digitize medical reports securely",
-      href: "/reports/scan"
-    },
-    {
-      icon: Share2,
-      title: "Share Report",
-      description: "Share reports via QR code for big screen viewing",
-      href: "/reports/share"
-    },
-    {
-      icon: FileText,
-      title: "Get Reports",
-      description: "Access reports instantly by scanning QR codes",
-      href: "/reports/view"
-    },
-    {
-      icon: UserSquare2,
-      title: "Get Patient ID",
-      description: "Generate unique patient IDs via QR code",
-      href: "/reports/patient-id"
+      icon: Upload,
+      title: "Add Reports",
+      description: "Upload and store your medical reports securely",
+      href: "/reports/add"
     },
     {
       icon: QrCode,
-      title: "Share Patient ID",
-      description: "Share patient IDs securely for report access",
-      href: "/reports/share-id"
+      title: "QR Code",
+      description: "Generate QR codes to share your medical reports",
+      href: "/reports/qr-code"
+    },
+    {
+      icon: Scan,
+      title: "Scan QR Code",
+      description: "Scan QR codes to access shared reports",
+      href: "/reports/scan-qr"
+    },
+    {
+      icon: FolderOpen,
+      title: "Reports Gallery",
+      description: "View and manage all your stored medical reports",
+      href: "/reports/gallery"
     }
   ];
 

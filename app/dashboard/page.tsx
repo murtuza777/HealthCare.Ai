@@ -13,8 +13,11 @@ import {
   QrCode, 
   Share2, 
   UserSquare2, 
-  ScanLine
-} from '@/app/components/icons';
+  ScanLine,
+  Upload,
+  Scan,
+  FolderOpen
+} from 'lucide-react';
 import FeatureCard from '@/app/components/FeatureCard';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAuth } from '../context/AuthContext';
@@ -273,35 +276,29 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[
                     {
-                      icon: ScanLine,
-                      title: "Scan Reports",
-                      description: "Upload and digitize medical reports securely",
-                      href: `/reports/scan?userId=${user?.id || ''}`
-                    },
-                    {
-                      icon: Share2,
-                      title: "Share Report",
-                      description: "Share reports via QR code for big screen viewing",
-                      href: `/reports/share?userId=${user?.id || ''}`
-                    },
-                    {
-                      icon: FileText,
-                      title: "Get Reports",
-                      description: "Access reports instantly by scanning QR codes",
-                      href: `/reports/view?userId=${user?.id || ''}`
-                    },
-                    {
-                      icon: UserSquare2,
-                      title: "Get Patient ID",
-                      description: "Generate unique patient IDs via QR code",
-                      href: `/reports/patient-id?userId=${user?.id || ''}`
+                      icon: Upload,
+                      title: "Add Reports",
+                      description: "Upload and store your medical reports securely",
+                      href: `/reports/add?userId=${user?.id || ''}`
                     },
                     {
                       icon: QrCode,
-                      title: "QR Scanner",
-                      description: "Scan QR codes for quick access to reports",
-                      href: `/reports/scan-id?userId=${user?.id || ''}`
+                      title: "QR Code",
+                      description: "Generate QR codes to share your medical reports",
+                      href: `/reports/qr-code?userId=${user?.id || ''}`
                     },
+                    {
+                      icon: Scan,
+                      title: "Scan QR Code",
+                      description: "Scan QR codes to access shared reports",
+                      href: `/reports/scan-qr?userId=${user?.id || ''}`
+                    },
+                    {
+                      icon: FolderOpen,
+                      title: "Reports Gallery",
+                      description: "View and manage all your stored medical reports",
+                      href: `/reports/gallery?userId=${user?.id || ''}`
+                    }
                   ].map((feature, index) => (
                     <FeatureCard
                       key={index}
@@ -329,17 +326,17 @@ export default function DashboardPage() {
 function HealthAnimatedBackground() {
   return (
     <div className="w-full h-full bg-gradient-to-br from-black via-gray-900 to-blue-900 overflow-hidden">
-      {/* ECG Line Animation */}
-      <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+      {/* ECG Line Animation - increased opacity and stroke width */}
+      <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
         <motion.path
           d="M0,540 L320,540 L340,400 L360,680 L380,400 L400,680 L420,540 L1920,540"
           fill="none"
-          stroke="#ef4444"
-          strokeWidth="3"
+          stroke="#ff3333"
+          strokeWidth="5"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ 
             pathLength: [0, 1],
-            opacity: [0.3, 0.8]
+            opacity: [0.5, 1]
           }}
           transition={{
             duration: 4,
@@ -349,19 +346,20 @@ function HealthAnimatedBackground() {
         />
       </svg>
       
-      {/* Medical crosses and symbols */}
+      {/* Medical crosses and symbols - increased size and opacity */}
       {Array.from({ length: 5 }).map((_, i) => (
         <motion.div
           key={`cross-${i}`}
-          className="absolute text-red-500"
+          className="absolute text-red-400"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            opacity: 0.2 + (Math.random() * 0.1),
-            fontSize: `${24 + Math.random() * 16}px`
+            opacity: 0.4 + (Math.random() * 0.2),
+            fontSize: `${32 + Math.random() * 20}px`,
+            fontWeight: 'bold'
           }}
           animate={{
-            opacity: [0.1, 0.2, 0.1],
+            opacity: [0.3, 0.5, 0.3],
             rotate: [0, 5, 0, -5, 0]
           }}
           transition={{
@@ -376,25 +374,25 @@ function HealthAnimatedBackground() {
       ))}
       
       {/* Grid lines for a medical dashboard feel */}
-      <div className="absolute inset-0 bg-grid opacity-10"></div>
+      <div className="absolute inset-0 bg-grid opacity-15"></div>
       
-      {/* Floating particles */}
+      {/* Floating particles - increased size and opacity */}
       {Array.from({ length: 50 }).map((_, i) => (
         <motion.div
           key={`particle-${i}`}
           className="absolute rounded-full"
           style={{
-            width: 1 + (Math.random() * 3),
-            height: 1 + (Math.random() * 3),
+            width: 2 + (Math.random() * 4),
+            height: 2 + (Math.random() * 4),
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            opacity: 0.1 + (Math.random() * 0.2),
-            backgroundColor: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#3b82f6' : '#ffffff'
+            opacity: 0.15 + (Math.random() * 0.25),
+            backgroundColor: i % 3 === 0 ? '#ff4444' : i % 3 === 1 ? '#4b93ff' : '#ffffff'
           }}
           animate={{
             y: [0, -10, 0],
             x: [0, Math.random() * 10 - 5, 0],
-            opacity: [0.1, 0.3, 0.1]
+            opacity: [0.15, 0.4, 0.15]
           }}
           transition={{
             duration: 5 + (Math.random() * 5),
@@ -405,19 +403,19 @@ function HealthAnimatedBackground() {
         />
       ))}
       
-      {/* Pulsing circles resembling medical readings */}
+      {/* Pulsing circles resembling medical readings - increased opacity */}
       {Array.from({ length: 8 }).map((_, i) => (
         <motion.div
           key={`pulse-${i}`}
-          className="absolute rounded-full border border-blue-500/30"
+          className="absolute rounded-full border-2 border-blue-400/40"
           style={{
             left: `${10 + (Math.random() * 80)}%`,
             top: `${10 + (Math.random() * 80)}%`,
-            opacity: 0.05 + (Math.random() * 0.1)
+            opacity: 0.1 + (Math.random() * 0.15)
           }}
           animate={{
             scale: [0, 1, 0],
-            opacity: [0, 0.2, 0]
+            opacity: [0, 0.3, 0]
           }}
           transition={{
             duration: 5 + (Math.random() * 5),
@@ -428,11 +426,11 @@ function HealthAnimatedBackground() {
         />
       ))}
       
-      {/* Subtle data waves */}
-      <svg className="absolute bottom-0 w-full h-1/3 opacity-10" viewBox="0 0 1440 320" preserveAspectRatio="none">
+      {/* Subtle data waves - increased opacity */}
+      <svg className="absolute bottom-0 w-full h-1/3 opacity-15" viewBox="0 0 1440 320" preserveAspectRatio="none">
         <motion.path
           d="M0,160 C320,300,420,240,640,160 C860,80,960,120,1280,160 L1440,160 L1440,320 L0,320 Z"
-          fill="#3b82f6"
+          fill="#4b93ff"
           initial={{ y: 10 }}
           animate={{ y: [10, -10, 10] }}
           transition={{
@@ -443,7 +441,7 @@ function HealthAnimatedBackground() {
         />
         <motion.path
           d="M0,220 C140,180,420,120,640,220 C860,320,1120,280,1280,240 L1440,220 L1440,320 L0,320 Z"
-          fill="#1e40af"
+          fill="#2550be"
           initial={{ y: -5 }}
           animate={{ y: [-5, 5, -5] }}
           transition={{
@@ -457,7 +455,7 @@ function HealthAnimatedBackground() {
       
       {/* Subtle gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent"></div>
     </div>
   );
 }
