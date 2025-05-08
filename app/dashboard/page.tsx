@@ -207,7 +207,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         <div className="backdrop-blur-md bg-black/20 rounded-full p-1">
           <nav className="flex space-x-1 justify-center">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
               {['overview', 'heartguard', 'reports', 'caretaker', 'timeline'].map((tab) => (
                 <motion.button
                   key={tab}
@@ -240,7 +240,7 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 20 }}
@@ -250,7 +250,21 @@ export default function DashboardPage() {
             className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-6 shadow-xl"
           >
             {activeTab === 'overview' ? (
-              <PatientOverview patientId={user?.id || ''} />
+              <div>
+                <div className="flex justify-between mb-4">
+                  <div className="flex flex-wrap items-center">
+                    <h2 className="text-xl md:text-2xl font-bold text-white">Patient Dashboard</h2>
+                    
+                    {/* Add a small indicator that AI system is using Gemini */}
+                    <div className="ml-3 flex items-center text-xs text-gray-400">
+                      <div className="h-2 w-2 rounded-full bg-green-500 mr-1.5"></div>
+                      AI: Gemini
+                    </div>
+                  </div>
+                </div>
+                
+                <PatientOverview patientId={user?.id || ''} />
+              </div>
             ) : activeTab === 'heartguard' ? (
               <HealthGuardianChat />
             ) : activeTab === 'reports' ? (
