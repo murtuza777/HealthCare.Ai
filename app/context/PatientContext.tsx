@@ -16,6 +16,7 @@ import {
   Medication,
   getSupabaseClient
 } from '../utils/supabase';
+import { MedicalReport } from '../utils/types';
 
 // Define types for the updated schema
 interface Vital {
@@ -59,6 +60,7 @@ interface PatientContextProps {
   reports: Report[];
   messages: Message[];
   reminders: Reminder[];
+  medicalReports: MedicalReport[];
   isLoading: boolean;
   updateHealthProfile: (profile: Partial<HealthProfile>) => Promise<void>;
   updateHealthMetrics: (metrics: Partial<HealthMetrics>) => Promise<void>;
@@ -67,8 +69,11 @@ interface PatientContextProps {
   addReport: (report: Omit<Report, 'id' | 'patient_id'>) => Promise<void>;
   addMessage: (message: Omit<Message, 'id' | 'patient_id' | 'timestamp'>) => Promise<void>;
   addReminder: (reminder: Omit<Reminder, 'id' | 'patient_id'>) => Promise<void>;
+  addMedicalReport: (report: Partial<MedicalReport>) => Promise<void>;
   updateReminder: (id: number, isCompleted: boolean) => Promise<void>;
   refreshPatientData: () => Promise<void>;
+  setHealthProfile: React.Dispatch<React.SetStateAction<HealthProfile | null>>;
+  setHealthMetrics: React.Dispatch<React.SetStateAction<HealthMetrics | null>>;
 }
 
 const PatientContext = createContext<PatientContextProps>({
@@ -80,6 +85,7 @@ const PatientContext = createContext<PatientContextProps>({
   reports: [],
   messages: [],
   reminders: [],
+  medicalReports: [],
   isLoading: true,
   updateHealthProfile: async () => {},
   updateHealthMetrics: async () => {},
@@ -88,8 +94,11 @@ const PatientContext = createContext<PatientContextProps>({
   addReport: async () => {},
   addMessage: async () => {},
   addReminder: async () => {},
+  addMedicalReport: async () => {},
   updateReminder: async () => {},
   refreshPatientData: async () => {},
+  setHealthProfile: () => {},
+  setHealthMetrics: () => {},
 });
 
 export const usePatient = () => useContext(PatientContext);
@@ -104,6 +113,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [medicalReports, setMedicalReports] = useState<MedicalReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const supabase = getSupabaseClient();
@@ -188,6 +198,48 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         }
       )
       .subscribe();
+
+    // Subscribe to health profiles table
+    const healthProfileSubscription = supabase
+      .channel('healthprofile-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'health_profiles',
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Health profile change received!', payload);
+          if (payload.eventType === 'UPDATE') {
+            setHealthProfile(payload.new as HealthProfile);
+          }
+        }
+      )
+      .subscribe();
+      
+    // Subscribe to health metrics table
+    const healthMetricsSubscription = supabase
+      .channel('healthmetrics-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'health_metrics',
+          filter: `user_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Health metrics change received!', payload);
+          if (payload.eventType === 'INSERT') {
+            setHealthMetrics(payload.new as HealthMetrics);
+          } else if (payload.eventType === 'UPDATE') {
+            setHealthMetrics(payload.new as HealthMetrics);
+          }
+        }
+      )
+      .subscribe();
       
     // Subscribe to reports table
     const reportsSubscription = supabase
@@ -267,6 +319,8 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
       supabase.removeChannel(reportsSubscription);
       supabase.removeChannel(messagesSubscription);
       supabase.removeChannel(remindersSubscription);
+      supabase.removeChannel(healthProfileSubscription);
+      supabase.removeChannel(healthMetricsSubscription);
     };
   }, [user, supabase]);
 
@@ -303,7 +357,13 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
             console.log('PatientContext: No patient profile found, creating default');
             const { data: newPatient, error: createError } = await supabase
               .from('patients')
-              .insert([{ id: user.id, name: user.email, created_at: new Date().toISOString() }])
+              .insert([{ 
+                id: user.id, 
+                name: user.email, 
+                age: 30, // Add default age
+                height: 170, // Add default height
+                created_at: new Date().toISOString() 
+              }])
               .select()
               .single();
               
@@ -346,7 +406,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
             blood_pressure_diastolic: parseInt(bp[1]) || 80,
             weight: 70, // Default if not available
             glucose: latestVital.glucose,
-            recorded_at: latestVital.timestamp
+            recorded_at: latestVital.timestamp ? new Date(latestVital.timestamp) : new Date()
           } as any);
         } else {
           // Set default health metrics if no vitals found
@@ -374,6 +434,52 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
           throw reportsError;
         }
         setReports(reportsData || []);
+        
+        // Fetch medical reports
+        console.log('PatientContext: Fetching medical reports');
+        const { data: medicalReportsData, error: medicalReportsError } = await supabase
+          .from('medical_reports')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false });
+          
+        if (medicalReportsError) {
+          if (medicalReportsError.code === '42P01' || medicalReportsError.message?.includes('Table') || medicalReportsError.message?.includes('not found')) {
+            console.error('PatientContext: medical_reports table not found. Please create it with the following SQL:');
+            console.error(`
+CREATE TABLE medical_reports (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  type VARCHAR(255) NOT NULL,
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
+  doctor VARCHAR(255),
+  facility VARCHAR(255),
+  findings TEXT,
+  recommendations TEXT,
+  follow_up BOOLEAN DEFAULT false,
+  follow_up_date TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX idx_medical_reports_user_id ON medical_reports(user_id);
+            `);
+          } else {
+            console.error('PatientContext: Error fetching medical reports:', medicalReportsError);
+          }
+          // Don't throw, continue with empty array
+          setMedicalReports([]);
+        } else {
+          // Convert the data to the MedicalReport type
+          const convertedReports: MedicalReport[] = (medicalReportsData || []).map(report => ({
+            type: report.type || '',
+            date: new Date(report.date),
+            doctor: report.doctor || '',
+            facility: report.facility || '',
+            findings: report.findings || '',
+            recommendations: report.recommendations || '',
+            follow_up: report.follow_up || false,
+            follow_up_date: report.follow_up_date ? new Date(report.follow_up_date) : null
+          }));
+          setMedicalReports(convertedReports);
+        }
         
         // Fetch messages
         console.log('PatientContext: Fetching messages');
@@ -413,6 +519,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         setReports([]);
         setMessages([]);
         setReminders([]);
+        setMedicalReports([]);
       } finally {
         console.log('PatientContext: Setting isLoading to false');
         setIsLoading(false);
@@ -475,7 +582,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         blood_pressure_diastolic: parseInt(bp[1]) || 80,
         weight: 70, // Default
         glucose: vital.glucose,
-        recorded_at: vital.timestamp
+        recorded_at: vital.timestamp ? new Date(vital.timestamp) : new Date()
       } as any);
     } catch (error) {
       console.error('Error adding vital:', error);
@@ -646,7 +753,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
           blood_pressure_diastolic: parseInt(bp[1]) || 80,
           weight: 70, // Default if not available
           glucose: latestVital.glucose,
-          recorded_at: latestVital.timestamp
+          recorded_at: latestVital.timestamp ? new Date(latestVital.timestamp) : new Date()
         } as any);
       }
       
@@ -685,6 +792,51 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Add medical report
+  const addMedicalReport = async (report: Partial<MedicalReport>) => {
+    if (!user) return;
+
+    try {
+      // Convert the MedicalReport type to the database schema
+      const dbReport = {
+        user_id: user.id,
+        type: report.type,
+        date: report.date?.toISOString(),
+        doctor: report.doctor,
+        facility: report.facility,
+        findings: report.findings,
+        recommendations: report.recommendations,
+        follow_up: report.follow_up,
+        follow_up_date: report.follow_up_date?.toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('medical_reports')
+        .insert([dbReport])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Convert the response to the MedicalReport type
+      const newReport: MedicalReport = {
+        type: data.type || '',
+        date: new Date(data.date),
+        doctor: data.doctor || '',
+        facility: data.facility || '',
+        findings: data.findings || '',
+        recommendations: data.recommendations || '',
+        follow_up: data.follow_up || false,
+        follow_up_date: data.follow_up_date ? new Date(data.follow_up_date) : null
+      };
+      
+      setMedicalReports(prev => [newReport, ...prev]);
+    } catch (error) {
+      console.error('Error adding medical report:', error);
+      throw error;
+    }
+  };
+
   return (
     <PatientContext.Provider
       value={{
@@ -696,6 +848,7 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         reports,
         messages,
         reminders,
+        medicalReports,
         isLoading,
         updateHealthProfile: handleUpdateHealthProfile,
         updateHealthMetrics: handleUpdateHealthMetrics,
@@ -704,8 +857,11 @@ export const PatientProvider = ({ children }: { children: ReactNode }) => {
         addReport,
         addMessage,
         addReminder,
+        addMedicalReport,
         updateReminder,
         refreshPatientData,
+        setHealthProfile,
+        setHealthMetrics,
       }}
     >
       {children}

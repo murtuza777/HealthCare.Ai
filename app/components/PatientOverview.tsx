@@ -141,6 +141,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
   const [healthAnalysis, setHealthAnalysis] = useState<any>(null);
   const [showPersonalizedAdvice, setShowPersonalizedAdvice] = useState(false);
   const [vitalHistory, setVitalHistory] = useState<any[]>([]);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
   
   // Cast to extended types to avoid TypeScript errors
   const { 
@@ -150,7 +151,9 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
     symptoms, 
     updateHealthProfile, 
     updateHealthMetrics,
-    refreshPatientData
+    refreshPatientData,
+    setHealthProfile,
+    setHealthMetrics
   } = usePatient();
   
   // Cast to extended interfaces to have access to all properties
@@ -172,6 +175,17 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
 
     loadData();
   }, [patientId, healthProfile, refreshPatientData]);
+
+  // Add an effect to auto-hide success toast after 5 seconds
+  useEffect(() => {
+    if (successToast) {
+      const timer = setTimeout(() => {
+        setSuccessToast(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [successToast]);
 
   // Update health analysis whenever patient data changes
   useEffect(() => {
@@ -234,6 +248,29 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
       // Add new vital with current metrics
       const bp = `${details.bloodPressureSystolic}/${details.bloodPressureDiastolic}`;
       
+      // Optimistically update UI with the new values
+      // This will make the changes appear immediately before backend confirms
+      setHealthProfile((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          ...profileUpdate
+        };
+      });
+      
+      setHealthMetrics((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          heart_rate: Number(details.heartRate),
+          blood_pressure_systolic: Number(details.bloodPressureSystolic),
+          blood_pressure_diastolic: Number(details.bloodPressureDiastolic),
+          cholesterol: Number(details.cholesterol),
+          weight: Number(details.weight),
+          recorded_at: new Date()
+        };
+      });
+      
       // Update health profile
       await updateHealthProfile(profileUpdate);
       
@@ -246,11 +283,13 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
         weight: Number(details.weight)
       });
 
-      // Refresh data to get the latest updates
+      // Refresh data to get the latest updates from server
+      // This ensures UI is in sync with backend
       await refreshPatientData();
 
       setShowForm(false);
       setError(null);
+      setSuccessToast('Patient details updated successfully!');
     } catch (error) {
       console.error('Error saving patient details:', error);
       setError('Failed to save patient details. Please try again.');
@@ -481,55 +520,61 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
 
   if (showForm) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Title className="text-white">Update Patient Details</Title>
-          <Button
-            size="sm"
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="backdrop-blur-md bg-black/30 border border-white/20 rounded-2xl max-w-4xl w-full p-8 shadow-2xl relative overflow-y-auto max-h-[90vh]"
+        >
+          <motion.button 
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowForm(false)}
-            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-            icon={FaUserPlus}
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors duration-300"
           >
-            Cancel
-          </Button>
-        </div>
-        {error && (
-          <div className="p-4 bg-red-900/50 text-red-200 rounded-lg border border-red-500/30">
-            {error}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </motion.button>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-white">Update Health Profile</h2>
+            <p className="text-gray-400 mt-1">Keep your information up-to-date for better health insights</p>
+            <div className="h-1 w-20 bg-gradient-to-r from-red-600 to-red-500 rounded-full mt-2"></div>
           </div>
-        )}
-        <PatientDetailsForm 
-          onSubmit={handlePatientDetailsSubmit} 
-          initialData={healthProfile && healthMetrics ? {
-            name: healthProfile.name || "",
-            age: healthProfile.age || 30,
-            height: healthProfile.height || 170,
-            weight: healthMetrics.weight || 70,
-            heartRate: healthMetrics.heart_rate || 75,
-            bloodPressureSystolic: healthMetrics.blood_pressure_systolic || 120,
-            bloodPressureDiastolic: healthMetrics.blood_pressure_diastolic || 80,
-            cholesterol: healthMetrics.cholesterol || 180,
-            hasHeartCondition: healthProfile.has_heart_condition || false,
-            hadHeartAttack: healthProfile.had_heart_attack || false,
-            lastHeartAttack: healthProfile.last_heart_attack ? 
-              new Date(healthProfile.last_heart_attack).toISOString().split('T')[0] : undefined,
-            currentMedications: healthProfile.medications?.map((med: any) => ({
-              name: med.name || '',
-              dosage: med.dosage || '',
-              frequency: med.frequency || '',
-              timeOfDay: Array.isArray(med.time_of_day) ? med.time_of_day.join(', ') : '',
-              startDate: med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : '',
-            })) || [],
-            allergies: Array.isArray(healthProfile.allergies) ? healthProfile.allergies.join(', ') : '',
-            conditions: Array.isArray(healthProfile.conditions) ? healthProfile.conditions.join(', ') : '',
-            familyHistory: Array.isArray(healthProfile.family_history) ? healthProfile.family_history.join(', ') : '',
-            smoker: healthProfile.lifestyle?.smoker || false,
-            alcoholConsumption: healthProfile.lifestyle?.alcohol_consumption || healthProfile.lifestyle?.alcoholConsumption || 'light',
-            exerciseFrequency: healthProfile.lifestyle?.exercise_frequency || healthProfile.lifestyle?.exerciseFrequency || 2,
-            diet: healthProfile.lifestyle?.diet || '',
-            stressLevel: healthProfile.lifestyle?.stress_level || healthProfile.lifestyle?.stressLevel || 3,
-          } : undefined} 
-        />
+          <PatientDetailsForm 
+            onSubmit={handlePatientDetailsSubmit} 
+            initialData={healthProfile && healthMetrics ? {
+              name: healthProfile.name || "",
+              age: healthProfile.age || 30,
+              height: healthProfile.height || 170,
+              weight: healthMetrics.weight || 70,
+              heartRate: healthMetrics.heart_rate || 75,
+              bloodPressureSystolic: healthMetrics.blood_pressure_systolic || 120,
+              bloodPressureDiastolic: healthMetrics.blood_pressure_diastolic || 80,
+              cholesterol: healthMetrics.cholesterol || 180,
+              bloodSugar: healthMetrics.glucose ? healthMetrics.glucose * 18 : 100, // Convert mmol/L to mg/dL
+              hasHeartCondition: healthProfile.has_heart_condition || false,
+              hadHeartAttack: healthProfile.had_heart_attack || false,
+              lastHeartAttack: healthProfile.last_heart_attack ? 
+                new Date(healthProfile.last_heart_attack).toISOString().split('T')[0] : undefined,
+              currentMedications: healthProfile.medications?.map((med: any) => ({
+                name: med.name || '',
+                dosage: med.dosage || '',
+                frequency: med.frequency || '',
+                timeOfDay: Array.isArray(med.time_of_day) ? med.time_of_day.join(', ') : '',
+                startDate: med.start_date ? new Date(med.start_date).toISOString().split('T')[0] : '',
+              })) || [],
+              allergies: Array.isArray(healthProfile.allergies) ? healthProfile.allergies.join(', ') : '',
+              conditions: Array.isArray(healthProfile.conditions) ? healthProfile.conditions.join(', ') : '',
+              familyHistory: Array.isArray(healthProfile.family_history) ? healthProfile.family_history.join(', ') : '',
+              smoker: healthProfile.lifestyle?.smoker || false,
+              alcoholConsumption: healthProfile.lifestyle?.alcohol_consumption || healthProfile.lifestyle?.alcoholConsumption || 'light',
+              exerciseFrequency: healthProfile.lifestyle?.exercise_frequency || healthProfile.lifestyle?.exerciseFrequency || 2,
+              diet: healthProfile.lifestyle?.diet || '',
+              stressLevel: healthProfile.lifestyle?.stress_level || healthProfile.lifestyle?.stressLevel || 3,
+            } : undefined} 
+          />
+        </motion.div>
       </div>
     );
   }
@@ -541,7 +586,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
           animate={{ scale: [0.9, 1, 0.9], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <FaUserPlus className="w-16 h-16 text-red-500" />
+        <FaUserPlus className="w-16 h-16 text-red-500" />
         </motion.div>
         <Title className="text-white">Welcome to Your Health Profile</Title>
         <p className="text-gray-300 text-center max-w-md">
@@ -604,18 +649,33 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
 
   return (
     <div className="space-y-6 text-white">
+      {successToast && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3"
+        >
+          <span className="flex items-center justify-center bg-white bg-opacity-25 rounded-full p-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </span>
+          <span className="font-medium">{successToast}</span>
+        </motion.div>
+      )}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">{healthProfile?.name || "Patient"}</h2>
           <p className="text-gray-300">
-            Age: {healthProfile?.age || "N/A"} | Height: {healthProfile?.height || "N/A"}cm | Weight: {healthMetrics?.weight || "N/A"}kg
+            Age: {healthProfile?.age || 30} | Height: {healthProfile?.height || 170}cm | Weight: {healthMetrics?.weight || 70}kg
           </p>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowForm(true)}
-          className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-full flex items-center space-x-2"
+          className="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg hover:shadow-red-500/30 transition-all duration-300"
         >
           <FaUserPlus className="w-4 h-4" />
           <span>Update Details</span>
@@ -666,7 +726,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
-            <HealthMetricsCard
+        <HealthMetricsCard
               title={metric.title}
               value={metric.value}
               icon={metric.icon}
@@ -793,7 +853,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
             >
               Hide
             </motion.button>
-          </div>
+            </div>
           <div className="space-y-4">
             {personalizedAdvice.map((advice, index) => (
               <motion.div 
@@ -813,14 +873,14 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
                   'bg-green-900/50 text-green-400'
                 }`}>
                   <advice.icon className="w-5 h-5" />
-                </div>
+            </div>
                 <div>
                   <h4 className="font-medium text-white">{advice.title}</h4>
                   <p className="text-gray-300 text-sm mt-1">{advice.description}</p>
-                </div>
+            </div>
               </motion.div>
             ))}
-          </div>
+            </div>
           <div className="mt-4 border-t border-white/10 pt-4">
             <p className="text-sm text-gray-400">
               Note: This advice is generated based on your health data. Always consult with a healthcare professional before making significant changes to your health regimen.
@@ -857,7 +917,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
                 </div>
               </motion.div>
             ))}
-          </div>
+              </div>
         ) : (
           <p className="text-gray-300">No medications recorded.</p>
         )}
@@ -895,7 +955,7 @@ export default function PatientOverview({ patientId }: PatientOverviewProps) {
                 </div>
               </motion.div>
             ))}
-          </div>
+        </div>
         </motion.div>
       )}
     </div>

@@ -17,7 +17,7 @@ export default function HomeClient({ children }: HomeClientProps) {
 
   return (
     <div className="min-h-screen">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {isLoading ? (
           <div
             key="loading"

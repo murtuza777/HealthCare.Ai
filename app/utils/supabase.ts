@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { MedicalReport } from './types';
 
 // Types for health data management
 export interface HealthProfile {
@@ -297,4 +298,7 @@ export const addSymptom = async (symptom: Partial<Symptom>): Promise<Symptom | n
   }
   
   return data;
-}; 
+};
+
+// Export MedicalReport type
+export type { MedicalReport }; 

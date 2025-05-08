@@ -21,7 +21,7 @@ export default function ChatMessage({
   onCallDoctor
 }: ChatMessageProps) {
   const isEmergency = message.type === 'emergency';
-  const hasQuickReplies = message.type === 'quick_replies' && message.quickReplies?.length > 0;
+  const hasQuickReplies = message.type === 'quick_replies' && message.quickReplies && message.quickReplies.length > 0;
 
   return (
     <motion.div
@@ -64,7 +64,7 @@ export default function ChatMessage({
           {/* Quick Replies */}
           {hasQuickReplies && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {message.quickReplies.map((reply, index) => (
+              {message.quickReplies?.map((reply, index) => (
                 <QuickReplyButton
                   key={index}
                   text={reply}

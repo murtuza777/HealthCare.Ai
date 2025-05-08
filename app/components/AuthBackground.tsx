@@ -1,45 +1,53 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 export default function AuthBackground() {
-  // Pre-calculate random positions and values to prevent hydration mismatch
+  // Use useState for client-side only rendering of random elements
+  const [isClient, setIsClient] = useState(false);
+  
+  // Set isClient to true after component mounts
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Pre-calculate random positions and values
   const crosses = useMemo(() => {
     return Array.from({ length: 5 }).map((_, i) => ({
-      left: `${Math.floor(Math.random() * 100)}%`,
-      top: `${Math.floor(Math.random() * 100)}%`,
-      opacity: 0.1 + (Math.random() * 0.1),
-      fontSize: `${24 + Math.floor(Math.random() * 16)}px`,
-      duration: 5 + Math.floor(Math.random() * 5),
-      delay: Math.floor(Math.random() * 2)
+      left: `${(i * 20) + 5}%`, // Deterministic positioning based on index
+      top: `${(i * 20) + 5}%`,  // Deterministic positioning based on index
+      opacity: isClient ? (0.1 + (Math.random() * 0.1)) : 0.15, // Only randomize on client
+      fontSize: isClient ? `${24 + Math.floor(Math.random() * 16)}px` : '30px', // Only randomize on client
+      duration: 5 + i,
+      delay: i
     }));
-  }, []);
+  }, [isClient]);
 
   const particles = useMemo(() => {
     return Array.from({ length: 30 }).map((_, i) => ({
-      width: 1 + Math.floor(Math.random() * 3),
-      height: 1 + Math.floor(Math.random() * 3),
-      left: `${Math.floor(Math.random() * 100)}%`,
-      top: `${Math.floor(Math.random() * 100)}%`,
-      opacity: 0.1 + (Math.random() * 0.2),
+      width: isClient ? (1 + Math.floor(Math.random() * 3)) : 2,
+      height: isClient ? (1 + Math.floor(Math.random() * 3)) : 2,
+      left: `${(i * 3) % 100}%`,  // Deterministic positioning based on index
+      top: `${(i * 3.5) % 100}%`, // Deterministic positioning based on index
+      opacity: isClient ? (0.1 + (Math.random() * 0.2)) : 0.2,
       color: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#3b82f6' : '#ffffff',
-      duration: 5 + Math.floor(Math.random() * 5),
-      delay: Math.floor(Math.random() * 3)
+      duration: 5 + (i % 5),
+      delay: i % 3
     }));
-  }, []);
+  }, [isClient]);
 
   const pulses = useMemo(() => {
     return Array.from({ length: 5 }).map((_, i) => ({
-      left: `${10 + Math.floor(Math.random() * 80)}%`,
-      top: `${10 + Math.floor(Math.random() * 80)}%`,
-      width: `${100 + Math.floor(Math.random() * 100)}px`,
-      height: `${100 + Math.floor(Math.random() * 100)}px`,
-      opacity: 0.05 + (Math.random() * 0.1),
-      duration: 5 + Math.floor(Math.random() * 5),
-      delay: Math.floor(Math.random() * 5)
+      left: `${10 + (i * 15)}%`,  // Deterministic positioning based on index
+      top: `${10 + (i * 15)}%`,   // Deterministic positioning based on index
+      width: `${100 + (i * 20)}px`,  // Deterministic sizing based on index
+      height: `${100 + (i * 20)}px`, // Deterministic sizing based on index
+      opacity: isClient ? (0.05 + (Math.random() * 0.1)) : 0.1,
+      duration: 5 + i,
+      delay: i
     }));
-  }, []);
+  }, [isClient]);
 
   return (
     <div className="fixed inset-0 -z-10 w-full h-full bg-gradient-to-br from-black via-gray-900 to-blue-900 overflow-hidden">
