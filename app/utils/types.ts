@@ -84,3 +84,14 @@ export interface Message {
     }>;
   };
 }
+
+export interface MedicalReport {
+  type: string;
+  date: Date;
+  doctor: string;
+  facility: string;
+  findings: string;
+  recommendations: string;
+  follow_up: boolean;
+  follow_up_date?: Date | null;
+}
