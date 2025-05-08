@@ -10,11 +10,12 @@ An advanced health monitoring and management platform powered by AI for early di
    - Monitor trends and changes in your health status
    - Input and manage health data including vitals, conditions, and medications
 
-2. **HeartGuard AI Assistant**
-   - Intelligent AI-powered health chat
-   - Personalized health advice based on patient data
-   - Medication guidance and symptom assessment
-   - Utilizes reports and health profile data for accurate recommendations
+2. **Health Guardian AI Assistant**
+   - Advanced AI-powered medical assistant that can answer ANY healthcare question
+   - Comprehensive knowledge of medical conditions, treatments, and terminology
+   - Personalized health advice based on patient data and health metrics
+   - Medication guidance, symptom assessment, and early disease detection
+   - Powered by Deepseek's large language model for accurate medical information
 
 3. **Reports Management System**
    - Securely store medical reports and test results
@@ -41,6 +42,7 @@ An advanced health monitoring and management platform powered by AI for early di
 - Tailwind CSS
 - Framer Motion
 - Supabase for authentication and database
+- Deepseek AI for comprehensive medical responses
 
 ## Getting Started
 
@@ -59,6 +61,7 @@ Create a `.env.local` file in the root directory and add:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 4. Run the development server:
@@ -67,6 +70,23 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+## AI Configuration
+
+This application uses the Deepseek API to power the Health Guardian AI assistant, providing comprehensive and accurate medical information.
+
+To set up the AI component:
+
+1. Obtain a Deepseek API key from [Deepseek](https://platform.deepseek.com)
+2. Add your API key to the `.env.local` file as shown above
+3. For development without an API key, the system falls back to template responses for common health questions
+
+The AI assistant is capable of:
+- Answering detailed questions about any medical condition, treatment, or health topic
+- Analyzing personal health metrics for early warning signs
+- Providing personalized health recommendations based on user data
+- Explaining medical terminology in clear, understandable language
+- Interpreting lab results and medical reports
 
 ## Project Structure
 
@@ -92,6 +112,7 @@ healthcare.ai/
 - **Remote Monitoring**: Allows healthcare providers to monitor patients remotely
 - **Health Trends Analysis**: Identify long-term patterns in health data
 - **Care Coordination**: Facilitates communication between patients, caretakers, and healthcare providers
+- **Medical Education**: Provides comprehensive information about health conditions and treatments
 
 ## Contributing
 
