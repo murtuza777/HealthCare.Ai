@@ -92,18 +92,77 @@ The AI assistant is capable of:
 
 ```
 healthcare.ai/
-├── app/                    # Next.js app directory
-│   ├── layout.tsx         # Root layout
-│   ├── page.tsx           # Home page
-│   ├── globals.css        # Global styles
-│   ├── dashboard/         # Dashboard pages
-│   ├── reports/           # Reports management
-│   └── components/        # UI components
-├── components/            # Shared React components
-├── lib/                   # Utility functions
-│   └── supabase.ts       # Supabase client
-└── public/               # Static assets
+├── app/                      # Next.js app directory with App Router
+│   ├── api/                 # API routes and endpoints
+│   ├── auth/                # Authentication-related pages
+│   ├── components/          # App-specific UI components
+│   ├── context/             # React context providers
+│   │   ├── AuthContext.tsx  # Authentication context
+│   │   └── PatientContext.tsx # Patient data management
+│   ├── dashboard/           # Dashboard pages and components
+│   ├── home/                # Home page components
+│   ├── lib/                 # App-specific utilities
+│   ├── reports/             # Reports management features
+│   │   ├── add/             # Upload/add reports feature
+│   │   ├── gallery/         # Reports gallery and management
+│   │   ├── qr-code/         # QR code generation
+│   │   ├── scan-qr/         # QR code scanning
+│   │   └── view-shared/     # Shared reports viewer
+│   ├── utils/               # Utility functions
+│   ├── ClientLayout.tsx     # Client-side layout wrapper
+│   ├── globals.css          # Global styles
+│   ├── layout.tsx           # Root layout
+│   ├── middleware.ts        # Next.js middleware for auth
+│   └── page.tsx             # Home page
+├── components/              # Shared React components
+├── data/                    # Static data files
+├── drizzle/                 # Database migrations and schema
+├── lib/                     # Global utility functions
+│   ├── supabase.ts          # Supabase client configuration
+│   └── utils.ts             # General utility functions
+├── migrations/              # Database migration scripts
+├── public/                  # Static assets
+├── src/                     # Source code (for non-app router code)
+├── styles/                  # Global styles
+├── .eslintrc.json           # ESLint configuration
+├── .gitignore               # Git ignore file
+├── components.json          # UI component configuration
+├── drizzle.config.ts        # Drizzle ORM configuration
+├── next.config.js           # Next.js configuration
+├── package.json             # Project dependencies
+├── postcss.config.js        # PostCSS configuration
+├── tailwind.config.js       # Tailwind CSS configuration
+└── tsconfig.json            # TypeScript configuration
 ```
+
+### Key Architectural Features
+
+1. **App Router Structure**: Uses Next.js 14 App Router for improved routing and server components.
+
+2. **Context Management**: 
+   - `AuthContext`: Handles user authentication state and methods
+   - `PatientContext`: Manages patient data and health records
+
+3. **Reports System Architecture**:
+   - Document storage in Supabase Storage Buckets
+   - Metadata stored in database with Row Level Security (RLS)
+   - QR code-based sharing system with time-limited access
+   - Gallery view with search and filtering capabilities
+
+4. **Authentication and Security**:
+   - Supabase authentication with Row Level Security
+   - Protected routes with middleware
+   - Secure data access patterns
+   
+5. **AI Integration**:
+   - Gemini AI integration for health assistant
+   - Contextual responses based on patient data
+   - Medical terminology processing
+   
+6. **Responsive UI Components**:
+   - Tailwind CSS for styling
+   - Framer Motion for animations
+   - Custom health visualization components
 
 ## Use Cases
 
