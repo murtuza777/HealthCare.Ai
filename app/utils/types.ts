@@ -50,13 +50,7 @@ export interface HealthProfile {
   hasHeartCondition: boolean;
   hadHeartAttack: boolean;
   lastHeartAttack?: Date;
-  medications: Array<{
-    name: string;
-    dosage: string;
-    frequency: string;
-    timeOfDay: string[];
-    startDate: Date;
-  }>;
+  medications: Medication[];
   allergies: string[];
   conditions: string[];
   familyHistory: string[];

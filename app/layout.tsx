@@ -1,15 +1,11 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { AuthProvider } from './context/AuthContext'
 import { PatientProvider } from './context/PatientContext'
 import { Suspense } from 'react'
 import LoadingAnimation from './components/LoadingAnimation'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-})
+// Temporarily removed font loading to fix build issues
 
 export const metadata: Metadata = {
   title: 'Healthcare.AI',
@@ -31,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased min-h-screen`}>
+      <body className="font-sans antialiased min-h-screen">
         <Suspense fallback={<Loading />}>
           <AuthProvider>
             <PatientProvider>
