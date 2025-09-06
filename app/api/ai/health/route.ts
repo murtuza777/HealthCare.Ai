@@ -20,6 +20,29 @@ export async function GET() {
         timestamp: new Date().toISOString()
       });
     } else {
+      // Check if this is a rate limit error
+      if (testResult.message.includes('429') || testResult.message.toLowerCase().includes('quota exceeded')) {
+        return NextResponse.json({
+          status: 'degraded',
+          gemini: {
+            status: 'rate_limited',
+            model: 'gemini-1.5-flash',
+            message: 'Gemini API is temporarily rate limited. The application will use fallback responses.',
+            retryAfter: '60' // Suggest retry after 1 minute
+          },
+          fallback: {
+            status: 'active',
+            message: 'Using local response system'
+          },
+          timestamp: new Date().toISOString()
+        }, { 
+          status: 429,
+          headers: {
+            'Retry-After': '60'
+          }
+        });
+      }
+      
       return NextResponse.json({
         status: 'degraded',
         gemini: {
@@ -32,6 +55,33 @@ export async function GET() {
     }
   } catch (error) {
     console.error("Error in AI health check:", error);
+    
+    // Determine if this is a rate limit error
+    const isRateLimit = error instanceof Error && 
+      (error.message.includes('429') || 
+       error.message.toLowerCase().includes('quota exceeded'));
+    
+    if (isRateLimit) {
+      return NextResponse.json({
+        status: 'degraded',
+        gemini: {
+          status: 'rate_limited',
+          model: 'gemini-1.5-flash',
+          message: 'Gemini API is temporarily rate limited. The application will use fallback responses.',
+          retryAfter: '60'
+        },
+        fallback: {
+          status: 'active',
+          message: 'Using local response system'
+        },
+        timestamp: new Date().toISOString()
+      }, { 
+        status: 429,
+        headers: {
+          'Retry-After': '60'
+        }
+      });
+    }
     
     return NextResponse.json({
       status: 'error',
