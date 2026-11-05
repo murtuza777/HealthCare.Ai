@@ -1,0 +1,59 @@
+{
+  "name": "healthcare-ai",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "AI health companion for people with heart conditions and their caretakers",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "cf-typegen": "wrangler types",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.5",
+    "better-auth": "1.7.12",
+    "clsx": "2.1.1",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "react-router": "8.5.0",
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.64.0",
+    "@cloudflare/vitest-pool-workers": "0.23.0",
+    "@eslint/js": "9.39.5",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "autoprefixer": "10.6.1",
+    "drizzle-kit": "0.31.11",
+    "esbuild": "0.28.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "picomatch": "4.0.7",
+    "postcss": "8.5.31",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.5",
+    "vitest": "4.1.12",
+    "wrangler": "4.151.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

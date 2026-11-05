@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "healthcare-ai",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    // The SPA is served straight from static assets (no Worker run, no CPU).
+    // Only /api/* runs the Worker. Unknown paths fall back to index.html.
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_URL": "https://healthcare-ai.mdmurtuzaali777.workers.dev",
+    "EMAIL_FROM": "Healthcare.AI <onboarding@resend.dev>"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "healthcare-ai-db",
+      "database_id": "fea4130e-e42f-40e3-a65d-d4c7105defc7",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  // Every minute: drain the outbox (emails). More jobs arrive in Phase 3.
+  "triggers": { "crons": ["* * * * *"] }
+}
