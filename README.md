@@ -2,6 +2,8 @@
 
 An advanced health monitoring and management platform powered by AI for early disease detection and patient health management.
 
+> **Planning docs:** [Product Requirements (PRD)](docs/PRD.md) · [Technical Implementation Plan](docs/TECH_PLAN.md)
+
 ## Key Features
 
 1. **Patient Overview Dashboard**
@@ -15,7 +17,7 @@ An advanced health monitoring and management platform powered by AI for early di
    - Comprehensive knowledge of medical conditions, treatments, and terminology
    - Personalized health advice based on patient data and health metrics
    - Medication guidance, symptom assessment, and early disease detection
-   - Powered by Deepseek's large language model for accurate medical information
+   - Powered by Google Gemini, called server-side only
 
 3. **Reports Management System**
    - Securely store medical reports and test results
@@ -42,7 +44,7 @@ An advanced health monitoring and management platform powered by AI for early di
 - Tailwind CSS
 - Framer Motion
 - Supabase for authentication and database
-- Deepseek AI for comprehensive medical responses
+- Google Gemini for the AI assistant
 
 ## Getting Started
 
@@ -57,11 +59,12 @@ npm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory and add:
+Copy `.env.example` to `.env.local` and fill in the values. `.env*` files are git-ignored; never commit real keys.
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key
+GEMINI_API_KEY=your_gemini_api_key   # server-only, no NEXT_PUBLIC_ prefix
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 4. Run the development server:
@@ -73,13 +76,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## AI Configuration
 
-This application uses the Deepseek API to power the Health Guardian AI assistant, providing comprehensive and accurate medical information.
+The Health Guardian assistant calls the Gemini API from the `/api/ai` route on the server, so the key never reaches the browser.
 
-To set up the AI component:
-
-1. Obtain a Deepseek API key from [Deepseek](https://platform.deepseek.com)
-2. Add your API key to the `.env.local` file as shown above
-3. For development without an API key, the system falls back to template responses for common health questions
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey)
+2. Set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in `.env.local`
+3. If the API is unavailable, the assistant falls back to built-in template responses
 
 The AI assistant is capable of:
 - Answering detailed questions about any medical condition, treatment, or health topic
