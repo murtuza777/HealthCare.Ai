@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v1.0 |
+| **Status** | Draft v1.1 (login is passwordless after the Phase 1 spikes) |
 | **Owner** | Murtuza |
 | **Last updated** | 2026-11-05 |
 | **Companion doc** | [Technical Implementation Plan](./TECH_PLAN.md) |
@@ -67,8 +67,8 @@ Priority: **P0** = required for that release, **P1** = should have, **P2** = nic
 ### 6.1 Accounts and onboarding (R1)
 | ID | Requirement | Priority |
 |---|---|---|
-| A-1 | Sign up and log in with email and password, with email verification and password reset. | P0 |
-| A-2 | Optional Google sign-in. | P1 |
+| A-1 | Passwordless sign-up and log in with a 6-digit code sent by email (codes expire after 5 minutes, limited attempts). No passwords to remember or reset. | P0 |
+| A-2 | Google sign-in. | P1 |
 | A-3 | Onboarding wizard collects the health profile: age, sex, height, weight, conditions, cardiac history (heart condition, past heart attack and date), allergies, family history, lifestyle (smoking, alcohol, exercise, diet, stress). | P0 |
 | A-4 | Protected pages require a session. Unauthenticated API calls return 401. | P0 |
 | A-5 | User can export all their data (JSON + report files) and delete their account permanently. | P0 (R4) |
@@ -174,7 +174,7 @@ Priority: **P0** = required for that release, **P1** = should have, **P2** = nic
 | Missed emergency | High | Deterministic thresholds, 100%-recall test suite, emergency UI that works offline from cached rules. |
 | Data breach or cross-user data leak | High | Single data-access layer that always scopes by user and permission, tests for authorization, hashed share tokens, audit log. |
 | Notification fatigue | Medium | Quiet hours, per-channel settings, digest mode for non-critical insights. |
-| Free-tier limits hit (AI quota, Workers CPU) | Medium | Per-user AI limits, caching, AI Gateway; upgrade to Workers Paid ($5/mo) when needed. |
+| Free-tier limits hit (AI quota, Workers CPU) | Medium | Architecture built for the 10 ms CPU limit (static SPA + small API, passwordless login; measured in spikes). Per-user AI limits, caching, AI Gateway. Upgrade to Workers Paid ($5/mo) with no code change when needed. |
 | Regulatory exposure | Medium | Position as a wellness and self-management tool, not a medical device; legal review before launch in a regulated market. |
 
 ## 10. Open questions
