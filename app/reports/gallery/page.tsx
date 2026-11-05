@@ -246,7 +246,7 @@ export default function ReportsGalleryPage() {
                 <p className="text-gray-500">Try changing your search or filter criteria</p>
               ) : (
                 <div>
-                  <p className="text-gray-500 mb-4">You haven't uploaded any reports yet</p>
+                  <p className="text-gray-500 mb-4">You haven&apos;t uploaded any reports yet</p>
                   <Link
                     href="/reports/add"
                     className="inline-flex items-center text-red-600 hover:text-red-800"

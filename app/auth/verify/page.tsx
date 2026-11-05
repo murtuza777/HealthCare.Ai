@@ -88,7 +88,7 @@ export default function VerifyPage() {
             <p className="text-gray-300 mb-6">
               {email ? (
                 <>
-                  We've sent a verification link to <span className="font-semibold text-red-400">{email}</span>.
+                  We&apos;ve sent a verification link to <span className="font-semibold text-red-400">{email}</span>.
                   <br />
                   Please check your inbox and click the link to verify your account.
                 </>

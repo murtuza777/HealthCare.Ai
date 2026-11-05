@@ -139,7 +139,7 @@ export default function QRCodePage() {
             </div>
           ) : reports.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">You don't have any reports yet</p>
+              <p className="text-gray-500">You don&apos;t have any reports yet</p>
               <a
                 href="/reports/add"
                 className="mt-2 inline-block text-red-600 hover:text-red-800"
