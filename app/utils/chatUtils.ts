@@ -1,8 +1,6 @@
 import { Message, Symptom, HealthProfile, HealthMetrics, MedicalReport } from './types';
 import { isEmergencySymptom, generateHealthTips } from './healthUtils';
-import { assessHealthStatus } from './healthApi';
 import { analyzeHealthData } from './healthAnalysis';
-import { getHealthAssistantResponse } from './healthAssistant';
 
 interface ChatResponse {
   messages: Message[];

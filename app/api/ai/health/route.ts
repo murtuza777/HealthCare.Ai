@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
 import { testGeminiApiConnection } from '@/app/utils/healthAssistant';
 
+export const dynamic = 'force-dynamic';
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
 export async function GET() {
   try {
     console.log("AI health check endpoint called");
     
     // Test if the Gemini API is accessible
-    const testResult = await testGeminiApiConnection('gemini-1.5-flash', 'v1beta');
+    const testResult = await testGeminiApiConnection();
     
     if (testResult.success) {
       return NextResponse.json({
         status: 'healthy',
         gemini: {
           status: 'connected',
-          model: 'gemini-1.5-flash',
-          apiVersion: 'v1beta',
+          model: GEMINI_MODEL,
+
           message: 'Gemini API is accessible'
         },
         timestamp: new Date().toISOString()
@@ -26,7 +30,7 @@ export async function GET() {
           status: 'degraded',
           gemini: {
             status: 'rate_limited',
-            model: 'gemini-1.5-flash',
+            model: GEMINI_MODEL,
             message: 'Gemini API is temporarily rate limited. The application will use fallback responses.',
             retryAfter: '60' // Suggest retry after 1 minute
           },
@@ -47,7 +51,7 @@ export async function GET() {
         status: 'degraded',
         gemini: {
           status: 'error',
-          model: 'gemini-1.5-flash',
+          model: GEMINI_MODEL,
           message: testResult.message
         },
         timestamp: new Date().toISOString()
@@ -66,7 +70,7 @@ export async function GET() {
         status: 'degraded',
         gemini: {
           status: 'rate_limited',
-          model: 'gemini-1.5-flash',
+          model: GEMINI_MODEL,
           message: 'Gemini API is temporarily rate limited. The application will use fallback responses.',
           retryAfter: '60'
         },

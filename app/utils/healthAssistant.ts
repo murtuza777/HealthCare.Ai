@@ -1,11 +1,9 @@
+import 'server-only';
 import { HealthProfile, HealthMetrics, Symptom, MedicalReport, Message } from './types';
 
-// Use Gemini API key instead of DeepSeek
-// const DEEPSEEK_API_KEY = "sk-52dade5aa02a41d1b9c192d4779e5b80";
-// const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD2XIQTo6DQ08XMLm1wjwU91iaKg-7JCuE";
-// Updated to use Gemini 2.0 Flash model
-const GEMINI_MODEL = 'gemini-1.5-flash';
+// Server-only: the key must never use the NEXT_PUBLIC_ prefix or it ships to the browser.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 interface HealthAssistantRequest {
@@ -109,47 +107,39 @@ async function callGeminiAPI(data: HealthAssistantRequest): Promise<HealthAssist
   
   // Format the content for Gemini API - update to match the expected format
   const combinedContent = {
-    contents: [
-      {
-        parts: [
-          {
-            text: systemMessage.content
-          }
-        ],
-        role: "system"
-      },
-      {
-        parts: [
-          {
-            text: userMessages.map(msg => 
-              `${msg.role === 'assistant' ? 'AI' : 'User'}: ${msg.content}`
-            ).join("\n")
-          }
-        ],
-        role: "user"
-      }
-    ],
+    systemInstruction: {
+      parts: [{ text: systemMessage.content }]
+    },
+    contents: userMessages.map((msg: { role: string; content: string }) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    })),
     generationConfig: {
       temperature: 0.7,
       topP: 0.95,
       topK: 40,
-      maxOutputTokens: 2048
+      maxOutputTokens: 2048,
+      responseMimeType: 'application/json'
     }
   };
-  
+
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not set');
+  }
+
   try {
     console.log("Calling Gemini API with URL:", GEMINI_API_URL);
-    console.log("Using API key:", GEMINI_API_KEY.substring(0, 5) + "..." + GEMINI_API_KEY.substring(GEMINI_API_KEY.length - 4));
     console.log("Request structure:", JSON.stringify(combinedContent).substring(0, 200) + "...");
     
     // Add timestamps for performance tracking
     const startTime = Date.now();
     console.log("API call started at:", new Date(startTime).toISOString());
     
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY
       },
       body: JSON.stringify(combinedContent)
     });
@@ -855,10 +845,10 @@ IMPORTANT GUIDELINES WHEN ACTING AS A MEDICAL ASSISTANT (when query is health-re
 3. Include relevant medical information, explanations of medical terms, treatment options, and preventive measures.
 4. Provide nuanced explanations of medical conditions, diseases, treatments, and health concepts.
 5. When discussing symptoms, provide detailed information about potential causes, when to seek medical attention, and self-care options.
-6. Treat the user as if you're a knowledgeable doctor having a conversation with a patient.
+6. Explain things the way a knowledgeable, careful clinician would, without claiming to be one.
 7. Feel free to include detailed medical information, explanations of mechanisms, and medical terminology (with explanations).
 8. Do not be vague or generic - provide specific, actionable information.
-9. NEVER respond with "I'm unable to provide medical advice" or similar disclaimers. Instead, provide comprehensive information while noting that you're not replacing professional medical care.
+9. Give genuinely useful information rather than refusing, but never diagnose with certainty or prescribe. Make clear you are an AI assistant, not a doctor, and do not replace professional medical care.
 10. Always note that while you're providing detailed information, the user should consult healthcare providers for personalized medical advice and diagnosis.
 11. When appropriate, incorporate the user's health profile data in your response, but always answer the question first and foremost.
 
@@ -975,11 +965,11 @@ function formatMedicalReportsForContext(reports: MedicalReport[]): string {
  * This can be used to test different model combinations
  */
 export async function testGeminiApiConnection(
-  modelId: string = 'gemini-1.5-flash', 
+  modelId: string = GEMINI_MODEL,
   apiVersion: string = 'v1beta'
 ): Promise<any> {
   const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelId}:generateContent`;
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "AIzaSyD2XIQTo6DQ08XMLm1wjwU91iaKg-7JCuE";
+  const apiKey = GEMINI_API_KEY;
   
   console.log(`Testing Gemini API with endpoint: ${endpoint}`);
   
@@ -1002,10 +992,11 @@ export async function testGeminiApiConnection(
   };
   
   try {
-    const response = await fetch(`${endpoint}?key=${apiKey}`, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
       },
       body: JSON.stringify(prompt)
     });

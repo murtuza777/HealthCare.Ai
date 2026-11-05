@@ -16,7 +16,6 @@ import {
   MedicalReport as SupabaseMedicalReport
 } from '../utils/supabase';
 import LoadingAnimation from './LoadingAnimation';
-import GeminiApiTester from './GeminiApiTester';
 
 // Create conversion functions between Supabase and local data models
 const convertHealthProfile = (profile: SupabaseHealthProfile | null): any => {
@@ -651,8 +650,6 @@ Would you like to add your current medications to your profile for better person
 
   return (
     <div className="relative">
-      {/* Display GeminiApiTester at the top */}
-      <GeminiApiTester />
       
       <motion.div
         className={`backdrop-blur-md bg-white/5 border rounded-xl overflow-hidden p-6 transition-all duration-300 ${
