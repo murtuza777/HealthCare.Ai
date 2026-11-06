@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft v2.0: architecture changed to SPA + API Worker after the Phase 1 spikes |
+| **Status** | v2.1: Phase 1 done (SPA + API Worker on Cloudflare); Phase 2 next |
 | **Last updated** | 2026-11-05 |
 | **Companion doc** | [Product Requirements (PRD)](./PRD.md) |
 
@@ -249,21 +249,26 @@ Each phase ends with a deployable app. Effort assumes one developer working part
 
 ### Phase 0 — Cleanup and security ✅ *done*
 
-### Phase 1 — New foundation: SPA + API on Cloudflare (≈ 3–4 weeks)
+### Phase 1 — New foundation: SPA + API on Cloudflare ✅ *done (2026-11-06), except first production sign-in*
+
 **Goal:** the app runs on Cloudflare's free plan with its own auth, database and storage. Next.js and Supabase are gone.
 
-1. ✅ Spikes: Next.js on Workers (failed the CPU limit) and SPA + Hono (passed). See §13.
-2. Scaffold in the repo: Vite + React + `@cloudflare/vite-plugin`, Hono Worker, `wrangler.jsonc` (assets with SPA fallback, D1, R2), Tailwind, path aliases, `.dev.vars`.
-3. Drizzle schema (§5) and first migrations.
-4. Better Auth passwordless: email code + Google, auth instance per isolate, cookie cache, D1 rate limiting, outbox + Resend sender. Login and verify pages in the SPA.
-5. DAL + `canAccess` + authorization tests; Hono session middleware.
-6. Port the UI: landing, auth, dashboard shell and navigation to React Router. Move components from `app/components` to `src/client/components`, replacing Next-specific APIs (`next/link`, `next/navigation`, `next/image`) with React Router and plain elements.
-7. Replace Supabase data access feature by feature (profile → vitals → medications → symptoms → reports on R2 → sharing), using TanStack Query and typed `hc` calls.
-8. Remove Next.js, `@supabase/*` and old config files.
-9. CI (typecheck, lint, test, build) and deploy to `*.workers.dev`.
-10. Data migration only if real Supabase data exists (CSV export → import script); otherwise start fresh.
+What shipped (branch `phase-1-foundation`):
+- Spikes: Next.js on Workers (failed the CPU limit) and SPA + Hono (passed). See §13.
+- Vite + React SPA, Hono API Worker, D1 schema (24 tables), private R2 bucket for reports.
+- Passwordless auth (email code), per-isolate auth instance, cookie cache, D1-backed rate limits, outbox + Resend sender.
+- Data access layer with `canAccess` and authorization tests; lint rule keeps database access inside it.
+- UI ported from the legacy app: landing, app shell, overview, vitals, medications, symptoms, profile wizard, reports gallery, QR share links and the public share page. Emergency dialog and rule-based red flags.
+- 81 tests in workerd; CI on GitHub Actions; deployed to `https://healthcare-ai.mdmurtuzaali777.workers.dev`.
+- The legacy Next.js app was removed; it is at commit `2cfbf56` under `legacy/` (the chat assistant and caretaker screens there are the starting point for Phases 2 and 3).
 
-**Exit criteria:** on the deployed URL, a user can sign in with an email code, save a profile, add vitals and upload a report that persist across sessions. No Next.js or Supabase code remains. CI is green. Zero `exceededCpu` across the E2E run.
+Still open from Phase 1:
+- **Production email:** add `RESEND_API_KEY` (and a verified sending domain in Resend) so login codes reach users. Until then nobody can sign in on the deployed site. Then do one real sign-in → profile → vitals → report check on production.
+- **CI deploys:** add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as GitHub secrets so pushes to `main` deploy automatically.
+- **CPU watch:** first production requests on cold isolates measured 15–37 ms CPU (warm: 6–7 ms in the spike), with no `exceededCpu`. Keep watching Workers observability as real traffic arrives.
+- Data migration from Supabase: not needed (no real user data).
+
+**Exit criteria (original):** on the deployed URL, a user can sign in with an email code, save a profile, add vitals and upload a report that persist across sessions. No Next.js or Supabase code remains. CI is green. Zero `exceededCpu` across the E2E run. *Everything except the production sign-in is met; that needs the Resend key.*
 
 ### Phase 2 — MVP feature-complete, release R1 (≈ 3–4 weeks)
 1. Onboarding wizard (PRD A-3).
