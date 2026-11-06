@@ -1,27 +1,26 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
+    "resolveJsonModule": true,
+    "types": [
+      "./worker-configuration.d.ts",
+      "vite/client",
+      "@cloudflare/vitest-pool-workers/types"
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@client/*": ["./src/client/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@worker/*": ["./src/worker/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src", "tests", "worker-configuration.d.ts"]
 }
