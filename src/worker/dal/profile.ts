@@ -20,7 +20,7 @@ export async function upsertProfile(db: Db, actor: Actor, patientId: string, inp
   if (name) await db.update(user).set({ name }).where(eq(user.id, patientId));
   await db
     .insert(profiles)
-    .values({ userId: patientId, ...fields })
+    .values({ userId: patientId, ...fields, onboardedAt: new Date() }) // first save completes onboarding
     .onConflictDoUpdate({ target: profiles.userId, set: { ...fields, updatedAt: new Date() } });
   return getProfile(db, actor, patientId);
 }
