@@ -23,6 +23,9 @@
       "migrations_dir": "drizzle"
     }
   ],
+  "r2_buckets": [
+    { "binding": "REPORTS", "bucket_name": "healthcare-ai-reports" }
+  ],
   // Every minute: drain the outbox (emails). More jobs arrive in Phase 3.
   "triggers": { "crons": ["* * * * *"] }
 }

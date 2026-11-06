@@ -9,6 +9,10 @@ import { medicationInputSchema, medicationUpdateSchema } from "../../shared/medi
 import { symptomInputSchema } from "../../shared/symptoms";
 import { addMedication, deleteMedication, listMedications, setMedicationActive } from "../dal/medications";
 import { getProfile, upsertProfile } from "../dal/profile";
+import { createReport, deleteReport, getReport, listReports } from "../dal/reports";
+import { createShare, listShares, revokeShare } from "../dal/shares";
+import { shareInputSchema } from "../../shared/reports";
+import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
 import { addVital, latestVitals, listVitals } from "../dal/vitals";
 import { notFound, parse } from "../middleware/validate";
@@ -102,6 +106,42 @@ export const patients = new Hono<AppEnv>()
       return c.json(result, 201);
     },
   )
+  // Reports
+  .get("/:patientId/reports", async (c) => {
+    const items = await listReports(c.var.db, c.var.actor, patientId(c));
+    return c.json({ items: items.map(({ r2Key: _key, ...r }) => r) });
+  })
+  .post("/:patientId/reports", async (c) => {
+    // Raw file body + X-Report-Meta header (see routes/files.ts); uploaded with plain fetch.
+    const { meta, bytes, mime } = await readUpload(c.req.raw);
+    const { r2Key: _key, ...report } = await createReport(c.var.db, c.env.REPORTS, c.var.actor, patientId(c), meta, { bytes, mime });
+    return c.json({ report }, 201);
+  })
+  .get("/:patientId/reports/:id/file", async (c) => {
+    const report = (await getReport(c.var.db, c.var.actor, patientId(c), c.req.param("id"))) ?? notFound();
+    return fileResponse(c.env.REPORTS, report.r2Key, report.mime, report.title, c.req.query("download") === "1");
+  })
+  .delete("/:patientId/reports/:id", async (c) => {
+    if (!(await deleteReport(c.var.db, c.env.REPORTS, c.var.actor, patientId(c), c.req.param("id")))) notFound();
+    return c.json({ ok: true });
+  })
+  // Share links
+  .get("/:patientId/shares", async (c) => {
+    const items = await listShares(c.var.db, c.var.actor, patientId(c));
+    return c.json({ items });
+  })
+  .post(
+    "/:patientId/shares",
+    validator("json", (v) => parse(shareInputSchema, v)),
+    async (c) => {
+      const { share, token } = await createShare(c.var.db, c.var.actor, patientId(c), c.req.valid("json"));
+      return c.json({ id: share.id, expiresAt: share.expiresAt, url: `${c.env.APP_URL}/share/${token}` }, 201);
+    },
+  )
+  .delete("/:patientId/shares/:id", async (c) => {
+    if (!(await revokeShare(c.var.db, c.var.actor, patientId(c), c.req.param("id")))) notFound();
+    return c.json({ ok: true });
+  })
   .delete("/:patientId/symptoms/:id", async (c) => {
     const deleted = await deleteSymptom(c.var.db, c.var.actor, patientId(c), c.req.param("id"));
     if (!deleted) notFound();

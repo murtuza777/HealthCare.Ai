@@ -27,6 +27,14 @@ export async function listVitals(
 /** Most recent reading of each type (one small indexed query per type, sent as one batch). */
 export async function latestVitals(db: Db, actor: Actor, patientId: string): Promise<Partial<Record<VitalType, Vital>>> {
   await assertAccess(db, actor, patientId, "vitals");
+  return latestVitalsFor(db, patientId);
+}
+
+/**
+ * No access check: callers must already have authorized access to this patient's vitals
+ * (latestVitals above, or a valid share link that includes vitals).
+ */
+export async function latestVitalsFor(db: Db, patientId: string): Promise<Partial<Record<VitalType, Vital>>> {
   const queries = VITAL_TYPES.map((type) =>
     db
       .select()
