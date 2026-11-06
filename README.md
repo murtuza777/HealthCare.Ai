@@ -17,7 +17,7 @@ An advanced health monitoring and management platform powered by AI for early di
    - Comprehensive knowledge of medical conditions, treatments, and terminology
    - Personalized health advice based on patient data and health metrics
    - Medication guidance, symptom assessment, and early disease detection
-   - Powered by Google Gemini, called server-side only
+   - Being rebuilt on the new API (Phase 2)
 
 3. **Reports Management System**
    - Securely store medical reports and test results
@@ -39,131 +39,56 @@ An advanced health monitoring and management platform powered by AI for early di
 
 ## Tech Stack
 
-- Next.js 14 with App Router
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Supabase for authentication and database
-- Google Gemini for the AI assistant
+Runs entirely on Cloudflare's free plan (see [docs/TECH_PLAN.md](docs/TECH_PLAN.md) for why).
+
+- **Frontend:** Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Framer Motion, Recharts, Lucide icons
+- **API:** Hono on Cloudflare Workers, typed end to end (the browser client gets its types from the API)
+- **Data:** Cloudflare D1 (SQLite) with Drizzle ORM and migrations
+- **Auth:** Better Auth, passwordless (6-digit email code), optional Google sign-in
+- **Email:** Resend, through an outbox table that retries failed sends
+- **Validation and clinical rules:** Zod schemas and rule functions in `src/shared`, used by both the API and the browser
+- **Tests:** Vitest running inside Cloudflare's runtime against a real local D1
 
 ## Getting Started
 
-1. Clone the repository:
-```bash
-git clone https://github.com/murtuza777/Healthcare.AI.git
-```
+Requires Node 22+ and a Cloudflare account (free) for deploying.
 
-2. Install dependencies:
 ```bash
 npm install
+cp .dev.vars.example .dev.vars        # then set BETTER_AUTH_SECRET to a long random string
+npm run db:migrate:local
+npm run dev                           # http://localhost:5173
 ```
 
-3. Set up environment variables:
-Copy `.env.example` to `.env.local` and fill in the values. `.env*` files are git-ignored; never commit real keys.
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-GEMINI_API_KEY=your_gemini_api_key   # server-only, no NEXT_PUBLIC_ prefix
-GEMINI_MODEL=gemini-2.5-flash
-```
+Without `RESEND_API_KEY`, sign-in codes aren't emailed; read the latest one from the local outbox:
 
-4. Run the development server:
 ```bash
-npm run dev
+npx wrangler d1 execute DB --local --command "SELECT recipient, payload FROM outbox ORDER BY created_at DESC LIMIT 1"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Checks:
 
-## AI Configuration
-
-The Health Guardian assistant calls the Gemini API from the `/api/ai` route on the server, so the key never reaches the browser.
-
-1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey)
-2. Set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in `.env.local`
-3. If the API is unavailable, the assistant falls back to built-in template responses
-
-The AI assistant is capable of:
-- Answering detailed questions about any medical condition, treatment, or health topic
-- Analyzing personal health metrics for early warning signs
-- Providing personalized health recommendations based on user data
-- Explaining medical terminology in clear, understandable language
-- Interpreting lab results and medical reports
+```bash
+npm run check    # typecheck, lint, tests, build
+```
 
 ## Project Structure
 
 ```
-healthcare.ai/
-├── app/                      # Next.js app directory with App Router
-│   ├── api/                 # API routes and endpoints
-│   ├── auth/                # Authentication-related pages
-│   ├── components/          # App-specific UI components
-│   ├── context/             # React context providers
-│   │   ├── AuthContext.tsx  # Authentication context
-│   │   └── PatientContext.tsx # Patient data management
-│   ├── dashboard/           # Dashboard pages and components
-│   ├── home/                # Home page components
-│   ├── lib/                 # App-specific utilities
-│   ├── reports/             # Reports management features
-│   │   ├── add/             # Upload/add reports feature
-│   │   ├── gallery/         # Reports gallery and management
-│   │   ├── qr-code/         # QR code generation
-│   │   ├── scan-qr/         # QR code scanning
-│   │   └── view-shared/     # Shared reports viewer
-│   ├── utils/               # Utility functions
-│   ├── ClientLayout.tsx     # Client-side layout wrapper
-│   ├── globals.css          # Global styles
-│   ├── layout.tsx           # Root layout
-│   ├── middleware.ts        # Next.js middleware for auth
-│   └── page.tsx             # Home page
-├── components/              # Shared React components
-├── data/                    # Static data files
-├── drizzle/                 # Database migrations and schema
-├── lib/                     # Global utility functions
-│   ├── supabase.ts          # Supabase client configuration
-│   └── utils.ts             # General utility functions
-├── migrations/              # Database migration scripts
-├── public/                  # Static assets
-├── src/                     # Source code (for non-app router code)
-├── styles/                  # Global styles
-├── .eslintrc.json           # ESLint configuration
-├── .gitignore               # Git ignore file
-├── components.json          # UI component configuration
-├── drizzle.config.ts        # Drizzle ORM configuration
-├── next.config.js           # Next.js configuration
-├── package.json             # Project dependencies
-├── postcss.config.js        # PostCSS configuration
-├── tailwind.config.js       # Tailwind CSS configuration
-└── tsconfig.json            # TypeScript configuration
+src/
+├── client/      React app: routes/ (screens), components/, lib/ (API client, data hooks)
+├── worker/      Cloudflare Worker: Hono routes, auth, dal/ (the only code that touches the database,
+│                and where every access is authorized), db/schema.ts, jobs/ (cron), notifications/
+└── shared/      Zod schemas and clinical rules used by both sides (vitals, symptoms, risk, emergency)
+drizzle/         SQL migrations
+tests/           Vitest suites (run in workerd)
+docs/            PRD and technical implementation plan
+legacy/          The previous Next.js + Supabase app, being ported screen by screen
 ```
 
-### Key Architectural Features
-
-1. **App Router Structure**: Uses Next.js 14 App Router for improved routing and server components.
-
-2. **Context Management**: 
-   - `AuthContext`: Handles user authentication state and methods
-   - `PatientContext`: Manages patient data and health records
-
-3. **Reports System Architecture**:
-   - Document storage in Supabase Storage Buckets
-   - Metadata stored in database with Row Level Security (RLS)
-   - QR code-based sharing system with time-limited access
-   - Gallery view with search and filtering capabilities
-
-4. **Authentication and Security**:
-   - Supabase authentication with Row Level Security
-   - Protected routes with middleware
-   - Secure data access patterns
-   
-5. **AI Integration**:
-   - Gemini AI integration for health assistant
-   - Contextual responses based on patient data
-   - Medical terminology processing
-   
-6. **Responsive UI Components**:
-   - Tailwind CSS for styling
-   - Framer Motion for animations
-   - Custom health visualization components
+Security notes:
+- D1 has no row-level security, so every query goes through `src/worker/dal`, which checks the caller's access. A lint rule blocks database imports anywhere else.
+- Emergency detection (vital thresholds, symptom red flags) is rule-based and runs without AI. Thresholds are pending clinician review.
 
 ## Use Cases
 
