@@ -24,7 +24,13 @@ export function Login() {
     const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
     setBusy(false);
     if (error) {
-      setError(error.status === 429 ? "Too many attempts. Wait a few minutes." : "Couldn't send the code. Check the email address.");
+      setError(
+        error.status === 429
+          ? "Too many attempts. Wait a few minutes."
+          : error.status === 503
+            ? "Email sign-in isn't available yet. Please try again later."
+            : "Couldn't send the code. Check the email address.",
+      );
       return;
     }
     setStep("code");

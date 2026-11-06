@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
-import { getAuth } from "./auth";
+import { emailSignInAvailable, getAuth } from "./auth";
 import { AccessDenied } from "./dal/authz";
 import { getDb } from "./db/client";
 import { drainOutbox } from "./jobs/outbox";
@@ -21,6 +21,11 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/health", (c) => c.json({ ok: true }));
+// Don't let the login page say "we sent a code" when no email can be delivered.
+app.post("/auth/email-otp/send-verification-otp", async (c, next) => {
+  if (!emailSignInAvailable(c.env)) return c.json({ code: "EMAIL_NOT_CONFIGURED", message: "Email sign-in isn't set up yet." }, 503);
+  await next();
+});
 app.on(["GET", "POST"], "/auth/*", (c) => getAuth(c.env).handler(c.req.raw));
 
 const v1 = new Hono<AppEnv>()

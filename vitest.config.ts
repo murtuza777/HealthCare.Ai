@@ -13,6 +13,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             BETTER_AUTH_SECRET: "test-secret-0123456789abcdef0123456789abcdef",
+            EMAIL_MODE: "outbox", // read login codes from the outbox in tests
           },
         },
       }),

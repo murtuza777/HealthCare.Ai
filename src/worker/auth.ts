@@ -1,6 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
+
+/**
+ * Can we actually deliver sign-in codes? Production needs RESEND_API_KEY.
+ * EMAIL_MODE=outbox (local dev and tests) keeps codes in the outbox table instead.
+ */
+export const emailSignInAvailable = (env: Env) => Boolean(env.RESEND_API_KEY) || env.EMAIL_MODE === "outbox";
 import { getDb } from "./db/client";
 import * as schema from "./db/schema";
 import { deliver, enqueue } from "./jobs/outbox";
@@ -50,6 +56,8 @@ function createAuth(env: Env) {
         allowedAttempts: 3,
         storeOTP: "hashed",
         async sendVerificationOTP({ email, otp, type }) {
+          // Runs as a background task (Better Auth hides timing to prevent account enumeration),
+          // so "email not configured" is rejected earlier, in the API router (see emailSignInAvailable).
           const row = await enqueue(db, { channel: "email", recipient: email, kind: `otp:${type}`, payload: { otp } });
           await deliver(env, db, row); // try now; the cron retries on failure
         },
