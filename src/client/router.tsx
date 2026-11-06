@@ -8,6 +8,7 @@ import { NotFound } from "./routes/NotFound";
 export const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
   { path: "/login", element: <Login /> },
+  { path: "/share/:token", lazy: async () => ({ Component: (await import("./routes/SharedView")).SharedView }) },
   {
     path: "/app",
     lazy: async () => ({ Component: (await import("./routes/AppLayout")).AppLayout }),
@@ -16,6 +17,8 @@ export const router = createBrowserRouter([
       { path: "vitals", lazy: async () => ({ Component: (await import("./routes/Vitals")).Vitals }) },
       { path: "medications", lazy: async () => ({ Component: (await import("./routes/Medications")).Medications }) },
       { path: "symptoms", lazy: async () => ({ Component: (await import("./routes/Symptoms")).Symptoms }) },
+      { path: "reports", lazy: async () => ({ Component: (await import("./routes/Reports")).Reports }) },
+      { path: "reports/share", lazy: async () => ({ Component: (await import("./routes/ShareReports")).ShareReports }) },
       { path: "profile", lazy: async () => ({ Component: (await import("./routes/Profile")).Profile }) },
     ],
   },

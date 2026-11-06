@@ -105,3 +105,77 @@ export function useDeleteSymptom() {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.symptoms }),
   });
 }
+
+// --- Reports ---------------------------------------------------------------
+export const reportKeys = { list: ["reports", "me"] as const, shares: ["shares", "me"] as const };
+
+export function useReports() {
+  return useQuery({ queryKey: reportKeys.list, queryFn: async () => (await ok(await p.reports.$get({ param: me }))).items });
+}
+
+export type Report = NonNullable<ReturnType<typeof useReports>["data"]>[number];
+
+export const reportFileUrl = (id: string, download = false) =>
+  `/api/v1/patients/me/reports/${encodeURIComponent(id)}/file${download ? "?download=1" : ""}`;
+
+/** UTF-8 safe base64url for the X-Report-Meta header. */
+function toBase64Url(json: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(json));
+  let bin = "";
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export type ReportUpload = {
+  file: File;
+  meta: { title: string; type: string; reportDate?: string; doctor?: string; facility?: string; note?: string };
+};
+
+export function useUploadReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    // Raw file body (not multipart): the Worker streams it to R2 with minimal CPU.
+    mutationFn: async ({ file, meta }: ReportUpload) =>
+      ok<{ report: Report }>(
+        await fetch("/api/v1/patients/me/reports", {
+          method: "POST",
+          headers: { "content-type": file.type || "application/octet-stream", "x-report-meta": toBase64Url(meta) },
+          body: file,
+        }),
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: reportKeys.list }),
+  });
+}
+
+export function useDeleteReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => ok(await p.reports[":id"].$delete({ param: { ...me, id } })),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: reportKeys.list });
+      void qc.invalidateQueries({ queryKey: reportKeys.shares });
+    },
+  });
+}
+
+// --- Share links -------------------------------------------------------------
+export function useShares() {
+  return useQuery({ queryKey: reportKeys.shares, queryFn: async () => (await ok(await p.shares.$get({ param: me }))).items });
+}
+
+export type ShareNew = InferRequestType<typeof p.shares.$post>["json"];
+export function useCreateShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (json: ShareNew) => ok(await p.shares.$post({ param: me, json })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: reportKeys.shares }),
+  });
+}
+
+export function useRevokeShare() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => ok(await p.shares[":id"].$delete({ param: { ...me, id } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: reportKeys.shares }),
+  });
+}

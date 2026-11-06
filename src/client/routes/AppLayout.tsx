@@ -15,6 +15,7 @@ const NAV = [
   { to: "/app/vitals", label: "Vitals" },
   { to: "/app/medications", label: "Medications" },
   { to: "/app/symptoms", label: "Symptoms" },
+  { to: "/app/reports", label: "Reports" },
   { to: "/app/profile", label: "Profile" },
 ];
 
