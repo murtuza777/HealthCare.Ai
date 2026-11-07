@@ -1,46 +1,76 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { motion } from "framer-motion";
+import { Link, type LinkProps } from "react-router";
 import type { Classification } from "../../shared/vitals";
 
-export const inputClass =
-  "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-gray-400 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500";
+// Clinic chart UI kit. Sheets with hairline rules, solid buttons, legible fields.
+// No entrance animation: product screens load straight into the task.
 
-export function Card({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+export const inputClass =
+  "block w-full rounded-control border border-line-strong bg-sheet px-3.5 py-2.5 text-base text-ink shadow-[inset_0_1px_1px_rgba(20,48,90,0.04)] transition-colors placeholder:text-ink-faint hover:border-ink-faint focus:border-action focus:outline-none focus:ring-2 focus:ring-action/25 disabled:bg-well disabled:text-ink-muted aria-[invalid=true]:border-danger";
+
+/** A chart sheet: white panel on the porcelain ground. `flush` drops the padding for edge-to-edge tables. */
+export function Card({
+  children,
+  className = "",
+  as: Tag = "section",
+  flush = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "section" | "div" | "article";
+  flush?: boolean;
+}) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay }}
-      className={`rounded-xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur-md ${className}`}
-    >
-      {children}
-    </motion.section>
+    <Tag className={`rounded-sheet border border-line bg-sheet shadow-sheet ${flush ? "overflow-hidden" : "p-5 sm:p-6"} ${className}`}>{children}</Tag>
   );
 }
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
-const VARIANTS: Record<Variant, string> = {
-  primary: "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg hover:shadow-red-500/30",
-  secondary: "bg-white/10 text-white hover:bg-white/20",
-  ghost: "text-gray-300 hover:text-white",
-  danger: "bg-red-900/40 text-red-200 hover:bg-red-900/70",
-};
-
-export function Button({ variant = "primary", className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+/** Sheet heading row: title on the left, an optional action on the right. */
+export function SheetHeader({ title, action, description }: { title: string; action?: ReactNode; description?: string }) {
   return (
-    <button
-      {...props}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
-    />
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 className="text-lg">{title}</h2>
+        {description && <p className="mt-0.5 text-sm text-ink-muted">{description}</p>}
+      </div>
+      {action}
+    </div>
   );
+}
+
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "danger-quiet";
+const VARIANTS: Record<Variant, string> = {
+  primary: "bg-action text-white hover:bg-action-hover active:translate-y-px",
+  secondary: "border border-line-strong bg-sheet text-ink hover:border-ink-faint hover:bg-well active:translate-y-px",
+  ghost: "text-action hover:bg-action-soft",
+  danger: "bg-danger text-white hover:bg-danger-hover active:translate-y-px",
+  "danger-quiet": "text-danger hover:bg-danger-soft",
+};
+const SIZES = { md: "min-h-11 px-4 text-base", sm: "min-h-9 px-3 text-sm" };
+
+export const buttonClasses = (variant: Variant = "primary", size: keyof typeof SIZES = "md") =>
+  `inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-[background-color,border-color,transform] duration-150 disabled:cursor-not-allowed disabled:opacity-55 ${SIZES[size]} ${VARIANTS[variant]}`;
+
+export function Button({
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: keyof typeof SIZES }) {
+  return <button {...props} className={`${buttonClasses(variant, size)} ${className}`} />;
+}
+
+/** A link styled as a button (navigation, not an action). */
+export function ButtonLink({ variant = "primary", size = "md", className = "", ...props }: LinkProps & { variant?: Variant; size?: keyof typeof SIZES }) {
+  return <Link {...props} className={`${buttonClasses(variant, size)} ${className}`} />;
 }
 
 export function Field({ label, hint, children, className = "" }: { label: string; hint?: string; children: ReactNode; className?: string }) {
   return (
-    <label className={`block text-sm text-gray-300 ${className}`}>
-      <span className="mb-1 block font-medium text-gray-200">{label}</span>
+    <label className={`block ${className}`}>
+      <span className="mb-1.5 block text-sm font-semibold text-ink">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-gray-400">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-sm text-ink-muted">{hint}</span>}
     </label>
   );
 }
@@ -49,55 +79,76 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-white md:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-gray-300">{subtitle}</p>}
+        <h1 className="text-2xl sm:text-3xl">{title}</h1>
+        {subtitle && <p className="mt-1.5 max-w-prose text-ink-muted">{subtitle}</p>}
       </div>
       {action}
     </div>
   );
 }
 
-const BADGE: Record<Classification, string> = {
-  normal: "bg-emerald-500/20 text-emerald-300",
-  borderline: "bg-yellow-500/20 text-yellow-300",
-  high: "bg-orange-500/20 text-orange-300",
-  low: "bg-sky-500/20 text-sky-300",
-  critical: "bg-red-600 text-white",
-};
-const BADGE_TEXT: Record<Classification, string> = {
-  normal: "Normal",
-  borderline: "Borderline",
-  high: "High",
-  low: "Low",
-  critical: "Emergency range",
+const STATUS: Record<Classification, { cls: string; text: string }> = {
+  normal: { cls: "bg-status-normal-bg text-status-normal", text: "Normal" },
+  borderline: { cls: "bg-status-borderline-bg text-status-borderline", text: "Borderline" },
+  high: { cls: "bg-status-high-bg text-status-high", text: "High" },
+  low: { cls: "bg-status-low-bg text-status-low", text: "Low" },
+  critical: { cls: "bg-danger text-white", text: "Emergency range" },
 };
 
+/** Classification chip. Always a word as well as a colour. */
 export function StatusBadge({ value }: { value: Classification | null | undefined }) {
   if (!value) return null;
-  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[value]}`}>{BADGE_TEXT[value]}</span>;
+  const s = STATUS[value];
+  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-semibold ${s.cls}`}>{s.text}</span>;
 }
 
 export function EmptyState({ icon, title, body, action }: { icon: ReactNode; title: string; body: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <div className="text-red-500">{icon}</div>
-      <p className="text-lg font-medium text-white">{title}</p>
-      <p className="max-w-md text-gray-400">{body}</p>
-      {action}
+    <div className="flex flex-col items-start gap-2 py-6">
+      <div className="text-ink-faint">{icon}</div>
+      <p className="font-semibold text-ink">{title}</p>
+      <p className="max-w-prose text-ink-muted">{body}</p>
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
 
 export function ErrorText({ error }: { error: unknown }) {
   if (!error) return null;
-  const message = error instanceof Error ? error.message : "Something went wrong.";
+  const message = error instanceof Error ? error.message : "Something went wrong. Try again.";
   return (
-    <p role="alert" className="mt-3 text-sm text-red-400">
+    <p role="alert" className="mt-3 text-sm font-semibold text-danger">
       {message}
     </p>
   );
 }
 
-export function Loading({ label = "Loading…" }: { label?: string }) {
-  return <p className="py-6 text-gray-400">{label}</p>;
+export function Notice({ tone = "info", children }: { tone?: "info" | "success"; children: ReactNode }) {
+  const cls = tone === "success" ? "bg-status-normal-bg text-status-normal" : "bg-action-soft text-ink";
+  return (
+    <p role="status" className={`rounded-control px-3.5 py-2.5 text-sm font-semibold ${cls}`}>
+      {children}
+    </p>
+  );
+}
+
+/** Skeleton lines while data loads (no spinners in the middle of content). */
+export function Loading({ label = "Loading", lines = 3 }: { label?: string; lines?: number }) {
+  return (
+    <div role="status" aria-label={label} className="space-y-3 py-2">
+      {Array.from({ length: lines }, (_, i) => (
+        <div key={i} className="h-4 animate-pulse rounded bg-well" style={{ width: `${90 - i * 18}%` }} />
+      ))}
+    </div>
+  );
+}
+
+/** Small label + value pair used in chart tables. */
+export function Datum({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-sm text-ink-muted">{label}</dt>
+      <dd className="figures text-ink">{children}</dd>
+    </div>
+  );
 }

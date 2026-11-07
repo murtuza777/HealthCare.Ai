@@ -16,6 +16,13 @@ export function formatReading(v: { type: VitalType; value: number; value2: numbe
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/** "2026-11-05" → "5 Nov 2026" in the user's locale, without shifting the day across time zones. */
+export function formatDay(isoDate: string) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  if (!y || !m || !d) return isoDate;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
 /** Today's date in the user's local time zone (YYYY-MM-DD). Not toISOString(), which is UTC. */
 export function localDate(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
