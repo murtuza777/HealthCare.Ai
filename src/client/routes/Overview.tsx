@@ -1,117 +1,118 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { Activity, CheckCircle2, Droplet, HeartPulse, Pill, Scale, Stethoscope, UserPlus } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { CircleCheck, CircleDashed, CircleAlert, Pill, Plus, Stethoscope } from "lucide-react";
 import { ageFrom, riskFactors, type RiskFactorStatus } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
 import { useLatestVitals, useMedications, useProfile, useSymptoms, useVitals } from "../lib/queries";
-import { formatReading, timeAgo } from "../lib/format";
-import { Button, Card, EmptyState, Loading, StatusBadge } from "../components/ui";
+import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
+import { ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 
-// Ported from legacy/app/components/PatientOverview.tsx. Changes: no made-up default values
-// (the old screen showed 75 bpm / 120/80 when there was no data); risk is a list of recognized
-// factors instead of an invented point score.
+// The overview answers one question first: "are my latest readings OK?" Readings are a chart
+// table, not a grid of identical cards. No made-up defaults when data is missing.
 
-const CARDS: { type: VitalType; title: string; icon: LucideIcon; accent: string }[] = [
-  { type: "heart_rate", title: "Heart rate", icon: HeartPulse, accent: "text-red-400" },
-  { type: "blood_pressure", title: "Blood pressure", icon: Activity, accent: "text-blue-400" },
-  { type: "glucose", title: "Glucose", icon: Droplet, accent: "text-amber-400" },
-  { type: "weight", title: "Weight", icon: Scale, accent: "text-emerald-400" },
-];
+const ROWS: VitalType[] = ["blood_pressure", "heart_rate", "spo2", "glucose", "weight"];
+
+function greeting(d = new Date()) {
+  const h = d.getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
 
 export function Overview() {
   const profile = useProfile();
   const latest = useLatestVitals();
   const toast = useToastFromNavigation();
 
-  if (profile.isPending || latest.isPending) return <Loading label="Loading your health data…" />;
+  if (profile.isPending || latest.isPending) return <Loading label="Loading your record" lines={5} />;
 
   const p = profile.data;
   const l = latest.data ?? {};
   const age = ageFrom(p?.dateOfBirth);
+  const first = p?.name?.split(" ")[0];
+  const facts = [age !== null && `Age ${age}`, p?.heightCm && `${p.heightCm} cm`, l.weight && `${l.weight.value} kg`].filter(Boolean) as string[];
 
   return (
     <div className="space-y-6">
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            role="status"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-900/40 px-4 py-3 text-emerald-200"
-          >
-            <CheckCircle2 className="h-5 w-5" aria-hidden="true" /> {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {toast && <Notice tone="success">{toast}</Notice>}
 
-      {!p?.onboardedAt ? (
-        <Card>
-          <EmptyState
-            icon={<UserPlus className="h-14 w-14" />}
-            title="Welcome to your health profile"
-            body="Add a few details about you and your heart history. It takes about two minutes and makes every reading and recommendation more useful."
-            action={
-              <Link to="/app/profile">
-                <Button>Set up profile</Button>
-              </Link>
-            }
-          />
-        </Card>
-      ) : (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{p.name}</h1>
-            <p className="text-gray-300">
-              {[age !== null && `Age ${age}`, p.heightCm && `${p.heightCm} cm`, l.weight && `${l.weight.value} kg`].filter(Boolean).join(" · ") ||
-                "Add your date of birth and height in your profile."}
-            </p>
-          </div>
-          <Link to="/app/profile">
-            <Button variant="secondary">Update details</Button>
-          </Link>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl">
+            {greeting()}
+            {first ? `, ${first}` : ""}
+          </h1>
+          <p className="mt-1 text-ink-muted">
+            {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
+            {facts.length > 0 && <span className="ml-3 hidden sm:inline">{facts.join(", ")}</span>}
+          </p>
         </div>
+        <ButtonLink to="/app/vitals">
+          <Plus className="h-5 w-5" aria-hidden="true" /> Log a reading
+        </ButtonLink>
+      </div>
+
+      {!p?.onboardedAt && (
+        <Card className="border-action/30 bg-action-soft shadow-none">
+          <h2 className="text-lg">Finish setting up your profile</h2>
+          <p className="mt-1 max-w-prose text-ink-muted">
+            Your age, heart history and medicines make every reading's check more accurate. It takes about two minutes.
+          </p>
+          <ButtonLink to="/app/profile" className="mt-4">
+            Set up profile
+          </ButtonLink>
+        </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {CARDS.map(({ type, title, icon: Icon, accent }, i) => {
-          const v = l[type];
-          return (
-            <Card key={type} delay={i * 0.05} className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-white/10 p-2">
-                  <Icon className={`h-6 w-6 ${accent}`} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-300">{title}</p>
+      <Card flush>
+        <div className="px-5 pt-5 sm:px-6 sm:pt-6">
+          <SheetHeader title="Latest readings" />
+        </div>
+        <table className="w-full border-collapse text-left">
+          <thead className="hidden border-y border-line bg-well text-sm text-ink-muted sm:table-header-group">
+            <tr>
+              <th scope="col" className="px-6 py-2.5 font-semibold">Measure</th>
+              <th scope="col" className="px-3 py-2.5 font-semibold">Reading</th>
+              <th scope="col" className="px-3 py-2.5 font-semibold">Status</th>
+              <th scope="col" className="px-6 py-2.5 text-right font-semibold">Taken</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line border-t border-line sm:border-t-0">
+            {ROWS.map((type) => {
+              const v = l[type];
+              return (
+                <tr key={type} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 px-5 py-4 sm:table-row sm:p-0">
+                  <th scope="row" className="font-semibold text-ink sm:px-6 sm:py-4">
+                    {VITAL_LABELS[type]}
+                  </th>
                   {v ? (
                     <>
-                      <p className="text-2xl font-semibold tabular-nums">{formatReading(v)}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                        <StatusBadge value={v.classification} /> {timeAgo(v.measuredAt)}
-                      </div>
+                      <td className="figures row-start-2 text-2xl font-bold sm:px-3 sm:py-4">{formatReading(v)}</td>
+                      <td className="text-right sm:px-3 sm:py-4 sm:text-left">
+                        <StatusBadge value={v.classification} />
+                      </td>
+                      <td className="row-start-2 self-center text-right text-sm text-ink-muted sm:px-6 sm:py-4">{timeAgo(v.measuredAt)}</td>
                     </>
                   ) : (
-                    <Link to="/app/vitals" className="mt-1 inline-block text-sm text-red-400 hover:text-red-300">
-                      No reading yet. Log one
-                    </Link>
+                    <td colSpan={3} className="text-right text-ink-muted sm:px-3 sm:py-4 sm:text-left">
+                      <span className="mr-3">Not recorded yet</span>
+                      <Link to="/app/vitals" className="font-semibold text-action hover:underline">
+                        Log it
+                      </Link>
+                    </td>
                   )}
-                </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <TrendCard type="blood_pressure" title="Blood pressure trend" unit="mmHg" dual />
         <TrendCard type="heart_rate" title="Heart rate trend" unit="bpm" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
         <RiskCard profile={p ?? null} latest={l} />
         <div className="space-y-6">
           <MedicationsCard />
@@ -126,16 +127,16 @@ function TrendCard({ type, title, unit, dual }: { type: VitalType; title: string
   const { data, isPending } = useVitals(type, 30);
   return (
     <Card>
-      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+      <SheetHeader title={title} description="Last 30 readings" />
       {isPending ? <Loading /> : <TrendChart points={data ?? []} unit={unit} dual={dual} />}
     </Card>
   );
 }
 
-const STATUS_STYLE: Record<RiskFactorStatus, { dot: string; text: string }> = {
-  present: { dot: "bg-orange-400", text: "Present" },
-  absent: { dot: "bg-emerald-400", text: "Not present" },
-  unknown: { dot: "bg-gray-500", text: "Not recorded" },
+const RISK: Record<RiskFactorStatus, { icon: typeof CircleCheck; cls: string; text: string }> = {
+  present: { icon: CircleAlert, cls: "text-status-high", text: "Present" },
+  absent: { icon: CircleCheck, cls: "text-status-normal", text: "Not present" },
+  unknown: { icon: CircleDashed, cls: "text-ink-faint", text: "Not recorded" },
 };
 
 function RiskCard({ profile, latest }: { profile: Parameters<typeof riskFactors>[0]; latest: Parameters<typeof riskFactors>[1] }) {
@@ -144,23 +145,27 @@ function RiskCard({ profile, latest }: { profile: Parameters<typeof riskFactors>
   const unknown = factors.filter((f) => f.status === "unknown").length;
   return (
     <Card>
-      <h2 className="text-lg font-semibold">Heart risk factors</h2>
-      <p className="mt-1 text-sm text-gray-300">
-        {present === 0 ? "No known risk factors recorded." : `${present} of ${factors.length} recognized risk factors present.`}
-        {unknown > 0 && ` ${unknown} not recorded yet.`} This is a checklist, not a diagnosis. Discuss it with your doctor.
-      </p>
-      <ul className="mt-4 divide-y divide-white/10">
-        {factors.map((f) => (
-          <li key={f.id} className="flex items-start gap-3 py-2">
-            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_STYLE[f.status].dot}`} aria-hidden="true" />
-            <div>
-              <p className="font-medium">
-                {f.label} <span className="text-xs font-normal text-gray-400">· {STATUS_STYLE[f.status].text}</span>
-              </p>
-              <p className="text-sm text-gray-400">{f.detail}</p>
-            </div>
-          </li>
-        ))}
+      <SheetHeader
+        title="Heart risk factors"
+        description={`${present} of ${factors.length} present${unknown ? `, ${unknown} not recorded` : ""}. A checklist to discuss with your doctor, not a diagnosis.`}
+      />
+      <ul className="divide-y divide-line border-t border-line">
+        {factors.map((f) => {
+          const r = RISK[f.status];
+          const Icon = r.icon;
+          return (
+            <li key={f.id} className="flex items-start gap-3 py-3">
+              <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${r.cls}`} aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span className="font-semibold">{f.label}</span>
+                  <span className={`text-sm font-semibold ${r.cls}`}>{r.text}</span>
+                </p>
+                <p className="text-sm text-ink-muted">{f.detail}</p>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );
@@ -170,25 +175,34 @@ function MedicationsCard() {
   const { data, isPending } = useMedications();
   return (
     <Card>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Current medications</h2>
-        <Link to="/app/medications" className="text-sm text-red-400 hover:text-red-300">
-          Manage
-        </Link>
-      </div>
+      <SheetHeader
+        title="Medicines"
+        action={
+          <Link to="/app/medications" className="font-semibold text-action hover:underline">
+            Manage
+          </Link>
+        }
+      />
       {isPending ? (
-        <Loading />
+        <Loading lines={2} />
       ) : !data?.length ? (
-        <p className="text-gray-400">No medications added.</p>
+        <p className="text-ink-muted">
+          No medicines added.{" "}
+          <Link to="/app/medications" className="font-semibold text-action hover:underline">
+            Add your first
+          </Link>
+        </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-line border-t border-line">
           {data.slice(0, 5).map((m) => (
-            <li key={m.id} className="flex items-center gap-3">
-              <Pill className="h-4 w-4 text-red-400" aria-hidden="true" />
-              <span className="font-medium">{m.name}</span>
-              <span className="text-sm text-gray-400">
-                {m.dose} · {m.schedule.times.join(", ")}
+            <li key={m.id} className="flex items-center justify-between gap-3 py-3">
+              <span className="flex items-center gap-3">
+                <Pill className="h-5 w-5 text-ink-faint" aria-hidden="true" />
+                <span>
+                  <span className="font-semibold">{m.name}</span> <span className="text-ink-muted">{m.dose}</span>
+                </span>
               </span>
+              <span className="figures text-ink-muted">{m.schedule.times.join(", ")}</span>
             </li>
           ))}
         </ul>
@@ -201,24 +215,28 @@ function SymptomsCard() {
   const { data, isPending } = useSymptoms();
   return (
     <Card>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Recent symptoms</h2>
-        <Link to="/app/symptoms" className="text-sm text-red-400 hover:text-red-300">
-          Log symptom
-        </Link>
-      </div>
+      <SheetHeader
+        title="Recent symptoms"
+        action={
+          <Link to="/app/symptoms" className="font-semibold text-action hover:underline">
+            Log a symptom
+          </Link>
+        }
+      />
       {isPending ? (
-        <Loading />
+        <Loading lines={2} />
       ) : !data?.length ? (
-        <p className="text-gray-400">No symptoms logged.</p>
+        <p className="text-ink-muted">Nothing logged. Note anything unusual, even if it passed.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-line border-t border-line">
           {data.slice(0, 3).map((s) => (
-            <li key={s.id} className="flex items-center gap-3">
-              <Stethoscope className="h-4 w-4 text-red-400" aria-hidden="true" />
-              <span className="font-medium capitalize">{s.type}</span>
-              <span className="text-sm text-gray-400">
-                severity {s.severity}/10 · {timeAgo(s.occurredAt)}
+            <li key={s.id} className="flex items-center justify-between gap-3 py-3">
+              <span className="flex items-center gap-3">
+                <Stethoscope className="h-5 w-5 text-ink-faint" aria-hidden="true" />
+                <span className="font-semibold first-letter:uppercase">{s.type}</span>
+              </span>
+              <span className="text-sm text-ink-muted">
+                <span className="figures">{s.severity}/10</span>, {timeAgo(s.occurredAt)}
               </span>
             </li>
           ))}
@@ -239,10 +257,9 @@ function useToastFromNavigation() {
     if (!incoming) return;
     navigate(location.pathname, { replace: true, state: null });
   }, [incoming, navigate, location.pathname]);
-  // Hide after a few seconds (separate effect, so clearing the state above doesn't cancel it).
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
+    const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [toast]);
   return toast;

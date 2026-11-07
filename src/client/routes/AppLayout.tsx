@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Siren } from "lucide-react";
+import { Activity, FileText, LayoutGrid, LogOut, Pill, Siren, Stethoscope, UserRound } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { authClient, useSession } from "../lib/auth-client";
 import { useProfile } from "../lib/queries";
 import { EmergencyDialog } from "../components/EmergencyDialog";
+import { HeartMark } from "../components/Shell";
+import { Loading } from "../components/ui";
 
-// Ported from legacy/app/dashboard/page.tsx: same header, pill navigation and glass styling,
-// but each tab is a real route (shareable URLs, back button works).
+// Operate surface. Top bar with tabs on wide screens; a bottom tab bar on phones (the pattern
+// patients already know). Emergency is one tap away everywhere and is the only red control.
 
-const NAV = [
-  { to: "/app", label: "Overview", end: true },
-  { to: "/app/vitals", label: "Vitals" },
-  { to: "/app/medications", label: "Medications" },
-  { to: "/app/symptoms", label: "Symptoms" },
-  { to: "/app/reports", label: "Reports" },
-  { to: "/app/profile", label: "Profile" },
+const NAV: { to: string; label: string; short: string; icon: LucideIcon; end?: boolean }[] = [
+  { to: "/app", label: "Overview", short: "Overview", icon: LayoutGrid, end: true },
+  { to: "/app/vitals", label: "Readings", short: "Readings", icon: Activity },
+  { to: "/app/medications", label: "Medicines", short: "Medicines", icon: Pill },
+  { to: "/app/symptoms", label: "Symptoms", short: "Symptoms", icon: Stethoscope },
+  { to: "/app/reports", label: "Reports", short: "Reports", icon: FileText },
 ];
 
 export function AppLayout() {
@@ -28,9 +29,9 @@ export function AppLayout() {
 
   if (isPending) {
     return (
-      <Background>
-        <p className="p-8 text-gray-400">Loading…</p>
-      </Background>
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        <Loading label="Opening your record" />
+      </div>
     );
   }
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
@@ -42,93 +43,100 @@ export function AppLayout() {
   }
 
   return (
-    <Background>
-      <header className="sticky top-0 z-40 bg-black/30 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/app" className="text-xl font-bold text-white">
-            Healthcare<span className="text-red-600">.AI</span>
+    <div className="min-h-screen bg-ground pb-24 md:pb-0">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-sheet focus:px-4 focus:py-2 focus:shadow-lift">
+        Skip to content
+      </a>
+      <header className="sticky top-0 z-30 border-b border-line bg-sheet/95 backdrop-blur supports-[backdrop-filter]:bg-sheet/85">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
+          <Link to="/app" className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
+            <HeartMark />
+            <span className="hidden sm:inline">Healthcare.AI</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Welcome fallback={session.user.email} />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+
+          <nav aria-label="Sections" className="hidden h-full md:flex">
+            <ul className="flex h-full">
+              {NAV.map((item) => (
+                <li key={item.to} className="h-full">
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `relative flex h-full items-center px-3 font-semibold transition-colors ${
+                        isActive
+                          ? "text-ink after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t after:bg-action"
+                          : "text-ink-muted hover:text-ink"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            <button
               onClick={() => setEmergencyOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 font-medium text-white shadow-md"
+              className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control bg-danger px-3.5 font-semibold text-white transition-colors hover:bg-danger-hover"
             >
               <Siren className="h-4 w-4" aria-hidden="true" /> Emergency
-            </motion.button>
-            <button onClick={signOut} className="px-2 py-2 text-gray-200 transition-colors hover:text-white">
-              Sign out
+            </button>
+            <NavLink
+              to="/app/profile"
+              className={({ isActive }) =>
+                `inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control px-2.5 font-semibold transition-colors ${isActive ? "bg-action-soft text-ink" : "text-ink-muted hover:bg-well hover:text-ink"}`
+              }
+            >
+              <UserRound className="h-5 w-5" aria-hidden="true" />
+              <span className="hidden lg:inline">
+                <AccountName fallback={session.user.email} />
+              </span>
+              <span className="sr-only lg:hidden">Profile</span>
+            </NavLink>
+            <button onClick={signOut} className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control px-2.5 font-semibold text-ink-muted transition-colors hover:bg-well hover:text-ink">
+              <LogOut className="h-5 w-5" aria-hidden="true" />
+              <span className="hidden sm:inline">Sign out</span>
+              <span className="sr-only sm:hidden">Sign out</span>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <nav aria-label="Sections" className="overflow-x-auto rounded-full bg-black/20 p-1 backdrop-blur-md">
-          <ul className="flex min-w-max justify-center gap-1">
-            {NAV.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `relative block whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${isActive ? "text-white" : "text-gray-300 hover:text-white"}`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <motion.span layoutId="tabIndicator" className="absolute inset-0 -z-10 rounded-full bg-red-600" />
-                      )}
-                      {item.label}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
-
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main" className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <Outlet />
       </main>
 
+      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-sheet pb-[env(safe-area-inset-bottom)] md:hidden">
+        <ul className="grid grid-cols-5">
+          {NAV.map(({ to, short, icon: Icon, end }) => (
+            <li key={to}>
+              <NavLink
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${isActive ? "text-action" : "text-ink-muted"}`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <Icon className="h-6 w-6" strokeWidth={isActive ? 2.4 : 1.9} aria-hidden="true" />
+                    {short}
+                  </>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       <EmergencyDialog open={emergencyOpen} onClose={() => setEmergencyOpen(false)} />
-    </Background>
-  );
-}
-
-function Welcome({ fallback }: { fallback: string }) {
-  const { data: profile } = useProfile();
-  const name = profile?.name?.trim() || fallback.split("@")[0];
-  return <span className="hidden text-gray-100 md:inline">Welcome, {name}</span>;
-}
-
-/** Ported from the legacy HealthAnimatedBackground: dark gradient with a slow ECG trace. */
-function Background({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative min-h-screen text-white">
-      <div className="fixed inset-0 -z-20 bg-gradient-to-br from-black via-gray-900 to-blue-950" aria-hidden="true" />
-      <svg
-        className="fixed inset-0 -z-10 h-full w-full opacity-20"
-        viewBox="0 0 1920 1080"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-      >
-        <motion.path
-          d="M0,540 L320,540 L340,400 L360,680 L380,400 L400,680 L420,540 L960,540 L980,440 L1000,640 L1020,540 L1920,540"
-          fill="none"
-          stroke="#ff3333"
-          strokeWidth="4"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: [0, 1] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        />
-      </svg>
-      {children}
     </div>
   );
+}
+
+function AccountName({ fallback }: { fallback: string }) {
+  const { data: profile } = useProfile();
+  return <>{profile?.name?.trim() || fallback.split("@")[0]}</>;
 }

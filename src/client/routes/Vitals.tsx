@@ -13,7 +13,7 @@ export function Vitals() {
   const [type, setType] = useState<VitalType>("blood_pressure");
   return (
     <div className="space-y-6">
-      <PageHeader title="Vitals" subtitle="Log a reading and see how it changes over time." />
+      <PageHeader title="Readings" subtitle="Log a reading and see how it changes over time." />
       <LogReading type={type} onTypeChange={setType} />
       <History type={type} />
     </div>
@@ -58,7 +58,7 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
           <Field label="Type">
             <select value={type} onChange={(e) => onTypeChange(e.target.value as VitalType)} className={inputClass}>
               {TYPES.map((t) => (
-                <option key={t} value={t} className="bg-gray-900">
+                <option key={t} value={t}>
                   {VITAL_LABELS[t]}
                 </option>
               ))}
@@ -81,7 +81,7 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
             {add.isPending ? "Saving…" : "Save reading"}
           </Button>
         </form>
-        <div className="mt-3 flex items-center gap-2 text-sm text-gray-400">
+        <div className="mt-3 flex items-center gap-2 text-sm text-ink-muted">
           {preview && (
             <>
               This reading looks: <StatusBadge value={preview} />
@@ -112,7 +112,7 @@ function History({ type }: { type: VitalType }) {
         <ul className="max-h-80 divide-y divide-white/10 overflow-y-auto">
           {data?.map((v) => (
             <li key={v.id} className="flex items-center justify-between gap-4 py-2">
-              <span className="text-sm text-gray-400">{new Date(v.measuredAt).toLocaleString()}</span>
+              <span className="text-sm text-ink-muted">{new Date(v.measuredAt).toLocaleString()}</span>
               <span className="flex items-center gap-3">
                 <span className="tabular-nums">{formatReading(v)}</span>
                 <StatusBadge value={v.classification} />

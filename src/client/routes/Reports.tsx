@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { Download, Eye, FileText, FolderOpen, QrCode, Search, Trash2, Upload, X } from "lucide-react";
 import { ALLOWED_MIME, MAX_REPORT_BYTES, REPORT_TYPES } from "../../shared/reports";
 import { reportFileUrl, useDeleteReport, useReports, useUploadReport, type Report } from "../lib/queries";
-import { localDate } from "../lib/format";
+import { localDate, formatDay } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 
 // Ported from legacy/app/reports/{add,gallery}. Files go to a private R2 bucket and are only
@@ -90,7 +90,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
     <Card>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Upload a report</h2>
-        <button onClick={onDone} aria-label="Cancel upload" className="text-gray-400 hover:text-white">
+        <button onClick={onDone} aria-label="Cancel upload" className="font-semibold text-action hover:underline">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -103,24 +103,24 @@ function UploadReport({ onDone }: { onDone: () => void }) {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-            dragging ? "border-red-500 bg-red-500/10" : "border-white/20 hover:border-white/40"
+            dragging ? "border-action bg-action-soft" : "border-line-strong bg-well hover:border-ink-faint"
           }`}
         >
-          <Upload className="h-8 w-8 text-red-400" aria-hidden="true" />
+          <Upload className="h-8 w-8 text-action" aria-hidden="true" />
           {file ? (
             <span className="font-medium">
-              {file.name} <span className="text-gray-400">({fmtSize(file.size)})</span>
+              {file.name} <span className="text-ink-muted">({fmtSize(file.size)})</span>
             </span>
           ) : (
             <span>
-              <span className="font-medium text-white">Choose a file</span> or drag it here
+              <span className="font-semibold text-ink">Choose a file</span> or drag it here
             </span>
           )}
-          <span className="text-xs text-gray-400">PDF, JPEG, PNG or WebP, up to 10 MB</span>
+          <span className="text-xs text-ink-muted">PDF, JPEG, PNG or WebP, up to 10 MB</span>
           <input type="file" accept={ALLOWED_MIME.join(",")} className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
         </label>
         {fileError && (
-          <p role="alert" className="text-sm text-red-400">
+          <p role="alert" className="text-sm font-semibold text-danger">
             {fileError}
           </p>
         )}
@@ -131,7 +131,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
           <Field label="Category">
             <select className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
               {REPORT_TYPES.map((t) => (
-                <option key={t} value={t} className="bg-gray-900">
+                <option key={t} value={t}>
                   {t}
                 </option>
               ))}
@@ -183,14 +183,14 @@ function Gallery({ onUpload }: { onUpload: () => void }) {
       <div className="mb-4 flex flex-wrap gap-3">
         <label className="relative min-w-48 flex-1">
           <span className="sr-only">Search reports</span>
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" aria-hidden="true" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-ink-muted" aria-hidden="true" />
           <input className={`${inputClass} pl-9`} placeholder="Search reports…" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
         <label>
           <span className="sr-only">Category</span>
           <select className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
             {["All", ...REPORT_TYPES].map((t) => (
-              <option key={t} value={t} className="bg-gray-900">
+              <option key={t} value={t}>
                 {t === "All" ? "All categories" : t}
               </option>
             ))}
@@ -207,7 +207,7 @@ function Gallery({ onUpload }: { onUpload: () => void }) {
           action={<Button onClick={onUpload}>Upload your first report</Button>}
         />
       )}
-      {data && data.length > 0 && filtered.length === 0 && <p className="py-6 text-center text-gray-400">No reports match your search.</p>}
+      {data && data.length > 0 && filtered.length === 0 && <p className="py-6 text-center text-ink-muted">No reports match your search.</p>}
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((r) => (
           <ReportCard key={r.id} r={r} />
@@ -221,30 +221,30 @@ function ReportCard({ r }: { r: Report }) {
   const del = useDeleteReport();
   const isImage = r.mime.startsWith("image/");
   return (
-    <li className="flex flex-col overflow-hidden rounded-xl border border-white/10 bg-black/20">
-      <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="flex h-36 items-center justify-center bg-white/5">
+    <li className="flex flex-col overflow-hidden rounded-sheet border border-line bg-sheet shadow-sheet">
+      <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="flex h-36 items-center justify-center border-b border-line bg-well">
         {isImage ? (
           <img src={reportFileUrl(r.id)} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <FileText className="h-12 w-12 text-red-400" aria-hidden="true" />
+          <FileText className="h-12 w-12 text-ink-faint" aria-hidden="true" />
         )}
       </a>
       <div className="flex flex-1 flex-col gap-1 p-4">
         <p className="font-medium">{r.title}</p>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-ink-muted">
           {r.type}
-          {r.reportDate && ` · ${r.reportDate}`} · {fmtSize(r.size)}
+          {r.reportDate && `, ${formatDay(r.reportDate)}`}. {fmtSize(r.size)}
         </p>
-        {(r.doctor || r.facility) && <p className="text-sm text-gray-400">{[r.doctor, r.facility].filter(Boolean).join(", ")}</p>}
+        {(r.doctor || r.facility) && <p className="text-sm text-ink-muted">{[r.doctor, r.facility].filter(Boolean).join(", ")}</p>}
         <div className="mt-auto flex gap-2 pt-3">
-          <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-sm hover:bg-white/20">
+          <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
             <Eye className="h-4 w-4" aria-hidden="true" /> View
           </a>
-          <a href={reportFileUrl(r.id, true)} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-sm hover:bg-white/20">
+          <a href={reportFileUrl(r.id, true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
             <Download className="h-4 w-4" aria-hidden="true" /> Download
           </a>
           <Button
-            variant="danger"
+            variant="danger-quiet"
             className="ml-auto px-3 py-1.5"
             aria-label={`Delete ${r.title}`}
             disabled={del.isPending}

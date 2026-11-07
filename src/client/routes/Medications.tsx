@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Pill, Plus, Trash2, X } from "lucide-react";
 import { useAddMedication, useDeleteMedication, useMedications, useSetMedicationActive } from "../lib/queries";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
-import { localDate } from "../lib/format";
+import { localDate, formatDay } from "../lib/format";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const today = () => localDate();
@@ -15,12 +15,12 @@ export function Medications() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Medications"
-        subtitle="Keep your medicine list and schedule up to date. Reminders arrive in a later update."
+        title="Medicines"
+        subtitle="Keep your medicines, doses and times up to date. Reminders are coming in a later update."
         action={
           !adding && (
             <Button onClick={() => setAdding(true)}>
-              <Plus className="h-4 w-4" aria-hidden="true" /> Add medication
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add medicine
             </Button>
           )
         }
@@ -28,16 +28,16 @@ export function Medications() {
       {adding && <AddMedication onDone={() => setAdding(false)} />}
       <Card>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{showAll ? "All medications" : "Current medications"}</h2>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input type="checkbox" className="accent-red-600" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+          <h2 className="text-lg font-semibold">{showAll ? "All medicines" : "Current medicines"}</h2>
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            <input type="checkbox" className="accent-action" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             Show stopped
           </label>
         </div>
         {isPending && <Loading />}
         <ErrorText error={error} />
         {data?.length === 0 && (
-          <EmptyState icon={<Pill className="h-10 w-10" />} title="No medications yet" body="Add the medicines you take so your doctor, caretakers and the assistant have the full picture." />
+          <EmptyState icon={<Pill className="h-10 w-10" />} title="No medicines yet" body="Add the medicines you take so your doctor, caretakers and the assistant have the full picture." />
         )}
         <ul className="divide-y divide-white/10">
           {data?.map((m) => <MedicationRow key={m.id} m={m} />)}
@@ -54,18 +54,18 @@ function MedicationRow({ m }: { m: NonNullable<ReturnType<typeof useMedications>
   return (
     <li className={`flex flex-wrap items-center justify-between gap-3 py-3 ${m.active ? "" : "opacity-60"}`}>
       <div className="flex items-start gap-3">
-        <Pill className="mt-1 h-5 w-5 text-red-400" aria-hidden="true" />
+        <Pill className="mt-1 h-5 w-5 text-ink-faint" aria-hidden="true" />
         <div>
           <p className="font-medium">
-            {m.name} <span className="text-gray-400">{m.dose}</span>
-            {m.form && <span className="text-sm text-gray-500"> · {m.form}</span>}
-            {!m.active && <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">Stopped</span>}
+            {m.name} <span className="text-ink-muted">{m.dose}</span>
+            {m.form && <span className="text-sm text-ink-faint"> ({m.form.toLowerCase()})</span>}
+            {!m.active && <span className="ml-2 rounded-full bg-well px-2.5 py-0.5 text-sm font-semibold text-ink-muted">Stopped</span>}
           </p>
-          <p className="text-sm text-gray-400">
-            {m.schedule.times.join(", ")} · {days} · since {m.startDate}
-            {m.endDate && ` until ${m.endDate}`}
+          <p className="text-sm text-ink-muted">
+            <span className="figures">{m.schedule.times.join(", ")}</span>, {m.schedule.days?.length ? days : "every day"}, since {formatDay(m.startDate)}
+            {m.endDate && `, until ${formatDay(m.endDate)}`}
           </p>
-          {m.instructions && <p className="text-sm text-gray-400">{m.instructions}</p>}
+          {m.instructions && <p className="text-sm text-ink-muted">{m.instructions}</p>}
         </div>
       </div>
       <div className="flex gap-2">
@@ -73,7 +73,7 @@ function MedicationRow({ m }: { m: NonNullable<ReturnType<typeof useMedications>
           {m.active ? "Mark stopped" : "Resume"}
         </Button>
         <Button
-          variant="danger"
+          variant="danger-quiet"
           aria-label={`Delete ${m.name}`}
           disabled={del.isPending}
           onClick={() => {
@@ -118,8 +118,8 @@ function AddMedication({ onDone }: { onDone: () => void }) {
   return (
     <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Add a medication</h2>
-        <button onClick={onDone} aria-label="Cancel" className="text-gray-400 hover:text-white">
+        <h2 className="text-lg font-semibold">Add a medicine</h2>
+        <button onClick={onDone} aria-label="Cancel" className="font-semibold text-action hover:underline">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -137,7 +137,7 @@ function AddMedication({ onDone }: { onDone: () => void }) {
         </div>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-gray-200">Times</legend>
+          <legend className="mb-2 text-sm font-semibold text-ink">Times</legend>
           <div className="flex flex-wrap items-center gap-2">
             {times.map((t, i) => (
               <span key={i} className="flex items-center gap-1">
@@ -150,7 +150,7 @@ function AddMedication({ onDone }: { onDone: () => void }) {
                   onChange={(e) => setTimes(times.map((x, j) => (j === i ? e.target.value : x)))}
                 />
                 {times.length > 1 && (
-                  <button type="button" aria-label={`Remove time ${i + 1}`} onClick={() => setTimes(times.filter((_, j) => j !== i))} className="text-gray-400 hover:text-white">
+                  <button type="button" aria-label={`Remove time ${i + 1}`} onClick={() => setTimes(times.filter((_, j) => j !== i))} className="font-semibold text-action hover:underline">
                     <X className="h-4 w-4" />
                   </button>
                 )}
@@ -165,14 +165,14 @@ function AddMedication({ onDone }: { onDone: () => void }) {
         </fieldset>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-gray-200">Days</legend>
-          <label className="flex items-center gap-2 text-gray-200">
-            <input type="checkbox" className="accent-red-600" checked={everyDay} onChange={(e) => setEveryDay(e.target.checked)} /> Every day
+          <legend className="mb-2 text-sm font-semibold text-ink">Days</legend>
+          <label className="flex items-center gap-2 text-ink">
+            <input type="checkbox" className="accent-action" checked={everyDay} onChange={(e) => setEveryDay(e.target.checked)} /> Every day
           </label>
           {!everyDay && (
             <div className="mt-2 flex flex-wrap gap-2">
               {DAYS.map((d, i) => (
-                <label key={d} className={`cursor-pointer rounded-full px-3 py-1 text-sm ${days.includes(i) ? "bg-red-600" : "bg-white/10"}`}>
+                <label key={d} className={`cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${days.includes(i) ? "border border-action bg-action text-white" : "border border-line-strong bg-sheet text-ink hover:bg-well"}`}>
                   <input
                     type="checkbox"
                     className="sr-only"
@@ -204,7 +204,7 @@ function AddMedication({ onDone }: { onDone: () => void }) {
             Cancel
           </Button>
           <Button type="submit" disabled={add.isPending || (!everyDay && days.length === 0)}>
-            {add.isPending ? "Saving…" : "Save medication"}
+            {add.isPending ? "Saving…" : "Save medicine"}
           </Button>
         </div>
       </form>

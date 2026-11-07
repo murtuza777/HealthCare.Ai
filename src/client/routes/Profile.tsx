@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { useNavigate } from "react-router";
 import { COUNTRIES } from "../../shared/emergency";
@@ -179,20 +178,19 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
       <PageHeader title={profile ? "Update your health profile" : "Set up your health profile"} subtitle="This helps us check your readings and personalise guidance. Only you can see it unless you invite a caretaker." />
       <Card>
         <div className="mb-6">
-          <div className="mb-2 flex justify-between text-sm text-white">
+          <div className="mb-2 flex justify-between text-sm font-semibold text-ink-muted">
             <span>
               Step {step + 1} of {STEPS.length}: {STEPS[step]}
             </span>
             <span>{Math.round(((step + 1) / STEPS.length) * 100)}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white/10">
-            <motion.div className="h-full bg-gradient-to-r from-red-600 to-red-500" animate={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-well">
+            <div className="h-full rounded-full bg-action transition-[width] duration-300 ease-out" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
           </div>
         </div>
 
         <form onSubmit={submit} noValidate>
-          <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }} className="space-y-4">
+          <div key={step} className="space-y-5">
               {step === 0 && (
                 <>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -204,10 +202,10 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                     </Field>
                     <Field label="Sex" hint="Used for age-related risk thresholds.">
                       <select className={inputClass} value={f.sex} onChange={(e) => set("sex", e.target.value as Form["sex"])}>
-                        <option value="" className="bg-gray-900">Prefer not to say</option>
-                        <option value="female" className="bg-gray-900">Female</option>
-                        <option value="male" className="bg-gray-900">Male</option>
-                        <option value="other" className="bg-gray-900">Other</option>
+                        <option value="">Prefer not to say</option>
+                        <option value="female">Female</option>
+                        <option value="male">Male</option>
+                        <option value="other">Other</option>
                       </select>
                     </Field>
                     <Field label="Height (cm)">
@@ -215,9 +213,9 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                     </Field>
                     <Field label="Country" hint="Sets your local emergency number.">
                       <select className={inputClass} value={f.country} onChange={(e) => set("country", e.target.value)}>
-                        <option value="" className="bg-gray-900">Select…</option>
+                        <option value="">Select…</option>
                         {COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code} className="bg-gray-900">
+                          <option key={c.code} value={c.code}>
                             {c.name}
                           </option>
                         ))}
@@ -227,8 +225,8 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                       <input className={inputClass} value={f.timezone} onChange={(e) => set("timezone", e.target.value)} />
                     </Field>
                   </div>
-                  <fieldset className="rounded-lg border border-white/10 p-4">
-                    <legend className="px-1 text-sm font-medium text-gray-200">Emergency contact (optional)</legend>
+                  <fieldset className="rounded-sheet border border-line p-4">
+                    <legend className="px-1 text-sm font-semibold text-ink">Emergency contact (optional)</legend>
                     <div className="grid gap-4 sm:grid-cols-3">
                       <Field label="Name">
                         <input className={inputClass} value={f.contactName} onChange={(e) => set("contactName", e.target.value)} />
@@ -247,11 +245,11 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
               {step === 1 && (
                 <>
                   <fieldset>
-                    <legend className="mb-2 text-sm font-medium text-gray-200">Conditions you've been diagnosed with</legend>
+                    <legend className="mb-2 text-sm font-semibold text-ink">Conditions you've been diagnosed with</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {HEART_CONDITIONS.map((c) => (
-                        <label key={c} className="flex items-center gap-2 text-gray-200">
-                          <input type="checkbox" className="h-4 w-4 accent-red-600" checked={f.conditions.includes(c)} onChange={() => toggle("conditions", c)} />
+                        <label key={c} className="flex items-center gap-2 text-ink">
+                          <input type="checkbox" className="h-4 w-4 accent-action" checked={f.conditions.includes(c)} onChange={() => toggle("conditions", c)} />
                           {c}
                         </label>
                       ))}
@@ -260,8 +258,8 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                   <Field label="Other conditions" hint="Separate with commas.">
                     <input className={inputClass} value={f.otherConditions} onChange={(e) => set("otherConditions", e.target.value)} />
                   </Field>
-                  <label className="flex items-center gap-2 text-gray-200">
-                    <input type="checkbox" className="h-4 w-4 accent-red-600" checked={f.hadHeartAttack} onChange={(e) => set("hadHeartAttack", e.target.checked)} />
+                  <label className="flex items-center gap-2 text-ink">
+                    <input type="checkbox" className="h-4 w-4 accent-action" checked={f.hadHeartAttack} onChange={(e) => set("hadHeartAttack", e.target.checked)} />
                     I have had a heart attack
                   </label>
                   {f.hadHeartAttack && (
@@ -273,11 +271,11 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                     <input className={inputClass} value={f.allergies} onChange={(e) => set("allergies", e.target.value)} placeholder="Penicillin, peanuts" />
                   </Field>
                   <fieldset>
-                    <legend className="mb-2 text-sm font-medium text-gray-200">Close family (parents, siblings) with</legend>
+                    <legend className="mb-2 text-sm font-semibold text-ink">Close family (parents, siblings) with</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {FAMILY.map((c) => (
-                        <label key={c} className="flex items-center gap-2 text-gray-200">
-                          <input type="checkbox" className="h-4 w-4 accent-red-600" checked={f.family.includes(c)} onChange={() => toggle("family", c)} />
+                        <label key={c} className="flex items-center gap-2 text-ink">
+                          <input type="checkbox" className="h-4 w-4 accent-action" checked={f.family.includes(c)} onChange={() => toggle("family", c)} />
                           {c}
                         </label>
                       ))}
@@ -291,7 +289,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
 
               {step === 2 && (
                 <>
-                  <p className="text-sm text-gray-300">Optional. Anything you enter is saved as a reading taken now. You can skip this step.</p>
+                  <p className="text-sm text-ink-muted">Optional. Anything you enter is saved as a reading taken now. You can skip this step.</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Weight (kg)">
                       <input type="number" inputMode="decimal" className={inputClass} value={f.weight} onChange={(e) => set("weight", e.target.value)} />
@@ -317,36 +315,35 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
 
               {step === 3 && (
                 <>
-                  <label className="flex items-center gap-2 text-gray-200">
-                    <input type="checkbox" className="h-4 w-4 accent-red-600" checked={f.smoker} onChange={(e) => set("smoker", e.target.checked)} />
+                  <label className="flex items-center gap-2 text-ink">
+                    <input type="checkbox" className="h-4 w-4 accent-action" checked={f.smoker} onChange={(e) => set("smoker", e.target.checked)} />
                     I smoke or use tobacco
                   </label>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Alcohol">
                       <select className={inputClass} value={f.alcohol} onChange={(e) => set("alcohol", e.target.value as Form["alcohol"])}>
-                        <option value="none" className="bg-gray-900">None</option>
-                        <option value="light" className="bg-gray-900">Light (1–2 drinks a week)</option>
-                        <option value="moderate" className="bg-gray-900">Moderate (3–7 drinks a week)</option>
-                        <option value="heavy" className="bg-gray-900">Heavy (8+ drinks a week)</option>
+                        <option value="none">None</option>
+                        <option value="light">Light (1–2 drinks a week)</option>
+                        <option value="moderate">Moderate (3–7 drinks a week)</option>
+                        <option value="heavy">Heavy (8+ drinks a week)</option>
                       </select>
                     </Field>
                     <Field label={`Days a week with 30+ minutes of activity: ${f.exerciseDaysPerWeek}`}>
-                      <input type="range" min={0} max={7} className="w-full accent-red-600" value={f.exerciseDaysPerWeek} onChange={(e) => set("exerciseDaysPerWeek", e.target.value)} />
+                      <input type="range" min={0} max={7} className="w-full accent-action" value={f.exerciseDaysPerWeek} onChange={(e) => set("exerciseDaysPerWeek", e.target.value)} />
                     </Field>
                     <Field label="Typical diet" className="sm:col-span-2">
                       <input className={inputClass} value={f.diet} onChange={(e) => set("diet", e.target.value)} placeholder="Vegetarian, low salt…" />
                     </Field>
                     <Field label={`Stress level: ${f.stressLevel} of 10`} className="sm:col-span-2">
-                      <input type="range" min={1} max={10} className="w-full accent-red-600" value={f.stressLevel} onChange={(e) => set("stressLevel", e.target.value)} />
+                      <input type="range" min={1} max={10} className="w-full accent-action" value={f.stressLevel} onChange={(e) => set("stressLevel", e.target.value)} />
                     </Field>
                   </div>
                 </>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
 
           {stepError && (
-            <p role="alert" className="mt-4 text-sm text-red-400">
+            <p role="alert" className="mt-4 text-sm font-semibold text-danger">
               {stepError}
             </p>
           )}

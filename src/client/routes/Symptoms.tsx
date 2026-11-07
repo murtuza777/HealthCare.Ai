@@ -6,6 +6,8 @@ import { timeAgo } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { CriticalBanner } from "../components/CriticalBanner";
 
+const sentence = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
 const COMMON = SYMPTOM_TYPES.filter((t) => t !== "other");
 
 export function Symptoms() {
@@ -60,10 +62,10 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
       <form onSubmit={submit} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Main symptom">
-            <select className={`${inputClass} capitalize`} value={type} onChange={(e) => setType(e.target.value)}>
+            <select className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
               {SYMPTOM_TYPES.map((t) => (
-                <option key={t} value={t} className="bg-gray-900 capitalize">
-                  {t}
+                <option key={t} value={t}>
+                  {sentence(t)}
                 </option>
               ))}
             </select>
@@ -78,15 +80,15 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           </Field>
         </div>
         <Field label={`Severity: ${severity} of 10`}>
-          <input type="range" min={1} max={10} className="w-full accent-red-600" value={severity} onChange={(e) => setSeverity(Number(e.target.value))} />
+          <input type="range" min={1} max={10} className="w-full accent-action" value={severity} onChange={(e) => setSeverity(Number(e.target.value))} />
         </Field>
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-gray-200">Also feeling</legend>
+          <legend className="mb-2 text-sm font-semibold text-ink">Also feeling</legend>
           <div className="flex flex-wrap gap-2">
             {COMMON.filter((t) => t !== type).map((t) => (
-              <label key={t} className={`cursor-pointer rounded-full px-3 py-1 text-sm capitalize ${also.includes(t) ? "bg-red-600" : "bg-white/10 hover:bg-white/20"}`}>
+              <label key={t} className={`cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${also.includes(t) ? "border border-action bg-action text-white" : "border border-line-strong bg-sheet text-ink hover:bg-well"}`}>
                 <input type="checkbox" className="sr-only" checked={also.includes(t)} onChange={() => setAlso(also.includes(t) ? also.filter((x) => x !== t) : [...also, t])} />
-                {t}
+                {sentence(t)}
               </label>
             ))}
           </div>
@@ -95,7 +97,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           <textarea rows={2} className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What were you doing when it started?" />
         </Field>
         {livePreview?.emergency && (
-          <p role="alert" className="rounded-lg border border-red-500/50 bg-red-900/40 p-3 text-sm text-red-100">
+          <p role="alert" className="rounded-control bg-danger-soft p-3.5 text-sm font-semibold text-danger">
             {livePreview.reason} If this is happening now, use the Emergency button or call your local emergency number.
           </p>
         )}
@@ -123,18 +125,18 @@ function SymptomList() {
         {data?.map((s) => (
           <li key={s.id} className="flex items-start justify-between gap-3 py-3">
             <div>
-              <p className="font-medium capitalize">
-                {s.type} <span className="text-sm font-normal normal-case text-gray-400">· severity {s.severity}/10</span>
+              <p className="font-semibold first-letter:uppercase">
+                {s.type}, <span className="figures">severity {s.severity}/10</span>
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-ink-muted">
                 {new Date(s.occurredAt).toLocaleString()} ({timeAgo(s.occurredAt)})
-                {s.durationMin ? ` · ${s.durationMin} min` : ""}
+                {s.durationMin ? `, lasted ${s.durationMin} min` : ""}
               </p>
-              {s.accompaniedBy.length > 0 && <p className="text-sm capitalize text-gray-400">With: {s.accompaniedBy.join(", ")}</p>}
-              {s.note && <p className="text-sm text-gray-300">{s.note}</p>}
+              {s.accompaniedBy.length > 0 && <p className="text-sm text-ink-muted">Also: {s.accompaniedBy.join(", ")}</p>}
+              {s.note && <p className="text-sm text-ink-muted">{s.note}</p>}
             </div>
             <Button
-              variant="danger"
+              variant="danger-quiet"
               aria-label={`Delete ${s.type} entry`}
               disabled={del.isPending}
               onClick={() => {
