@@ -18,6 +18,7 @@ import { addVital, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
 import { listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
+import { audit } from "../dal/account";
 import { doseActionSchema } from "../../shared/doses";
 import { notFound, parse } from "../middleware/validate";
 import type { AppEnv } from "../types";
@@ -46,6 +47,15 @@ const VITAL_NAMES: Record<VitalType, string> = {
 const firstName = async (c: Context<AppEnv>, id: string) => (await patientNames(c.var.db, [id])).get(id)?.split(" ")[0] || "Your patient";
 
 export const patients = new Hono<AppEnv>()
+  // Log every successful read of a record by someone other than its owner (shown to the patient).
+  .use("/:patientId/*", async (c, next) => {
+    await next();
+    const id = patientId(c);
+    if (id !== c.var.actor.userId && c.res.ok && c.req.method === "GET") {
+      const entity = c.req.path.split("/").slice(5).join("/") || "record";
+      await audit(c.var.db, { actorId: c.var.actor.userId, subjectUserId: id, action: "caretaker.viewed", entity });
+    }
+  })
   .get("/:patientId/profile", async (c) => {
     const profile = await getProfile(c.var.db, c.var.actor, patientId(c));
     return c.json({ profile });

@@ -20,6 +20,7 @@ import {
   usageToday,
 } from "../dal/assistant";
 import { notFound, parse } from "../middleware/validate";
+import { consentStatus } from "../dal/account";
 import type { AppEnv } from "../types";
 
 const dailyLimit = (env: Env) => Number(env.AI_DAILY_LIMIT) || 25;
@@ -29,7 +30,8 @@ export const assistant = new Hono<AppEnv>()
   .get("/status", async (c) => {
     const used = await usageToday(c.var.db, c.var.actor);
     const limit = dailyLimit(c.env);
-    return c.json({ available: aiAvailable(c.env), limit, remaining: Math.max(0, limit - used) });
+    const consented = (await consentStatus(c.var.db, c.var.actor)).ai_processing;
+    return c.json({ available: aiAvailable(c.env), consented, limit, remaining: Math.max(0, limit - used) });
   })
   .get("/conversations", async (c) => {
     const items = await listConversations(c.var.db, c.var.actor);
@@ -74,6 +76,11 @@ export const assistant = new Hono<AppEnv>()
         const ctx = await buildPatientContext(db, actor);
         const reply = await addAssistantMessage(db, conversationId, emergencyReply(emergency, ctx.emergencyNumber));
         return c.json({ kind: "emergency" as const, conversationId, reason: emergency.reason, number: ctx.emergencyNumber, message: { id: reply.id, content: reply.content } });
+      }
+
+      // The patient must have agreed to their record being processed by the AI model.
+      if (!(await consentStatus(db, actor)).ai_processing) {
+        return c.json({ kind: "consent" as const, conversationId }, 403);
       }
 
       if (!aiAvailable(c.env)) {

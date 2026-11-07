@@ -9,6 +9,7 @@ import { patients } from "./routes/patients";
 import { assistant } from "./routes/assistant";
 import { push } from "./routes/push";
 import { care } from "./routes/care";
+import { account } from "./routes/account";
 import { CareError } from "./dal/care";
 import { publicRoutes } from "./routes/public";
 import { ShareError } from "./dal/shares";
@@ -60,7 +61,8 @@ const v1 = new Hono<AppEnv>()
   .route("/patients", patients)
   .route("/assistant", assistant)
   .route("/push", push)
-  .route("/care", care);
+  .route("/care", care)
+  .route("/account", account);
 
 const routes = app.route("/v1", v1).route("/public", publicRoutes);
 export type AppType = typeof routes;

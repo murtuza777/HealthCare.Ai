@@ -18,6 +18,7 @@ import { adherence, dosesForDay } from "../dal/doses";
 import { listMedications } from "../dal/medications";
 import { getProfile } from "../dal/profile";
 import { enqueue } from "../jobs/outbox";
+import { audit } from "../dal/account";
 import { listReports } from "../dal/reports";
 import { listSymptoms } from "../dal/symptoms";
 import { latestVitals, listVitals } from "../dal/vitals";
@@ -75,6 +76,7 @@ export const care = new Hono<AppEnv>()
     const link = (await listPatientsCaredFor(db, actor)).find((p) => p.patientId === patientId) ?? notFound();
     const can = (p: string) => link.permissions.includes(p as never);
     const profile = await getProfile(db, actor, patientId);
+    await audit(db, { actorId: actor.userId, subjectUserId: patientId, action: "caretaker.viewed", entity: "summary" });
 
     const [latest, bp, hr, symptoms, doses, week, meds, reports, alerts] = await Promise.all([
       can("vitals") ? latestVitals(db, actor, patientId) : null,

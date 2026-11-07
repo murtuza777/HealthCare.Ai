@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { emergencyInText } from "../src/shared/assistant";
 import { buildPatientContext } from "../src/worker/ai/context";
 import { takeQuota } from "../src/worker/dal/assistant";
-import { call, db, signIn, userId } from "./helpers";
+import { call, db, signIn as baseSignIn, userId } from "./helpers";
+
+// Assistant users have agreed to AI processing (tested separately below).
+async function signIn(email: string, ip: string) {
+  const cookie = await baseSignIn(email, ip);
+  await call("/api/v1/account/consents", { cookie, body: { kinds: ["ai_processing"] } });
+  return cookie;
+}
 
 describe("emergencyInText (rule-based, runs before any model)", () => {
   it.each([
@@ -74,6 +81,16 @@ describe("assistant API", () => {
     expect((await call("/api/v1/assistant/chat", { cookie: b, body: { conversationId: id, message: "hello" } })).status).toBe(404);
     expect((await call(`/api/v1/assistant/conversations/${id}`, { cookie: b, method: "DELETE" })).status).toBe(404);
     expect((await call(`/api/v1/assistant/conversations/${id}`, { cookie: a, method: "DELETE" })).status).toBe(200);
+  });
+
+  it("needs consent to AI processing, except for emergencies", async () => {
+    const cookie = await baseSignIn("assist-consent@example.com", "198.51.100.46");
+    expect((await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high?" } })).status).toBe(403);
+    expect((await call("/api/v1/assistant/chat", { cookie, body: { message: "I fainted this morning" } })).status).toBe(200);
+    await call("/api/v1/account/consents", { cookie, body: { kinds: ["ai_processing"] } });
+    const ok = await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high?" } });
+    expect(ok.status).toBe(200);
+    await ok.text();
   });
 
   it("stops at the daily limit", async () => {
