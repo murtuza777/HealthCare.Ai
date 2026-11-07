@@ -1,55 +1,11 @@
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
-import { desc, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import worker from "../src/worker";
-import { getDb } from "../src/worker/db/client";
-import { outbox } from "../src/worker/db/schema";
+import { call, signIn as signInBase } from "./helpers";
 
-const origin = env.APP_URL;
-const db = getDb(env);
-
-async function call(path: string, init: { method?: string; body?: unknown; cookie?: string; ip?: string } = {}) {
-  const ctx = createExecutionContext();
-  const res = await worker.fetch(
-    new Request(origin + path, {
-      method: init.method ?? (init.body ? "POST" : "GET"),
-      headers: {
-        origin,
-        "content-type": "application/json",
-        "cf-connecting-ip": init.ip ?? "203.0.113.1",
-        ...(init.cookie ? { cookie: init.cookie } : {}),
-      },
-      body: init.body ? JSON.stringify(init.body) : undefined,
-    }),
-    env,
-    ctx,
-  );
-  await waitOnExecutionContext(ctx);
-  return res;
-}
-
-/** Sign in with an email code, read from the outbox (no email provider in tests). */
-async function signIn(email: string, ip: string): Promise<string> {
-  const send = await call("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" }, ip });
-  expect(send.status).toBe(200);
-  const row = await db.select().from(outbox).where(eq(outbox.recipient, email)).orderBy(desc(outbox.createdAt)).get();
-  const otp = String(row!.payload.otp);
-  expect(otp).toMatch(/^\d{6}$/);
-
-  const wrongCode = otp === "000000" ? "111111" : "000000";
-  const wrong = await call("/api/auth/sign-in/email-otp", { body: { email, otp: wrongCode }, ip });
-  expect(wrong.status).toBe(400);
-
-  const res = await call("/api/auth/sign-in/email-otp", { body: { email, otp }, ip });
-  expect(res.status).toBe(200);
-  const cookies = res.headers
-    .getSetCookie()
-    .map((c) => c.split(";")[0])
-    .join("; ");
-  expect(cookies).toContain("session_token");
-  return cookies;
-}
+// The first sign-ins also check that a wrong code is rejected.
+const signIn = (email: string, ip: string) => signInBase(email, ip, { checkWrongCode: true });
 
 describe("API", () => {
   it("rejects requests without a session", async () => {
@@ -146,6 +102,23 @@ describe("API", () => {
 
     const badTz = await call("/api/v1/patients/me/profile", { cookie: gus, method: "PUT", body: { timezone: "Mars/Olympus" } });
     expect(badTz.status).toBe(400);
+  });
+
+  it("refuses to pretend a code was sent when email isn't configured", async () => {
+    // Production-like env: no RESEND_API_KEY and no outbox mode. A new env object gets its own auth instance.
+    const prodLike = { ...env, EMAIL_MODE: "", RESEND_API_KEY: "" };
+    const ctx = createExecutionContext();
+    const res = await worker.fetch(
+      new Request(`${env.APP_URL}/api/auth/email-otp/send-verification-otp`, {
+        method: "POST",
+        headers: { origin: env.APP_URL, "content-type": "application/json", "cf-connecting-ip": "198.51.100.40" },
+        body: JSON.stringify({ email: "nomail@example.com", type: "sign-in" }),
+      }),
+      prodLike,
+      ctx,
+    );
+    await waitOnExecutionContext(ctx);
+    expect(res.status).toBe(503);
   });
 
   it("rate-limits sign-in code requests per IP", async () => {

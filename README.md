@@ -72,6 +72,20 @@ Checks:
 npm run check    # typecheck, lint, tests, build
 ```
 
+## Deploying
+
+Live: https://healthcare-ai.mdmurtuzaali777.workers.dev
+
+```bash
+npx wrangler login                                   # once
+npm run db:migrate:remote                            # apply new migrations first
+npm run deploy                                       # build and deploy the Worker
+```
+
+Production secrets (set once with `npx wrangler secret put <NAME>`): `BETTER_AUTH_SECRET` (set), `RESEND_API_KEY` (needed for login emails), and optionally `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+
+CI runs on every push. To deploy automatically from `main`, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub.
+
 ## Project Structure
 
 ```
@@ -83,7 +97,7 @@ src/
 drizzle/         SQL migrations
 tests/           Vitest suites (run in workerd)
 docs/            PRD and technical implementation plan
-legacy/          The previous Next.js + Supabase app, being ported screen by screen
+(The previous Next.js + Supabase app was removed after the port; it is at commit 2cfbf56 under legacy/.)
 ```
 
 Security notes:

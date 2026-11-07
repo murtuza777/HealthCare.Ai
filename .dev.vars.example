@@ -1,7 +1,9 @@
 # Copy to .dev.vars for local development. Never commit .dev.vars.
 BETTER_AUTH_SECRET=generate-a-long-random-string
 APP_URL=http://localhost:5173
-# Optional locally: without it, emails (login codes) stay in the outbox table only.
+# Local dev: keep emails (login codes) in the outbox table instead of sending them.
+EMAIL_MODE=outbox
+# Production needs this, or sign-in fails with "Email sign-in isn't set up yet".
 RESEND_API_KEY=
 # Optional: Google sign-in
 GOOGLE_CLIENT_ID=

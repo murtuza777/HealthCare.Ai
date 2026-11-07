@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
-import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-pool-workers";
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin";
 
 // Tests run inside workerd with a fresh local D1 that has all migrations applied.
 export default defineConfig(async () => {
@@ -13,6 +13,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             BETTER_AUTH_SECRET: "test-secret-0123456789abcdef0123456789abcdef",
+            EMAIL_MODE: "outbox", // read login codes from the outbox in tests
           },
         },
       }),

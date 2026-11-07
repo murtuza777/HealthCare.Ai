@@ -4,9 +4,15 @@ import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 
 export default tseslint.config(
-  { ignores: ["dist", "legacy", "node_modules", ".wrangler", "worker-configuration.d.ts", "drizzle"] },
+  { ignores: ["dist", "node_modules", ".wrangler", "worker-configuration.d.ts", "drizzle"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    rules: {
+      // Allow `const { secret: _secret, ...safe } = row` to strip fields before returning them.
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true, varsIgnorePattern: "^_", argsIgnorePattern: "^_" }],
+    },
+  },
   {
     files: ["src/client/**/*.{ts,tsx}"],
     languageOptions: { globals: globals.browser },
