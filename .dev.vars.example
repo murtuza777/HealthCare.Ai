@@ -1,5 +1,7 @@
 # Copy to .dev.vars for local development. Never commit .dev.vars.
 BETTER_AUTH_SECRET=generate-a-long-random-string
+# Server-side secret mixed into every stored password hash. Never change it once users exist.
+PASSWORD_PEPPER=generate-another-long-random-string
 APP_URL=http://localhost:5173
 # Local dev: keep emails (login codes) in the outbox table instead of sending them.
 EMAIL_MODE=outbox
@@ -8,3 +10,6 @@ RESEND_API_KEY=
 # Optional: Google sign-in
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+# Optional: Cloudflare Turnstile (bot protection). These are Cloudflare test keys that always pass.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
