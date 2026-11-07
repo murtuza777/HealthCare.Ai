@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: ShieldCheck,
     title: "Private by design",
-    body: "Your data is visible only to you and the people you invite. No passwords to leak: sign in with a one-time code.",
+    body: "Your data is visible only to you and the people you invite. Passwords are protected on your device before they're sent, and checked against known breaches.",
   },
 ];
 
@@ -53,12 +53,17 @@ export function Landing() {
           <span className="text-2xl font-bold">
             Healthcare<span className="text-red-600">.AI</span>
           </span>
-          <Link
-            to="/login"
-            className="inline-flex items-center rounded-full border border-red-600 px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-red-600/10"
-          >
-            Get started
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/login" className="px-2 py-2 text-sm font-medium text-gray-200 hover:text-white">
+              Sign in
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center rounded-full border border-red-600 px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-red-600/10"
+            >
+              Get started
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -90,7 +95,7 @@ export function Landing() {
           <div className="flex flex-col items-center justify-center gap-6 pt-4 sm:flex-row">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
-                to="/login"
+                to="/signup"
                 className="group inline-flex items-center rounded-full bg-gradient-to-r from-red-600 to-red-500 px-12 py-4 text-lg font-semibold shadow-lg transition-all duration-300 hover:shadow-red-500/50"
               >
                 Launch platform

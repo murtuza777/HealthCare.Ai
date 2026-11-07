@@ -8,6 +8,9 @@ import { NotFound } from "./routes/NotFound";
 export const router = createBrowserRouter([
   { path: "/", element: <Landing /> },
   { path: "/login", element: <Login /> },
+  { path: "/signup", lazy: async () => ({ Component: (await import("./routes/SignUp")).SignUp }) },
+  { path: "/verify-email", lazy: async () => ({ Component: (await import("./routes/VerifyEmail")).VerifyEmail }) },
+  { path: "/forgot-password", lazy: async () => ({ Component: (await import("./routes/ForgotPassword")).ForgotPassword }) },
   { path: "/share/:token", lazy: async () => ({ Component: (await import("./routes/SharedView")).SharedView }) },
   {
     path: "/app",
