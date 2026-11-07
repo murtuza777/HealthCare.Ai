@@ -6,16 +6,16 @@ Scope: landing (Persuade), sign-in and sign-up screens (Operate), signed-in app 
 
 ## Direction contract
 
-THESIS: The record looks like a cardiology clinic's own chart: precise, quiet and trustworthy, with readings set like measurements, not decorated like a fitness app. It refuses the dark glass-and-gradient health template and the identical-card dashboard.
+THESIS: A quiet record, set like a well-made printed document: generous space, a light serif for what matters, plain sans for everything else, near-black ink on neutral paper. Revision 2 (Nov 2026) replaces the Clinic chart look, which the user judged still "AI slop": card-on-grey layouts, bold navy headings, blue primary buttons, pastel pills and icon rows. References studied: Function Health (light serif display, warm restraint), Oura (editorial serif, muted text), Linear (tight tracking, quiet secondary text, ink primary).
 
-OWN-WORLD: Cool porcelain ground (#F5F8FA), white chart sheets with hairline rules (#D6DFE8), prescription-ink blue text (#14305A) and actions (#1F5FD1). A faint ECG-paper millimetre grid (#F0D8D3 minor, #E3B7AF major) appears only behind charts, where the trace is drawn in ink. Heart red (#C3122F) only for emergencies and alerts. Atkinson Hyperlegible Next everywhere; readings in tabular figures at generous size. Corners: 8px controls, 12px sheets. No glass, no gradients, no entrance animation.
+OWN-WORLD: Neutral paper (#FAFAF9), near-black ink (#1C1D1F), muted #5C5E63, hairlines #E7E7E4. One accent blue (#2952CC) only for focus and selection. Red (#C0172F) only for emergencies and alerts. Source Serif 4 at weight 300-400 for headings and big readings; Mona Sans for UI. Pill buttons in ink that press (scale 0.97). Status is a dot and a word. Sections separated by space and hairlines; only forms are boxed. Charts are a fine ink trace over faint rules aligned to the ticks.
 
 STORY: A patient sees at a glance what their latest readings are and whether any need attention, logs a new one in seconds, and trusts that the record is exact enough to show a doctor. A caretaker understands the situation in one screen.
 
-FIRST VIEWPORT: Landing: left-aligned headline and one sentence with two actions (create account, sign in); beside it a chart sheet showing 30 days of blood pressure on ECG grid with a classified latest reading, labelled as sample data. App overview: greeting and date, then a "latest readings" chart table (measure, value, status, when) with the log-a-reading action in the top bar.
+FIRST VIEWPORT: Landing: a large light serif headline, one sentence, an ink pill and a quiet text action; below, an unboxed 30-day blood pressure chart with the latest reading set large in the serif, labelled as sample data. App overview: serif greeting and date, then an unboxed latest-readings table.
 
-FORM: Clinic chart, chosen by the user from four directions (pill organizer, health diary, clinic chart, platform standard). Seed: none (unavailable; impeccable launcher not installed).
+FORM: Quiet record (revision 2). Revision 1 was Clinic chart, chosen from four directions (pill organizer, health diary, clinic chart, platform standard).
 
-SIGNATURE INTERACTION: On the landing chart, the trace draws once across the grid on first view (reduced-motion: static). In the app, logging a reading shows its classification before saving and the new point lands on the chart.
+SIGNATURE INTERACTION: On the landing chart, the trace draws once on first view (reduced-motion: static). In the app, logging a reading shows its classification before saving and the new point lands on the chart.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

@@ -29,5 +29,5 @@ Readings are logged at home right after measuring, morning and evening, usually 
 - Accessibility is a requirement, not polish: large legible type, 4.5:1 contrast, keyboard and screen-reader support, reduced motion respected.
 
 ## Brand commitments
-- Typeface: Atkinson Hyperlegible Next (designed for low-vision readers).
-- Heart red is reserved for alerts, emergencies and destructive actions.
+- Type: Source Serif 4 (light) for headings and large readings, Mona Sans for everything else. Body never below 16px.
+- Red is reserved for alerts and emergencies. Primary actions are near-black ink, never a brand blue.

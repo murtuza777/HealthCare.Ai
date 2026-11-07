@@ -1,75 +1,65 @@
 ---
-name: Clinic chart
+name: Quiet record
 colors:
-  ground: "#F5F8FA"
+  ground: "#FAFAF9"
   sheet: "#FFFFFF"
-  well: "#EEF3F7"
-  line: "#D6DFE8"
-  line-strong: "#B8C6D4"
-  ink: "#14305A"
-  ink-muted: "#4A5F7A"
-  ink-faint: "#6B7F96"
-  action: "#1F5FD1"
-  action-hover: "#1A4FB0"
-  action-soft: "#E6EEFB"
-  danger: "#C3122F"
-  danger-soft: "#FBE7EA"
-  grid-minor: "#F0D8D3"
-  grid-major: "#E3B7AF"
-  status-normal: { text: "#1E6B45", bg: "#E2F2E9" }
-  status-borderline: { text: "#7A4E00", bg: "#FDF0D5" }
-  status-high: { text: "#9A3A0A", bg: "#FBE5D9" }
-  status-low: { text: "#1A4FA8", bg: "#E3ECFB" }
+  well: "#F3F3F1"
+  line: "#E7E7E4"
+  line-strong: "#D2D2CE"
+  ink: "#1C1D1F"
+  ink-muted: "#5C5E63"
+  ink-faint: "#73757A"
+  accent: "#2952CC" # focus and selection only (token name: action)
+  danger: "#C0172F"
+  danger-soft: "#FCEEF0"
+  status-dots: { normal: "#2E8555", borderline: "#B7791F", high: "#C4501A", low: "#3B6FD4" }
 typography:
-  family: "Atkinson Hyperlegible Next (variable, self-hosted)"
-  base: "17px / 1.65"
-  scale: [13, 15, 17, 20, 24, 30, 36, 48, 60]
-  numerals: "tabular-nums for every reading (.figures)"
+  display: "Source Serif 4 Variable (optical sizes), weight 300-400"
+  text: "Mona Sans Variable, body weight 420, emphasis 540-560"
+  base: "16px / 1.625"
+  scale: [13, 14, 16, 18, 22, 28, 36, 48, 64]
+  numerals: "tabular figures (.figures); large readings in the serif (.reading)"
 rounded:
-  control: 8px
-  sheet: 12px
-  chip: 9999px
+  control: 10px
+  sheet: 14px
+  button: 9999px
 ---
 
-# Clinic chart
+# Quiet record
 
-Healthcare.AI looks like a cardiology clinic's own chart: precise, quiet and trustworthy. Readings are set like measurements, not decorated. Source of truth for values: `tailwind.config.js` and `src/client/styles/globals.css`.
+Healthcare.AI reads like a well-made printed record: generous space, a light serif for what matters, plain sans for everything else, near-black ink on neutral paper. Source of truth for values: `tailwind.config.js` and `src/client/styles/globals.css`. Direction and history: `docs/design/brief.md`.
 
 ## Colour
-- **Restrained strategy.** Porcelain ground, white sheets, prescription-ink blue for text and actions.
-- **Action blue** is for primary actions, links, current navigation and focus. It never decorates.
-- **Heart red is reserved** for emergencies, alerts, form errors and destructive actions. Decorative icons are `ink-faint`, never red.
-- **Status always has a word** ("Normal", "High", "Emergency range"), never colour alone.
-- **ECG paper grid** (`.ecg-grid`) appears only behind charts. It is the system's signature; don't use it as a page background or ornament.
-- Light theme only: patients log readings at home in daylight on phones.
+- **Ink does the work.** Text, primary buttons, selected chips and the chart trace are near-black ink. Muted and faint inks carry secondary text.
+- **No brand blue on surfaces.** The accent appears only as the focus ring and text selection.
+- **Red is for alerts only:** the Emergency control (an outlined pill), the critical banner, the emergency dialog's call button and form errors. Delete buttons are quiet and turn red on hover.
+- **Status is a dot and a word** ("Normal", "High"), muted text. Only "Emergency range" raises its voice: red, semibold.
+- Light theme only.
 
 ## Type
-- One family, Atkinson Hyperlegible Next, chosen for low-vision readers. Its slashed zero is intentional.
-- Fixed rem scale (~1.2), 17px body. Headings bold with slight negative tracking and balanced wrapping.
-- Readings use `.figures` (tabular, lining) at large sizes (24px+ in tables).
-- Sentence case everywhere. No all-caps labels, no eyebrow labels above headings, no dot-joined meta strings.
+- **Headings** (`h1`, `h2`) are Source Serif 4 at weight 300-400 with optical sizing; size carries hierarchy, not weight. `h3` is Mona Sans at 560.
+- **Body** is Mona Sans at 420. Emphasis is 540-560; nothing is bold.
+- **Readings** that matter use `.reading` (serif, tabular, tight tracking) with the unit set small in sans beside it. Columns of numbers use `.figures`.
+- Sentence case everywhere. No eyebrow labels, no all caps, no dot-joined meta strings.
 
 ## Components (src/client/components/ui.tsx)
-- **Card (sheet):** white, 1px `line` border, 12px radius, soft offset shadow. `flush` for edge-to-edge tables. Never nest cards.
-- **Buttons:** 44px min height (36px small), 8px radius, semibold. Variants: primary, secondary, ghost, danger (emergencies), danger-quiet (delete, revoke).
-- **Fields:** label above (semibold 15px), 44px inputs, 2px action focus ring, hint below in muted ink.
-- **Chips** (toggle groups): rounded-full, selected = solid action blue; hidden inputs show a focus ring on the chip.
-- **StatusBadge**, **EmptyState** (left-aligned, teaches the next step), **Loading** (skeleton lines, never spinners mid-content), **Notice**.
-- **TrendChart:** ink trace on ECG paper; blood pressure is systolic solid and diastolic dashed, with a legend.
+- **Card:** plain by default (no box: sections are separated by space). `boxed` draws a white bordered surface for things that must read as one object, which in practice means forms. `flush` is boxed without padding. Never nest boxes.
+- **Buttons:** pills. Primary ink, secondary outlined, ghost text. `active:scale-[0.97]`, 150ms ease-out on specific properties.
+- **Fields:** label above at 540, 44px inputs, ink border and a soft ink halo on focus.
+- **Chips** (toggle groups): pills; selected is solid ink.
+- **Lists and tables:** hairline rules between rows and above/below the set; no row icons.
+- **EmptyState** is text only and teaches the next step. **Loading** is skeleton lines. **Notice** is a quiet well with a coloured dot.
+- **Charts:** a 1.75px ink trace (diastolic: dashed grey) over faint horizontal rules aligned to the ticks; no dots, no box.
 
 ## Layout
-- Max width 72rem (`max-w-6xl`), 16–24px gutters.
-- App: sticky top bar with tabs on ≥768px; a bottom tab bar with icon and label on phones. Emergency is always one tap away.
-- Overview leads with a "latest readings" table (measure, reading, status, taken), not a grid of identical metric cards.
-- Auth: form column plus a quiet reassurance panel on wide screens.
+- Content width 64rem (`max-w-5xl`), 20-32px gutters. Sections 56px apart (`space-y-14`).
+- App: a translucent top bar with text tabs (the current one sits on a faint ink pill) on wide screens; a bottom tab bar on phones. Emergency is always one tap away.
+- Auth: one centred 400px column, no side panel.
 
 ## Motion
-- One authored moment: the landing chart trace sweeps across the grid once (`.trace-draw`, clip reveal, 1.8s ease-out).
-- Product screens have no entrance animation; transitions are 150–300ms on state changes only.
-- `prefers-reduced-motion` disables all of it.
-
-## Browser surfaces
-Selection, caret, focus ring, scrollbar colour, placeholder and dialog backdrop are themed from the palette in `globals.css`.
+- Page content settles once on navigation (`.settle`: 6px rise and fade, 360ms, ease-out).
+- The landing chart's trace draws in once (`.trace-draw`).
+- Buttons press. Nothing else moves. `prefers-reduced-motion` disables all of it.
 
 ## Don't
-Glass or blur as decoration, gradients, gradient text, glowing edges, emoji as icons, hero-metric templates, identical icon cards, red for decoration, modals where inline works.
+Cards on grey as the default layout, bold headings, blue primary buttons, filled pastel status pills, icons beside every row, gradients, glass as decoration, glows, emoji, eyebrow labels, hero-metric templates, identical icon cards, red for anything but alerts.
