@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | v2.1: Phase 1 done (SPA + API Worker on Cloudflare); Phase 2 next |
+| **Status** | v3.0 (2026-11-07): Phases 1–3 done; Phase 4 partly done (assistant, visit summary); Phase 5 essentials done (export, deletion, consent, audit log) |
 | **Last updated** | 2026-11-05 |
 | **Companion doc** | [Product Requirements (PRD)](./PRD.md) |
 
@@ -269,6 +269,22 @@ Still open from Phase 1:
 - Data migration from Supabase: not needed (no real user data).
 
 **Exit criteria (original):** on the deployed URL, a user can sign in with an email code, save a profile, add vitals and upload a report that persist across sessions. No Next.js or Supabase code remains. CI is green. Zero `exceededCpu` across the E2E run. *Everything except the production sign-in is met; that needs the Resend key.*
+
+### Progress on 2026-11-07
+
+Shipped to `main` (see git history for detail):
+- **Assistant (Phase 2.7, 4.1–4.2 in part):** Workers AI instead of Gemini (no key, stays on Cloudflare). Context built server-side through the DAL; a rule-based emergency check (heart attack, stroke, breathing, fainting, self-harm) runs before any model call and returns a fixed, human-written reply; safety prompt; streamed replies; saved conversations with ratings; daily quota; AI-processing consent. Tool calls with confirm cards are **not** built yet: the assistant only reads.
+- **Doses and reminders (Phase 3.1–3.3):** timezone-aware schedule expansion (DST-tested), taken/skipped/undo, missed after 2 hours, adherence; Web Push on Web Crypto (VAPID + RFC 8291, round-trip tested) with a "Taken" action in the notification; one cron dispatches every job.
+- **Caretakers (Phase 3.4–3.6):** invites by email (hashed single-use token, 7 days, must be accepted by the invited email), permissions, revocation that ends access at once, a read-only caretaker dashboard, and alerts for emergency-range readings, red-flag symptoms and missed doses. Quiet hours are **not** built yet.
+- **PWA (Phase 3.7):** manifest, generated icons, offline app shell.
+- **Visit prep (Phase 4.5):** printable one-page summary (browser PDF) with AI-suggested questions.
+- **Phase 5.1–5.2:** data export, account deletion (including R2 files), consent records per document version, audit log of caretaker access shown to the patient, plain-language Privacy and Terms pages (drafts).
+
+Still open:
+- **Report reader (4.3)** and **monitoring agent (4.4):** needs an image-capable model and an accuracy set of real, de-identified reports before shipping.
+- **Assistant write tools** with confirm cards, **AI eval suite in CI**, AI Gateway.
+- **Quiet hours** for caretaker alerts; unified timeline; Playwright end-to-end suite.
+- **Launch items:** Resend key and domain, VAPID keys in production, error tracking, accessibility audit, restore drill, clinician review of thresholds, red-flag rules and prompts, legal review of the Privacy and Terms drafts, custom domain.
 
 ### Phase 2 — MVP feature-complete, release R1 (≈ 3–4 weeks)
 1. Onboarding wizard (PRD A-3).

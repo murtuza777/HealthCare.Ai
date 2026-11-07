@@ -1,51 +1,32 @@
 # Healthcare.AI
 
-An advanced health monitoring and management platform powered by AI for early disease detection and patient health management.
+A calm, careful record of your heart, for people living with heart conditions and the family who help them.
 
-> **Planning docs:** [Product Requirements (PRD)](docs/PRD.md) · [Technical Implementation Plan](docs/TECH_PLAN.md)
+> **Planning docs:** [Product Requirements (PRD)](docs/PRD.md) · [Technical Implementation Plan](docs/TECH_PLAN.md) · [Design system](DESIGN.md)
 
-## Key Features
+## What it does
 
-1. **Patient Overview Dashboard**
-   - Track and visualize vital health metrics
-   - Receive personalized health insights and advice based on your data
-   - Monitor trends and changes in your health status
-   - Input and manage health data including vitals, conditions, and medications
+1. **Readings, checked as you enter them.** Blood pressure, pulse, oxygen, glucose, temperature, cholesterol and weight, classified against clinical ranges and charted over time.
+2. **Medicines that remind you.** A daily checklist (taken, skipped, missed), 7- and 30-day adherence, and reminders on your phone or computer through Web Push, with a "Taken" button right in the notification.
+3. **An assistant that reads your record.** Questions answered from your own readings, medicines and symptoms (Cloudflare Workers AI). Fixed rules catch emergencies before any model runs, and it never tells you to change a medicine.
+4. **A care team.** Invite family by email and choose what they see. They get alerts for emergency-range readings, urgent symptoms and missed doses, and you can see each time they looked.
+5. **Reports and sharing.** Upload lab results and scans; share chosen reports through a link or QR code that expires and can be revoked.
+6. **Visit summary.** A one-page summary to print or save as PDF for your doctor, with suggested questions.
+7. **Yours to keep or delete.** Download everything as JSON, or delete your account and every file at once.
 
-2. **Health Guardian AI Assistant**
-   - Advanced AI-powered medical assistant that can answer ANY healthcare question
-   - Comprehensive knowledge of medical conditions, treatments, and terminology
-   - Personalized health advice based on patient data and health metrics
-   - Medication guidance, symptom assessment, and early disease detection
-   - Being rebuilt on the new API (Phase 2)
-
-3. **Reports Management System**
-   - Securely store medical reports and test results
-   - Share reports with healthcare providers via QR codes
-   - Scan and digitize paper reports
-   - Manage patient identification and secure sharing
-
-4. **Caretaker Management**
-   - Set up reminders for medications, exercises, and appointments
-   - Assign and manage caretakers for patient monitoring
-   - Configure notifications for health events
-   - Coordinate care among multiple care providers
-
-5. **Health Timeline**
-   - Comprehensive view of health history and events
-   - Filter and search through past health records
-   - Track interactions with healthcare system
-   - Identify patterns and trends in health data
+Installable as an app (PWA) and the emergency button works offline.
 
 ## Tech Stack
 
 Runs entirely on Cloudflare's free plan (see [docs/TECH_PLAN.md](docs/TECH_PLAN.md) for why).
 
-- **Frontend:** Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Framer Motion, Recharts, Lucide icons
+- **Frontend:** Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Recharts, Lucide icons; installable PWA with a service worker
 - **API:** Hono on Cloudflare Workers, typed end to end (the browser client gets its types from the API)
 - **Data:** Cloudflare D1 (SQLite) with Drizzle ORM and migrations
 - **Auth:** Better Auth with email + password (stretched in the browser, see below), email verification and password reset by code, JWT session cookies and Bearer access tokens, optional Google sign-in and Cloudflare Turnstile
-- **Email:** Resend, through an outbox table that retries failed sends
+- **AI:** Cloudflare Workers AI (Llama 3.3 70B by default, `AI_MODEL`), with server-built context, rule-based emergency checks, consent and a daily quota
+- **Notifications:** Web Push implemented on Web Crypto (VAPID + RFC 8291), and email through Resend; both go through an outbox that retries
+- **Jobs:** one cron trigger dispatches dose generation, reminders, missed-dose alerts and the outbox
 - **Validation and clinical rules:** Zod schemas and rule functions in `src/shared`, used by both the API and the browser
 - **Tests:** Vitest running inside Cloudflare's runtime against a real local D1
 
@@ -85,7 +66,10 @@ npm run deploy                                       # build and deploy the Work
 Production secrets (set once with `npx wrangler secret put <NAME>`):
 - `BETTER_AUTH_SECRET` and `PASSWORD_PEPPER` (both set; never change the pepper once users exist, or every password stops working)
 - `RESEND_API_KEY`: turns on email verification and password reset. Until it's set, sign-up signs people in without verifying their email.
+- `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`: turn on medicine reminders and caretaker alerts on devices. Generate them with `node scripts/vapid-keys.mjs`. Never change them once people have turned reminders on (their subscriptions would stop working).
 - Optional: `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI `<APP_URL>/api/auth/callback/google`), `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`.
+
+The assistant uses the `AI` binding in `wrangler.jsonc` (no key needed). `AI_DAILY_LIMIT` sets questions per person per day; the free Workers AI allowance is shared by everyone, so keep it modest or move to Workers Paid.
 
 CI runs on every push. To deploy automatically from `main`, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub.
 
