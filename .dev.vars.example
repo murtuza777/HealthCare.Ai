@@ -13,3 +13,6 @@ GOOGLE_CLIENT_SECRET=
 # Optional: Cloudflare Turnstile (bot protection). These are Cloudflare test keys that always pass.
 TURNSTILE_SITE_KEY=1x00000000000000000000AA
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+
+# Assistant: leave empty to use Workers AI (needs `wrangler login`); "fake" answers with fixed text (tests).
+AI_MODE=

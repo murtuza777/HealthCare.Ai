@@ -13,8 +13,13 @@
   "observability": { "enabled": true },
   "vars": {
     "APP_URL": "https://healthcare-ai.mdmurtuzaali777.workers.dev",
-    "EMAIL_FROM": "Healthcare.AI <onboarding@resend.dev>"
+    "EMAIL_FROM": "Healthcare.AI <onboarding@resend.dev>",
+    // Assistant: Workers AI model and requests per patient per day (free allowance is shared).
+    "AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "AI_DAILY_LIMIT": "25"
   },
+  // Workers AI (assistant). Always runs remotely, even in local dev.
+  "ai": { "binding": "AI" },
   "d1_databases": [
     {
       "binding": "DB",

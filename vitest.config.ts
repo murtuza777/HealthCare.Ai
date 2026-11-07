@@ -9,11 +9,13 @@ export default defineConfig(async () => {
     plugins: [
       cloudflareTest({
         wrangler: { configPath: "./wrangler.jsonc" },
+        remoteBindings: false, // never call Workers AI from tests (and CI has no Cloudflare login)
         miniflare: {
           bindings: {
             TEST_MIGRATIONS: migrations,
             BETTER_AUTH_SECRET: "test-secret-0123456789abcdef0123456789abcdef",
             EMAIL_MODE: "outbox", // read verification codes from the outbox in tests
+            AI_MODE: "fake", // the assistant answers with fixed text; no model is called
             PASSWORD_PEPPER: "test-pepper-0123456789abcdef0123456789abcdef",
             // Pin optional features off so a developer's .dev.vars can't change test behaviour.
             RESEND_API_KEY: "",

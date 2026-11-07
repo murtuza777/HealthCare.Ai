@@ -7,6 +7,7 @@ import { getDb } from "./db/client";
 import { drainOutbox } from "./jobs/outbox";
 import { requireSession } from "./middleware/session";
 import { patients } from "./routes/patients";
+import { assistant } from "./routes/assistant";
 import { publicRoutes } from "./routes/public";
 import { ShareError } from "./dal/shares";
 import type { AppEnv } from "./types";
@@ -52,7 +53,8 @@ app.on(["GET", "POST"], "/auth/*", (c) => getAuth(c.env).handler(c.req.raw));
 const v1 = new Hono<AppEnv>()
   .use("*", requireSession)
   .get("/me", (c) => c.json({ user: c.var.user }))
-  .route("/patients", patients);
+  .route("/patients", patients)
+  .route("/assistant", assistant);
 
 const routes = app.route("/v1", v1).route("/public", publicRoutes);
 export type AppType = typeof routes;
