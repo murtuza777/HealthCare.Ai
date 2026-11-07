@@ -12,7 +12,7 @@ import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHe
 export function Reports() {
   const [uploading, setUploading] = useState(false);
   return (
-    <div className="space-y-6">
+    <div className="space-y-14">
       <PageHeader
         title="Reports"
         subtitle="Keep lab results, scans and prescriptions together, and share them with your doctor."
@@ -87,10 +87,10 @@ function UploadReport({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Card>
+    <Card boxed>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Upload a report</h2>
-        <button onClick={onDone} aria-label="Cancel upload" className="font-semibold text-action hover:underline">
+        <h2 className="text-xl">Upload a report</h2>
+        <button onClick={onDone} aria-label="Cancel upload" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -103,24 +103,24 @@ function UploadReport({ onDone }: { onDone: () => void }) {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-            dragging ? "border-action bg-action-soft" : "border-line-strong bg-well hover:border-ink-faint"
+            dragging ? "border-ink bg-well" : "border-line-strong bg-well hover:border-ink-faint"
           }`}
         >
-          <Upload className="h-8 w-8 text-action" aria-hidden="true" />
+          <Upload className="h-6 w-6 text-ink-faint" aria-hidden="true" />
           {file ? (
             <span className="font-medium">
               {file.name} <span className="text-ink-muted">({fmtSize(file.size)})</span>
             </span>
           ) : (
             <span>
-              <span className="font-semibold text-ink">Choose a file</span> or drag it here
+              <span className="font-[540] text-ink">Choose a file</span> or drag it here
             </span>
           )}
           <span className="text-xs text-ink-muted">PDF, JPEG, PNG or WebP, up to 10 MB</span>
           <input type="file" accept={ALLOWED_MIME.join(",")} className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
         </label>
         {fileError && (
-          <p role="alert" className="text-sm font-semibold text-danger">
+          <p role="alert" className="text-sm font-[540] text-danger">
             {fileError}
           </p>
         )}
@@ -237,10 +237,10 @@ function ReportCard({ r }: { r: Report }) {
         </p>
         {(r.doctor || r.facility) && <p className="text-sm text-ink-muted">{[r.doctor, r.facility].filter(Boolean).join(", ")}</p>}
         <div className="mt-auto flex gap-2 pt-3">
-          <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
+          <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm font-[540] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]">
             <Eye className="h-4 w-4" aria-hidden="true" /> View
           </a>
-          <a href={reportFileUrl(r.id, true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
+          <a href={reportFileUrl(r.id, true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm font-[540] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]">
             <Download className="h-4 w-4" aria-hidden="true" /> Download
           </a>
           <Button

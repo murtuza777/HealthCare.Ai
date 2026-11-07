@@ -12,7 +12,7 @@ const TYPES: VitalType[] = ["blood_pressure", "heart_rate", "spo2", "glucose", "
 export function Vitals() {
   const [type, setType] = useState<VitalType>("blood_pressure");
   return (
-    <div className="space-y-6">
+    <div className="space-y-14">
       <PageHeader title="Readings" subtitle="Log a reading and see how it changes over time." />
       <LogReading type={type} onTypeChange={setType} />
       <History type={type} />
@@ -52,8 +52,8 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
   return (
     <>
       {add.data?.classification === "critical" && <CriticalBanner kind="reading" />}
-      <Card>
-        <h2 className="text-lg font-semibold">Log a reading</h2>
+      <Card boxed>
+        <h2 className="text-xl">Log a reading</h2>
         <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <Field label="Type">
             <select value={type} onChange={(e) => onTypeChange(e.target.value as VitalType)} className={inputClass}>
@@ -64,17 +64,17 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
               ))}
             </select>
           </Field>
-          <Field label={isBp ? "Systolic (top, mmHg)" : `Value (${CANONICAL_UNITS[type]})`}>
+          <Field label={isBp ? "Systolic, mmHg" : `Value (${CANONICAL_UNITS[type]})`}>
             <input required type="number" step="any" inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} className={inputClass} />
           </Field>
           {isBp ? (
-            <Field label="Diastolic (bottom, mmHg)">
+            <Field label="Diastolic, mmHg">
               <input required type="number" step="any" inputMode="decimal" value={value2} onChange={(e) => setValue2(e.target.value)} className={inputClass} />
             </Field>
           ) : (
             <div className="hidden lg:block" />
           )}
-          <Field label="Taken at" hint="Leave empty for now.">
+          <Field label="Taken at (optional)">
             <input type="datetime-local" value={measuredAt} onChange={(e) => setMeasuredAt(e.target.value)} max={localDateTime()} className={inputClass} />
           </Field>
           <Button type="submit" disabled={add.isPending} className="h-10">
@@ -99,17 +99,17 @@ function History({ type }: { type: VitalType }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
-        <h2 className="mb-3 text-lg font-semibold">{VITAL_LABELS[type]} trend</h2>
+        <h2 className="mb-4 text-xl">{VITAL_LABELS[type]} trend</h2>
         {isPending ? <Loading /> : <TrendChart points={data ?? []} unit={CANONICAL_UNITS[type]} dual={type === "blood_pressure"} height={260} />}
       </Card>
       <Card>
-        <h2 className="mb-3 text-lg font-semibold">History</h2>
+        <h2 className="mb-4 text-xl">History</h2>
         {isPending && <Loading />}
         <ErrorText error={error} />
         {data?.length === 0 && (
           <EmptyState icon={<Activity className="h-10 w-10" />} title="No readings yet" body={`Your ${VITAL_LABELS[type].toLowerCase()} readings will appear here.`} />
         )}
-        <ul className="max-h-80 divide-y divide-white/10 overflow-y-auto">
+        <ul className="max-h-80 divide-y divide-line border-y border-line overflow-y-auto">
           {data?.map((v) => (
             <li key={v.id} className="flex items-center justify-between gap-4 py-2">
               <span className="text-sm text-ink-muted">{new Date(v.measuredAt).toLocaleString()}</span>

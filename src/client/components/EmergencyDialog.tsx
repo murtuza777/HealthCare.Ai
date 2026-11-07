@@ -25,12 +25,12 @@ export function EmergencyDialog({ open, onClose }: { open: boolean; onClose: () 
       aria-labelledby="emergency-title"
       className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-sheet border border-line bg-sheet p-0 text-ink shadow-lift"
     >
-      <div className="border-t-[6px] border-danger p-6 sm:p-7">
+      <div className="p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4">
-          <h2 id="emergency-title" className="text-2xl">
+          <h2 id="emergency-title" className="text-3xl font-light">
             Need help now?
           </h2>
-          <button onClick={onClose} aria-label="Close" className="-m-1.5 grid h-10 w-10 place-items-center rounded-control text-ink-muted hover:bg-well hover:text-ink">
+          <button onClick={onClose} aria-label="Close" className="-m-1.5 grid h-10 w-10 place-items-center rounded-full text-ink-faint transition-colors hover:bg-well hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -40,14 +40,14 @@ export function EmergencyDialog({ open, onClose }: { open: boolean; onClose: () 
         </p>
         <a
           href={`tel:${number}`}
-          className="figures mt-6 flex min-h-14 items-center justify-center gap-3 rounded-control bg-danger px-4 text-xl font-bold text-white hover:bg-danger-hover"
+          className="figures mt-6 flex min-h-14 items-center justify-center gap-3 rounded-full bg-danger px-4 text-lg font-[560] text-white transition-[background-color,transform] duration-150 ease-out hover:bg-danger-hover active:scale-[0.97]"
         >
           <Phone className="h-6 w-6" aria-hidden="true" /> Call {number}
         </a>
         {contact ? (
           <a
             href={`tel:${contact.phone}`}
-            className="mt-3 flex min-h-12 items-center justify-center gap-3 rounded-control border border-line-strong px-4 font-semibold hover:bg-well"
+            className="mt-3 flex min-h-12 items-center justify-center gap-3 rounded-full border border-line-strong px-4 font-[540] transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]"
           >
             <Phone className="h-5 w-5" aria-hidden="true" /> Call {contact.name}
             {contact.relation ? ` (${contact.relation})` : ""}

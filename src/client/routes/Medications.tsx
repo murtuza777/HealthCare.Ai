@@ -13,7 +13,7 @@ export function Medications() {
   const { data, isPending, error } = useMedications(showAll);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-14">
       <PageHeader
         title="Medicines"
         subtitle="Keep your medicines, doses and times up to date. Reminders are coming in a later update."
@@ -28,7 +28,7 @@ export function Medications() {
       {adding && <AddMedication onDone={() => setAdding(false)} />}
       <Card>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{showAll ? "All medicines" : "Current medicines"}</h2>
+          <h2 className="text-xl">{showAll ? "All medicines" : "Current medicines"}</h2>
           <label className="flex items-center gap-2 text-sm text-ink-muted">
             <input type="checkbox" className="accent-action" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             Show stopped
@@ -39,7 +39,7 @@ export function Medications() {
         {data?.length === 0 && (
           <EmptyState icon={<Pill className="h-10 w-10" />} title="No medicines yet" body="Add the medicines you take so your doctor, caretakers and the assistant have the full picture." />
         )}
-        <ul className="divide-y divide-white/10">
+        <ul className="divide-y divide-line border-y border-line">
           {data?.map((m) => <MedicationRow key={m.id} m={m} />)}
         </ul>
       </Card>
@@ -59,7 +59,7 @@ function MedicationRow({ m }: { m: NonNullable<ReturnType<typeof useMedications>
           <p className="font-medium">
             {m.name} <span className="text-ink-muted">{m.dose}</span>
             {m.form && <span className="text-sm text-ink-faint"> ({m.form.toLowerCase()})</span>}
-            {!m.active && <span className="ml-2 rounded-full bg-well px-2.5 py-0.5 text-sm font-semibold text-ink-muted">Stopped</span>}
+            {!m.active && <span className="ml-2 rounded-full bg-well px-2.5 py-0.5 text-sm font-[540] text-ink-muted">Stopped</span>}
           </p>
           <p className="text-sm text-ink-muted">
             <span className="figures">{m.schedule.times.join(", ")}</span>, {m.schedule.days?.length ? days : "every day"}, since {formatDay(m.startDate)}
@@ -116,10 +116,10 @@ function AddMedication({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Card>
+    <Card boxed>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Add a medicine</h2>
-        <button onClick={onDone} aria-label="Cancel" className="font-semibold text-action hover:underline">
+        <h2 className="text-xl">Add a medicine</h2>
+        <button onClick={onDone} aria-label="Cancel" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -137,7 +137,7 @@ function AddMedication({ onDone }: { onDone: () => void }) {
         </div>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-ink">Times</legend>
+          <legend className="mb-2 text-sm font-[540] text-ink">Times</legend>
           <div className="flex flex-wrap items-center gap-2">
             {times.map((t, i) => (
               <span key={i} className="flex items-center gap-1">
@@ -150,7 +150,7 @@ function AddMedication({ onDone }: { onDone: () => void }) {
                   onChange={(e) => setTimes(times.map((x, j) => (j === i ? e.target.value : x)))}
                 />
                 {times.length > 1 && (
-                  <button type="button" aria-label={`Remove time ${i + 1}`} onClick={() => setTimes(times.filter((_, j) => j !== i))} className="font-semibold text-action hover:underline">
+                  <button type="button" aria-label={`Remove time ${i + 1}`} onClick={() => setTimes(times.filter((_, j) => j !== i))} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
                     <X className="h-4 w-4" />
                   </button>
                 )}
@@ -165,14 +165,14 @@ function AddMedication({ onDone }: { onDone: () => void }) {
         </fieldset>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-ink">Days</legend>
+          <legend className="mb-2 text-sm font-[540] text-ink">Days</legend>
           <label className="flex items-center gap-2 text-ink">
             <input type="checkbox" className="accent-action" checked={everyDay} onChange={(e) => setEveryDay(e.target.checked)} /> Every day
           </label>
           {!everyDay && (
             <div className="mt-2 flex flex-wrap gap-2">
               {DAYS.map((d, i) => (
-                <label key={d} className={`cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${days.includes(i) ? "border border-action bg-action text-white" : "border border-line-strong bg-sheet text-ink hover:bg-well"}`}>
+                <label key={d} className={`cursor-pointer select-none rounded-full px-3.5 py-1.5 text-sm font-[500] transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${days.includes(i) ? "border border-ink bg-ink text-white" : "border border-line-strong bg-sheet text-ink hover:border-ink/30"}`}>
                   <input
                     type="checkbox"
                     className="sr-only"

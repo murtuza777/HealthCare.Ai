@@ -30,21 +30,21 @@ export function SharedView() {
         {q.data === null && (
           <Card className="mt-8 text-center">
             <Link2Off className="mx-auto h-12 w-12 text-ink-faint" aria-hidden="true" />
-            <h1 className="mt-4 text-xl font-semibold">This link isn't available</h1>
+            <h1 className="mt-4 text-2xl">This link isn't available</h1>
             <p className="mt-2 text-ink-muted">It may have expired or been revoked. Ask the patient to share a new one.</p>
           </Card>
         )}
         {q.data && (
-          <div className="mt-6 space-y-6">
+          <div className="mt-10 space-y-14">
             <div>
-              <h1 className="text-2xl font-bold">Reports shared by {q.data.patientName}</h1>
+              <h1 className="text-2xl font-[560]">Reports shared by {q.data.patientName}</h1>
               <p className="text-ink-muted">Read-only. This link works until {new Date(q.data.expiresAt).toLocaleString()}.</p>
             </div>
 
             {q.data.vitals && q.data.vitals.length > 0 && (
               <Card>
-                <h2 className="mb-3 text-lg font-semibold">Latest readings</h2>
-                <ul className="divide-y divide-white/10">
+                <h2 className="mb-4 text-xl">Latest readings</h2>
+                <ul className="divide-y divide-line border-y border-line">
                   {q.data.vitals.map((v) => (
                     <li key={v.type} className="flex items-center justify-between gap-3 py-2">
                       <span>{VITAL_LABELS[v.type]}</span>
@@ -60,8 +60,8 @@ export function SharedView() {
             )}
 
             <Card>
-              <h2 className="mb-3 text-lg font-semibold">Reports</h2>
-              <ul className="divide-y divide-white/10">
+              <h2 className="mb-4 text-xl">Reports</h2>
+              <ul className="divide-y divide-line border-y border-line">
                 {q.data.reports.map((r) => (
                   <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="flex items-start gap-3">
@@ -76,10 +76,10 @@ export function SharedView() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <a href={fileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
+                      <a href={fileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm font-[540] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]">
                         <Eye className="h-4 w-4" aria-hidden="true" /> View
                       </a>
-                      <a href={fileUrl(r.id, true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-line-strong bg-sheet px-3 text-sm font-semibold text-ink hover:bg-well">
+                      <a href={fileUrl(r.id, true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm font-[540] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]">
                         <Download className="h-4 w-4" aria-hidden="true" /> Download
                       </a>
                     </div>

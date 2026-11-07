@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { CircleCheck, CircleDashed, CircleAlert, Pill, Plus, Stethoscope } from "lucide-react";
 import { ageFrom, riskFactors, type RiskFactorStatus } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
 import { useLatestVitals, useMedications, useProfile, useSymptoms, useVitals } from "../lib/queries";
@@ -32,70 +31,70 @@ export function Overview() {
   const facts = [age !== null && `Age ${age}`, p?.heightCm && `${p.heightCm} cm`, l.weight && `${l.weight.value} kg`].filter(Boolean) as string[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-14">
       {toast && <Notice tone="success">{toast}</Notice>}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl">
+          <h1 className="text-3xl font-light sm:text-[2.75rem] sm:leading-[1.1]">
             {greeting()}
             {first ? `, ${first}` : ""}
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-2 text-ink-muted">
             {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
-            {facts.length > 0 && <span className="ml-3 hidden sm:inline">{facts.join(", ")}</span>}
+            {facts.length > 0 && <span className="ml-4 hidden text-ink-faint sm:inline">{facts.join(", ")}</span>}
           </p>
         </div>
         <ButtonLink to="/app/vitals">
-          <Plus className="h-5 w-5" aria-hidden="true" /> Log a reading
+          Log a reading
         </ButtonLink>
       </div>
 
       {!p?.onboardedAt && (
-        <Card className="border-action/30 bg-action-soft shadow-none">
-          <h2 className="text-lg">Finish setting up your profile</h2>
+        <Card boxed>
+          <h2 className="text-xl">Finish setting up your profile</h2>
           <p className="mt-1 max-w-prose text-ink-muted">
             Your age, heart history and medicines make every reading's check more accurate. It takes about two minutes.
           </p>
-          <ButtonLink to="/app/profile" className="mt-4">
+          <ButtonLink to="/app/profile" size="sm" className="mt-5">
             Set up profile
           </ButtonLink>
         </Card>
       )}
 
-      <Card flush>
-        <div className="px-5 pt-5 sm:px-6 sm:pt-6">
-          <SheetHeader title="Latest readings" />
-        </div>
+      <section>
+        <SheetHeader title="Latest readings" />
         <table className="w-full border-collapse text-left">
-          <thead className="hidden border-y border-line bg-well text-sm text-ink-muted sm:table-header-group">
+          <thead className="hidden text-sm text-ink-faint sm:table-header-group">
             <tr>
-              <th scope="col" className="px-6 py-2.5 font-semibold">Measure</th>
-              <th scope="col" className="px-3 py-2.5 font-semibold">Reading</th>
-              <th scope="col" className="px-3 py-2.5 font-semibold">Status</th>
-              <th scope="col" className="px-6 py-2.5 text-right font-semibold">Taken</th>
+              <th scope="col" className="pb-2 pr-3 font-[460]">Measure</th>
+              <th scope="col" className="px-3 pb-2 font-[460]">Reading</th>
+              <th scope="col" className="px-3 pb-2 font-[460]">Status</th>
+              <th scope="col" className="pb-2 pl-3 text-right font-[460]">Taken</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line border-t border-line sm:border-t-0">
+          <tbody className="divide-y divide-line border-y border-line">
             {ROWS.map((type) => {
               const v = l[type];
               return (
-                <tr key={type} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 px-5 py-4 sm:table-row sm:p-0">
-                  <th scope="row" className="font-semibold text-ink sm:px-6 sm:py-4">
+                <tr key={type} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 py-4 sm:table-row sm:p-0">
+                  <th scope="row" className="font-[460] text-ink-muted sm:py-5 sm:pr-3">
                     {VITAL_LABELS[type]}
                   </th>
                   {v ? (
                     <>
-                      <td className="figures row-start-2 text-2xl font-bold sm:px-3 sm:py-4">{formatReading(v)}</td>
-                      <td className="text-right sm:px-3 sm:py-4 sm:text-left">
+                      <td className="row-start-2 sm:px-3 sm:py-5">
+                        <Reading text={formatReading(v)} />
+                      </td>
+                      <td className="text-right sm:px-3 sm:py-5 sm:text-left">
                         <StatusBadge value={v.classification} />
                       </td>
-                      <td className="row-start-2 self-center text-right text-sm text-ink-muted sm:px-6 sm:py-4">{timeAgo(v.measuredAt)}</td>
+                      <td className="row-start-2 self-center text-right text-sm text-ink-faint sm:py-5 sm:pl-3">{timeAgo(v.measuredAt)}</td>
                     </>
                   ) : (
-                    <td colSpan={3} className="text-right text-ink-muted sm:px-3 sm:py-4 sm:text-left">
+                    <td colSpan={3} className="text-right text-ink-faint sm:px-3 sm:py-5 sm:text-left">
                       <span className="mr-3">Not recorded yet</span>
-                      <Link to="/app/vitals" className="font-semibold text-action hover:underline">
+                      <Link to="/app/vitals" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
                         Log it
                       </Link>
                     </td>
@@ -105,21 +104,34 @@ export function Overview() {
             })}
           </tbody>
         </table>
-      </Card>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-x-12 gap-y-14 lg:grid-cols-2">
         <TrendCard type="blood_pressure" title="Blood pressure trend" unit="mmHg" dual />
         <TrendCard type="heart_rate" title="Heart rate trend" unit="bpm" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+      <div className="grid gap-x-12 gap-y-14 lg:grid-cols-[1.15fr_1fr]">
         <RiskCard profile={p ?? null} latest={l} />
-        <div className="space-y-6">
+        <div className="space-y-14">
           <MedicationsCard />
           <SymptomsCard />
         </div>
       </div>
     </div>
+  );
+}
+
+/** "138/86 mmHg" set as a serif figure with a small sans unit. */
+function Reading({ text }: { text: string }) {
+  const at = text.lastIndexOf(" ");
+  const value = at > 0 ? text.slice(0, at) : text;
+  const unit = at > 0 ? text.slice(at + 1) : "";
+  return (
+    <span className="whitespace-nowrap">
+      <span className="reading text-[1.75rem] leading-none">{value}</span>
+      {unit && <span className="ml-1.5 text-sm text-ink-muted">{unit}</span>}
+    </span>
   );
 }
 
@@ -133,10 +145,10 @@ function TrendCard({ type, title, unit, dual }: { type: VitalType; title: string
   );
 }
 
-const RISK: Record<RiskFactorStatus, { icon: typeof CircleCheck; cls: string; text: string }> = {
-  present: { icon: CircleAlert, cls: "text-status-high", text: "Present" },
-  absent: { icon: CircleCheck, cls: "text-status-normal", text: "Not present" },
-  unknown: { icon: CircleDashed, cls: "text-ink-faint", text: "Not recorded" },
+const RISK: Record<RiskFactorStatus, { dot: string; text: string }> = {
+  present: { dot: "bg-status-high", text: "Present" },
+  absent: { dot: "bg-status-normal", text: "Not present" },
+  unknown: { dot: "border border-ink-faint", text: "Not recorded" },
 };
 
 function RiskCard({ profile, latest }: { profile: Parameters<typeof riskFactors>[0]; latest: Parameters<typeof riskFactors>[1] }) {
@@ -149,19 +161,20 @@ function RiskCard({ profile, latest }: { profile: Parameters<typeof riskFactors>
         title="Heart risk factors"
         description={`${present} of ${factors.length} present${unknown ? `, ${unknown} not recorded` : ""}. A checklist to discuss with your doctor, not a diagnosis.`}
       />
-      <ul className="divide-y divide-line border-t border-line">
+      <ul className="divide-y divide-line border-y border-line">
         {factors.map((f) => {
           const r = RISK[f.status];
-          const Icon = r.icon;
           return (
-            <li key={f.id} className="flex items-start gap-3 py-3">
-              <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${r.cls}`} aria-hidden="true" />
-              <div className="min-w-0 flex-1">
+            <li key={f.id} className="py-3.5">
+              <div className="min-w-0">
                 <p className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <span className="font-semibold">{f.label}</span>
-                  <span className={`text-sm font-semibold ${r.cls}`}>{r.text}</span>
+                  <span className="font-[540]">{f.label}</span>
+                  <span className="inline-flex items-center gap-2 text-sm text-ink-muted">
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${r.dot}`} />
+                    {r.text}
+                  </span>
                 </p>
-                <p className="text-sm text-ink-muted">{f.detail}</p>
+                <p className="mt-0.5 text-sm text-ink-muted">{f.detail}</p>
               </div>
             </li>
           );
@@ -178,7 +191,7 @@ function MedicationsCard() {
       <SheetHeader
         title="Medicines"
         action={
-          <Link to="/app/medications" className="font-semibold text-action hover:underline">
+          <Link to="/app/medications" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Manage
           </Link>
         }
@@ -188,19 +201,16 @@ function MedicationsCard() {
       ) : !data?.length ? (
         <p className="text-ink-muted">
           No medicines added.{" "}
-          <Link to="/app/medications" className="font-semibold text-action hover:underline">
+          <Link to="/app/medications" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Add your first
           </Link>
         </p>
       ) : (
-        <ul className="divide-y divide-line border-t border-line">
+        <ul className="divide-y divide-line border-y border-line">
           {data.slice(0, 5).map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-3 py-3">
-              <span className="flex items-center gap-3">
-                <Pill className="h-5 w-5 text-ink-faint" aria-hidden="true" />
-                <span>
-                  <span className="font-semibold">{m.name}</span> <span className="text-ink-muted">{m.dose}</span>
-                </span>
+            <li key={m.id} className="flex items-center justify-between gap-3 py-3.5">
+              <span>
+                <span className="font-[540]">{m.name}</span> <span className="text-ink-muted">{m.dose}</span>
               </span>
               <span className="figures text-ink-muted">{m.schedule.times.join(", ")}</span>
             </li>
@@ -218,7 +228,7 @@ function SymptomsCard() {
       <SheetHeader
         title="Recent symptoms"
         action={
-          <Link to="/app/symptoms" className="font-semibold text-action hover:underline">
+          <Link to="/app/symptoms" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Log a symptom
           </Link>
         }
@@ -228,13 +238,10 @@ function SymptomsCard() {
       ) : !data?.length ? (
         <p className="text-ink-muted">Nothing logged. Note anything unusual, even if it passed.</p>
       ) : (
-        <ul className="divide-y divide-line border-t border-line">
+        <ul className="divide-y divide-line border-y border-line">
           {data.slice(0, 3).map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-3 py-3">
-              <span className="flex items-center gap-3">
-                <Stethoscope className="h-5 w-5 text-ink-faint" aria-hidden="true" />
-                <span className="font-semibold first-letter:uppercase">{s.type}</span>
-              </span>
+            <li key={s.id} className="flex items-center justify-between gap-3 py-3.5">
+              <span className="font-[540] first-letter:uppercase">{s.type}</span>
               <span className="text-sm text-ink-muted">
                 <span className="figures">{s.severity}/10</span>, {timeAgo(s.occurredAt)}
               </span>

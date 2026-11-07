@@ -176,16 +176,16 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title={profile ? "Update your health profile" : "Set up your health profile"} subtitle="This helps us check your readings and personalise guidance. Only you can see it unless you invite a caretaker." />
-      <Card>
+      <Card boxed>
         <div className="mb-6">
-          <div className="mb-2 flex justify-between text-sm font-semibold text-ink-muted">
+          <div className="mb-2 flex justify-between text-sm font-[540] text-ink-muted">
             <span>
               Step {step + 1} of {STEPS.length}: {STEPS[step]}
             </span>
             <span>{Math.round(((step + 1) / STEPS.length) * 100)}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-well">
-            <div className="h-full rounded-full bg-action transition-[width] duration-300 ease-out" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+            <div className="h-full rounded-full bg-ink transition-[width] duration-300 ease-out" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
           </div>
         </div>
 
@@ -226,7 +226,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                     </Field>
                   </div>
                   <fieldset className="rounded-sheet border border-line p-4">
-                    <legend className="px-1 text-sm font-semibold text-ink">Emergency contact (optional)</legend>
+                    <legend className="px-1 text-sm font-[540] text-ink">Emergency contact (optional)</legend>
                     <div className="grid gap-4 sm:grid-cols-3">
                       <Field label="Name">
                         <input className={inputClass} value={f.contactName} onChange={(e) => set("contactName", e.target.value)} />
@@ -245,7 +245,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
               {step === 1 && (
                 <>
                   <fieldset>
-                    <legend className="mb-2 text-sm font-semibold text-ink">Conditions you've been diagnosed with</legend>
+                    <legend className="mb-2 text-sm font-[540] text-ink">Conditions you've been diagnosed with</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {HEART_CONDITIONS.map((c) => (
                         <label key={c} className="flex items-center gap-2 text-ink">
@@ -271,7 +271,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
                     <input className={inputClass} value={f.allergies} onChange={(e) => set("allergies", e.target.value)} placeholder="Penicillin, peanuts" />
                   </Field>
                   <fieldset>
-                    <legend className="mb-2 text-sm font-semibold text-ink">Close family (parents, siblings) with</legend>
+                    <legend className="mb-2 text-sm font-[540] text-ink">Close family (parents, siblings) with</legend>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {FAMILY.map((c) => (
                         <label key={c} className="flex items-center gap-2 text-ink">
@@ -343,7 +343,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
             </div>
 
           {stepError && (
-            <p role="alert" className="mt-4 text-sm font-semibold text-danger">
+            <p role="alert" className="mt-4 text-sm font-[540] text-danger">
               {stepError}
             </p>
           )}

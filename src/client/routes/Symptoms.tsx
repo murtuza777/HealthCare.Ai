@@ -13,7 +13,7 @@ const COMMON = SYMPTOM_TYPES.filter((t) => t !== "other");
 export function Symptoms() {
   const [redFlag, setRedFlag] = useState<RedFlag | null>(null);
   return (
-    <div className="space-y-6">
+    <div className="space-y-14">
       <PageHeader title="Symptoms" subtitle="Log how you feel. Patterns help your doctor, and urgent combinations are flagged right away." />
       {redFlag?.emergency && <CriticalBanner kind="symptom" reason={redFlag.reason} />}
       <LogSymptom onSaved={setRedFlag} />
@@ -57,8 +57,8 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
   }
 
   return (
-    <Card>
-      <h2 className="text-lg font-semibold">Log a symptom</h2>
+    <Card boxed>
+      <h2 className="text-xl">Log a symptom</h2>
       <form onSubmit={submit} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Main symptom">
@@ -83,10 +83,10 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           <input type="range" min={1} max={10} className="w-full accent-action" value={severity} onChange={(e) => setSeverity(Number(e.target.value))} />
         </Field>
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-ink">Also feeling</legend>
+          <legend className="mb-2 text-sm font-[540] text-ink">Also feeling</legend>
           <div className="flex flex-wrap gap-2">
             {COMMON.filter((t) => t !== type).map((t) => (
-              <label key={t} className={`cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${also.includes(t) ? "border border-action bg-action text-white" : "border border-line-strong bg-sheet text-ink hover:bg-well"}`}>
+              <label key={t} className={`cursor-pointer select-none rounded-full px-3.5 py-1.5 text-sm font-[500] transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${also.includes(t) ? "border border-ink bg-ink text-white" : "border border-line-strong bg-sheet text-ink hover:border-ink/30"}`}>
                 <input type="checkbox" className="sr-only" checked={also.includes(t)} onChange={() => setAlso(also.includes(t) ? also.filter((x) => x !== t) : [...also, t])} />
                 {sentence(t)}
               </label>
@@ -97,7 +97,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           <textarea rows={2} className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What were you doing when it started?" />
         </Field>
         {livePreview?.emergency && (
-          <p role="alert" className="rounded-control bg-danger-soft p-3.5 text-sm font-semibold text-danger">
+          <p role="alert" className="rounded-control bg-danger-soft p-3.5 text-sm font-[540] text-danger">
             {livePreview.reason} If this is happening now, use the Emergency button or call your local emergency number.
           </p>
         )}
@@ -117,15 +117,15 @@ function SymptomList() {
   const del = useDeleteSymptom();
   return (
     <Card>
-      <h2 className="mb-3 text-lg font-semibold">History</h2>
+      <h2 className="mb-4 text-xl">History</h2>
       {isPending && <Loading />}
       <ErrorText error={error} />
       {data?.length === 0 && <EmptyState icon={<Stethoscope className="h-10 w-10" />} title="No symptoms logged" body="Symptoms you log will appear here." />}
-      <ul className="divide-y divide-white/10">
+      <ul className="divide-y divide-line border-y border-line">
         {data?.map((s) => (
           <li key={s.id} className="flex items-start justify-between gap-3 py-3">
             <div>
-              <p className="font-semibold first-letter:uppercase">
+              <p className="font-[540] first-letter:uppercase">
                 {s.type}, <span className="figures">severity {s.severity}/10</span>
               </p>
               <p className="text-sm text-ink-muted">

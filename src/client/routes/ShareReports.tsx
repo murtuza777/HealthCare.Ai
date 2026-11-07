@@ -30,15 +30,15 @@ export function ShareReports() {
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
-    <div className="space-y-6">
-      <Link to="/app/reports" className="inline-flex items-center gap-1 text-sm font-semibold text-action hover:underline">
+    <div className="space-y-14">
+      <Link to="/app/reports" className="inline-flex items-center gap-1 text-sm font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to reports
       </Link>
       <PageHeader title="Share reports" subtitle="Create a link and QR code your doctor can open without an account. It stops working when it expires or you revoke it." />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="text-lg font-semibold">1. Choose what to share</h2>
+        <Card boxed>
+          <h2 className="text-xl">1. Choose what to share</h2>
           {reports.isPending && <Loading />}
           {reports.data?.length === 0 && (
             <EmptyState icon={<QrCode className="h-10 w-10" />} title="No reports to share" body="Upload a report first." action={<Link to="/app/reports"><Button>Go to reports</Button></Link>} />
@@ -65,10 +65,10 @@ export function ShareReports() {
                 </ul>
               </fieldset>
               <fieldset>
-                <legend className="mb-2 text-sm font-semibold text-ink">Link works for</legend>
+                <legend className="mb-2 text-sm font-[540] text-ink">Link works for</legend>
                 <div className="flex flex-wrap gap-2">
                   {DURATIONS.map((d) => (
-                    <label key={d.value} className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${expiresIn === d.value ? "border border-action bg-action text-white" : "border border-line-strong bg-sheet text-ink hover:bg-well"}`}>
+                    <label key={d.value} className={`cursor-pointer select-none rounded-full px-4 py-1.5 text-sm font-[500] transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${expiresIn === d.value ? "border border-ink bg-ink text-white" : "border border-line-strong bg-sheet text-ink hover:border-ink/30"}`}>
                       <input type="radio" name="expires" className="sr-only" checked={expiresIn === d.value} onChange={() => setExpiresIn(d.value)} />
                       {d.label}
                     </label>
@@ -87,8 +87,8 @@ export function ShareReports() {
           )}
         </Card>
 
-        <Card>
-          <h2 className="text-lg font-semibold">2. Show or send it</h2>
+        <Card boxed>
+          <h2 className="text-xl">2. Show or send it</h2>
           {create.data ? <NewLink url={create.data.url} expiresAt={create.data.expiresAt} /> : <p className="mt-4 text-ink-muted">Your QR code and link will appear here.</p>}
         </Card>
       </div>
@@ -132,10 +132,10 @@ function ActiveLinks() {
   const revoke = useRevokeShare();
   return (
     <Card>
-      <h2 className="mb-3 text-lg font-semibold">Your share links</h2>
+      <h2 className="mb-4 text-xl">Your share links</h2>
       {isPending && <Loading />}
       {data?.length === 0 && <p className="text-ink-muted">You haven't shared anything yet.</p>}
-      <ul className="divide-y divide-white/10">
+      <ul className="divide-y divide-line border-y border-line">
         {data?.map((s) => (
           <li key={s.id} className={`flex flex-wrap items-center justify-between gap-3 py-3 ${s.active ? "" : "opacity-60"}`}>
             <div>

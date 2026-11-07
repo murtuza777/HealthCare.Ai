@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, FileText, LayoutGrid, LogOut, Pill, Siren, Stethoscope, UserRound } from "lucide-react";
+import { Activity, FileText, LayoutGrid, LogOut, Pill, Stethoscope, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { authClient, useSession } from "../lib/auth-client";
 import { useProfile } from "../lib/queries";
@@ -9,8 +9,8 @@ import { EmergencyDialog } from "../components/EmergencyDialog";
 import { HeartMark } from "../components/Shell";
 import { Loading } from "../components/ui";
 
-// Operate surface. Top bar with tabs on wide screens; a bottom tab bar on phones (the pattern
-// patients already know). Emergency is one tap away everywhere and is the only red control.
+// Operate surface. A quiet top bar with text tabs on wide screens; a bottom tab bar on phones.
+// Emergency is one tap away everywhere: an outlined red pill, the only red control.
 
 const NAV: { to: string; label: string; short: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/app", label: "Overview", short: "Overview", icon: LayoutGrid, end: true },
@@ -29,7 +29,7 @@ export function AppLayout() {
 
   if (isPending) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8">
         <Loading label="Opening your record" />
       </div>
     );
@@ -44,28 +44,26 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-ground pb-24 md:pb-0">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-sheet focus:px-4 focus:py-2 focus:shadow-lift">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white">
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-line bg-sheet/95 backdrop-blur supports-[backdrop-filter]:bg-sheet/85">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-          <Link to="/app" className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
+      <header className="sticky top-0 z-30 border-b border-line bg-ground/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-5xl items-center gap-8 px-5 sm:px-8">
+          <Link to="/app" className="inline-flex items-center gap-2 rounded-md text-ink" aria-label="Healthcare.AI, overview">
             <HeartMark />
-            <span className="hidden sm:inline">Healthcare.AI</span>
+            <span className="hidden font-serif text-[1.3125rem] leading-none tracking-[-0.02em] sm:inline">Healthcare.AI</span>
           </Link>
 
-          <nav aria-label="Sections" className="hidden h-full md:flex">
-            <ul className="flex h-full">
+          <nav aria-label="Sections" className="hidden md:block">
+            <ul className="flex items-center gap-1">
               {NAV.map((item) => (
-                <li key={item.to} className="h-full">
+                <li key={item.to}>
                   <NavLink
                     to={item.to}
                     end={item.end}
                     className={({ isActive }) =>
-                      `relative flex h-full items-center px-3 font-semibold transition-colors ${
-                        isActive
-                          ? "text-ink after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t after:bg-action"
-                          : "text-ink-muted hover:text-ink"
+                      `inline-flex h-9 items-center rounded-full px-3.5 text-[0.9375rem] transition-colors duration-150 ${
+                        isActive ? "bg-ink/[0.06] font-[560] text-ink" : "font-[460] text-ink-muted hover:text-ink"
                       }`
                     }
                   >
@@ -76,27 +74,27 @@ export function AppLayout() {
             </ul>
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1">
             <button
               onClick={() => setEmergencyOpen(true)}
-              className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control bg-danger px-3.5 font-semibold text-white transition-colors hover:bg-danger-hover"
+              className="mr-1 inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full border border-danger/30 px-3.5 text-[0.9375rem] font-[560] text-danger transition-[background-color,border-color,transform] duration-150 ease-out hover:border-danger hover:bg-danger-soft active:scale-[0.97]"
             >
-              <Siren className="h-4 w-4" aria-hidden="true" /> Emergency
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-danger" /> Emergency
             </button>
             <NavLink
               to="/app/profile"
               className={({ isActive }) =>
-                `inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control px-2.5 font-semibold transition-colors ${isActive ? "bg-action-soft text-ink" : "text-ink-muted hover:bg-well hover:text-ink"}`
+                `inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] transition-colors duration-150 ${isActive ? "bg-ink/[0.06] font-[560] text-ink" : "text-ink-muted hover:text-ink"}`
               }
             >
-              <UserRound className="h-5 w-5" aria-hidden="true" />
+              <UserRound className="h-[1.125rem] w-[1.125rem] lg:hidden" aria-hidden="true" />
               <span className="hidden lg:inline">
                 <AccountName fallback={session.user.email} />
               </span>
               <span className="sr-only lg:hidden">Profile</span>
             </NavLink>
-            <button onClick={signOut} className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-control px-2.5 font-semibold text-ink-muted transition-colors hover:bg-well hover:text-ink">
-              <LogOut className="h-5 w-5" aria-hidden="true" />
+            <button onClick={signOut} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] text-ink-muted transition-colors duration-150 hover:text-ink">
+              <LogOut className="h-[1.125rem] w-[1.125rem] sm:hidden" aria-hidden="true" />
               <span className="hidden sm:inline">Sign out</span>
               <span className="sr-only sm:hidden">Sign out</span>
             </button>
@@ -104,11 +102,13 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-        <Outlet />
+      <main id="main" className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+        <div key={location.pathname} className="settle">
+          <Outlet />
+        </div>
       </main>
 
-      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-sheet pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         <ul className="grid grid-cols-5">
           {NAV.map(({ to, short, icon: Icon, end }) => (
             <li key={to}>
@@ -116,12 +116,12 @@ export function AppLayout() {
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors ${isActive ? "text-action" : "text-ink-muted"}`
+                  `flex min-h-16 flex-col items-center justify-center gap-1 text-xs transition-colors ${isActive ? "font-[600] text-ink" : "text-ink-faint"}`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className="h-6 w-6" strokeWidth={isActive ? 2.4 : 1.9} aria-hidden="true" />
+                    <Icon className="h-[1.375rem] w-[1.375rem]" strokeWidth={isActive ? 2 : 1.6} aria-hidden="true" />
                     {short}
                   </>
                 )}
