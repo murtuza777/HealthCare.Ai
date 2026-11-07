@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Activity, FileText, LayoutGrid, LogOut, Pill, Stethoscope, UserRound } from "lucide-react";
+import { Activity, FileText, LayoutGrid, LogOut, MessagesSquare, Pill, Stethoscope, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { authClient, useSession } from "../lib/auth-client";
 import { useProfile } from "../lib/queries";
@@ -15,6 +15,7 @@ import { Loading } from "../components/ui";
 const NAV: { to: string; label: string; short: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/app", label: "Overview", short: "Overview", icon: LayoutGrid, end: true },
   { to: "/app/vitals", label: "Readings", short: "Readings", icon: Activity },
+  { to: "/app/assistant", label: "Assistant", short: "Assistant", icon: MessagesSquare },
   { to: "/app/medications", label: "Medicines", short: "Medicines", icon: Pill },
   { to: "/app/symptoms", label: "Symptoms", short: "Symptoms", icon: Stethoscope },
   { to: "/app/reports", label: "Reports", short: "Reports", icon: FileText },
@@ -109,14 +110,14 @@ export function AppLayout() {
       </main>
 
       <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-6">
           {NAV.map(({ to, short, icon: Icon, end }) => (
             <li key={to}>
               <NavLink
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex min-h-16 flex-col items-center justify-center gap-1 text-xs transition-colors ${isActive ? "font-[600] text-ink" : "text-ink-faint"}`
+                  `flex min-h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] transition-colors ${isActive ? "font-[600] text-ink" : "text-ink-faint"}`
                 }
               >
                 {({ isActive }) => (
