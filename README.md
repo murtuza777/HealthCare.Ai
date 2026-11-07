@@ -89,6 +89,21 @@ Production secrets (set once with `npx wrangler secret put <NAME>`):
 
 CI runs on every push. To deploy automatically from `main`, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub.
 
+## Development skills
+
+Agent skills (from [skills.sh](https://skills.sh)) used when building this app, installed per project in `.claude/skills/` (git-ignored, because not every source is licensed for redistribution):
+
+| Skill | Source | Use |
+|---|---|---|
+| frontend-design | anthropics/skills @ 2c5958e | Distinctive, intentional visual design |
+| impeccable | pbakaus/impeccable @ 687bc38 (without `scripts/`) | Critique, audit, polish, typeset, layout, onboarding |
+| emil-design-eng | emilkowalski/skill @ c8a7962 | Motion, detail and component craft |
+| web-design-guidelines | vercel-labs/agent-skills @ 1a2c79d | Accessibility and interface rules review |
+| react-best-practices | vercel-labs/agent-skills @ 1a2c79d | React performance patterns |
+| composition-patterns | vercel-labs/agent-skills @ 1a2c79d | Component architecture |
+
+To install on another machine: `npx skills add <source> --skill <name>` (for example `npx skills add anthropics/skills --skill frontend-design`). The impeccable launcher in `scripts/` downloads and runs a binary; it was left out on purpose, and the skill falls back to reading `PRODUCT.md` and `DESIGN.md` directly.
+
 ## Project Structure
 
 ```

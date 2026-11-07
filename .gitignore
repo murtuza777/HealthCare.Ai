@@ -40,3 +40,6 @@ next-env.d.ts
 dist
 .dev.vars
 !.dev.vars.example
+
+# Third-party agent skills (installed locally; see README "Development skills")
+.claude/skills/
