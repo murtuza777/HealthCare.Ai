@@ -1,10 +1,7 @@
-import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import worker from "../src/worker";
 import { call, signIn as signInBase } from "./helpers";
 
-// The first sign-ins also check that a wrong code is rejected.
+// The first sign-ups also check that a wrong verification code is rejected.
 const signIn = (email: string, ip: string) => signInBase(email, ip, { checkWrongCode: true });
 
 describe("API", () => {
@@ -102,35 +99,5 @@ describe("API", () => {
 
     const badTz = await call("/api/v1/patients/me/profile", { cookie: gus, method: "PUT", body: { timezone: "Mars/Olympus" } });
     expect(badTz.status).toBe(400);
-  });
-
-  it("refuses to pretend a code was sent when email isn't configured", async () => {
-    // Production-like env: no RESEND_API_KEY and no outbox mode. A new env object gets its own auth instance.
-    const prodLike = { ...env, EMAIL_MODE: "", RESEND_API_KEY: "" };
-    const ctx = createExecutionContext();
-    const res = await worker.fetch(
-      new Request(`${env.APP_URL}/api/auth/email-otp/send-verification-otp`, {
-        method: "POST",
-        headers: { origin: env.APP_URL, "content-type": "application/json", "cf-connecting-ip": "198.51.100.40" },
-        body: JSON.stringify({ email: "nomail@example.com", type: "sign-in" }),
-      }),
-      prodLike,
-      ctx,
-    );
-    await waitOnExecutionContext(ctx);
-    expect(res.status).toBe(503);
-  });
-
-  it("rate-limits sign-in code requests per IP", async () => {
-    const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) {
-      const res = await call("/api/auth/email-otp/send-verification-otp", {
-        body: { email: `rl${i}@example.com`, type: "sign-in" },
-        ip: "198.51.100.7",
-      });
-      statuses.push(res.status);
-    }
-    expect(statuses.slice(0, 5).every((s) => s === 200)).toBe(true);
-    expect(statuses[5]).toBe(429);
   });
 });

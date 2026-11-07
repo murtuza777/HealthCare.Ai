@@ -44,7 +44,7 @@ Runs entirely on Cloudflare's free plan (see [docs/TECH_PLAN.md](docs/TECH_PLAN.
 - **Frontend:** Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Framer Motion, Recharts, Lucide icons
 - **API:** Hono on Cloudflare Workers, typed end to end (the browser client gets its types from the API)
 - **Data:** Cloudflare D1 (SQLite) with Drizzle ORM and migrations
-- **Auth:** Better Auth, passwordless (6-digit email code), optional Google sign-in
+- **Auth:** Better Auth with email + password (stretched in the browser, see below), email verification and password reset by code, JWT session cookies and Bearer access tokens, optional Google sign-in and Cloudflare Turnstile
 - **Email:** Resend, through an outbox table that retries failed sends
 - **Validation and clinical rules:** Zod schemas and rule functions in `src/shared`, used by both the API and the browser
 - **Tests:** Vitest running inside Cloudflare's runtime against a real local D1
@@ -60,7 +60,7 @@ npm run db:migrate:local
 npm run dev                           # http://localhost:5173
 ```
 
-Without `RESEND_API_KEY`, sign-in codes aren't emailed; read the latest one from the local outbox:
+Locally `EMAIL_MODE=outbox` keeps emails (verification and reset codes) in the database; read the latest one:
 
 ```bash
 npx wrangler d1 execute DB --local --command "SELECT recipient, payload FROM outbox ORDER BY created_at DESC LIMIT 1"
@@ -82,7 +82,10 @@ npm run db:migrate:remote                            # apply new migrations firs
 npm run deploy                                       # build and deploy the Worker
 ```
 
-Production secrets (set once with `npx wrangler secret put <NAME>`): `BETTER_AUTH_SECRET` (set), `RESEND_API_KEY` (needed for login emails), and optionally `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+Production secrets (set once with `npx wrangler secret put <NAME>`):
+- `BETTER_AUTH_SECRET` and `PASSWORD_PEPPER` (both set; never change the pepper once users exist, or every password stops working)
+- `RESEND_API_KEY`: turns on email verification and password reset. Until it's set, sign-up signs people in without verifying their email.
+- Optional: `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI `<APP_URL>/api/auth/callback/google`), `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`.
 
 CI runs on every push. To deploy automatically from `main`, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub.
 
@@ -101,6 +104,8 @@ docs/            PRD and technical implementation plan
 ```
 
 Security notes:
+- **Passwords:** the browser stretches the password with PBKDF2-SHA256 (600,000 rounds, salted with the email) and sends only the result. The server stores a salted HMAC of that with a secret pepper (~0.1 ms of CPU, so it fits the free plan). The password itself never reaches the server. Password rules and the Have I Been Pwned check run in the browser.
+- **Sessions and tokens:** an httpOnly session cookie (revocable, in D1) plus a 5-minute signed JWT cookie cache. `GET /api/auth/token` issues 15-minute EdDSA access tokens; `/api/auth/jwks` publishes the public keys; the API accepts `Authorization: Bearer`.
 - D1 has no row-level security, so every query goes through `src/worker/dal`, which checks the caller's access. A lint rule blocks database imports anywhere else.
 - Emergency detection (vital thresholds, symptom red flags) is rule-based and runs without AI. Thresholds are pending clinician review.
 

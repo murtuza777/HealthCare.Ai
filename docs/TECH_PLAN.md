@@ -45,7 +45,7 @@ This document describes how to take Healthcare.AI from its current state to the 
 | Dev tooling | **@cloudflare/vite-plugin** | `vite dev` runs the API in workerd (the real runtime) with local D1/R2. |
 | Database | **Cloudflare D1** (SQLite) + **Drizzle ORM** | Free 5 GB, native binding, typed schema and migrations. |
 | File storage | **Cloudflare R2** | 10 GB free, no egress fees. |
-| Auth | **Better Auth**, **passwordless**: 6-digit email code (email-OTP plugin) and Google sign-in | Password hashing costs 60–150 ms CPU per login and doesn't fit the free plan. Codes are stored hashed. Simpler for older users too. |
+| Auth | **Better Auth**: email + password, email verification and reset by 6-digit code, Google, Cloudflare Turnstile | Server-side password hashing costs 60–150 ms CPU (over the free plan's 10 ms), so the browser stretches the password (PBKDF2 600k) and the server stores a peppered HMAC (~0.1 ms). Sessions: revocable cookie + 5-minute JWT cookie cache; 15-minute EdDSA access tokens with JWKS for non-browser clients. |
 | Email | **Resend** (HTTP API) via an outbox table | ~3,000 emails/month free. The outbox makes sending retryable and idempotent. |
 | AI | **Vercel AI SDK** (`ai`) behind **Cloudflare AI Gateway** | Provider-agnostic streaming, tools and structured output. LLM waiting time is network I/O, not CPU. |
 | LLM | **Gemini** (free tier) for development; choose the production model in Phase 4 | Swappable via the AI SDK. |
@@ -64,7 +64,7 @@ flowchart LR
     subgraph CF["Cloudflare (single Worker, free plan)"]
         ASSETS["Static assets<br/>(no Worker run, no CPU)"]
         subgraph API["Hono API — /api/*"]
-            AUTH["Better Auth<br/>email code + Google"]
+            AUTH["Better Auth<br/>password + Google + JWT"]
             MW["Session + authz middleware"]
             ROUTES["/api/v1/* routes<br/>(Zod-validated)"]
             DAL["Data access layer<br/>(authz enforced here)"]
@@ -166,7 +166,7 @@ D1 has **no row-level security**, so authorization is enforced in one place: the
 - **Every DAL function takes the acting user** and a target `patientId`, and calls `canAccess(actor, patientId, permission)` first. Routes and AI tools never query tables directly; only `src/worker/dal` imports the db client.
 - Permissions: `owner` (everything); caretakers per `care_links.permissions` (`vitals`, `meds`, `reports`, `alerts`).
 - **Authorization tests** for every DAL function: user B can't read or write user A's data; a caretaker without a permission is denied.
-- **Login:** email codes are 6 digits, stored hashed, expire in 5 minutes, allow 3 attempts, and are rate-limited per email and per IP (Better Auth limiter in D1). Session cookies are `HttpOnly`, `Secure`, `SameSite=Lax`. Better Auth checks the request `Origin`.
+- **Login:** email + password; the password is stretched in the browser (PBKDF2-SHA256, 600,000 rounds) and stored server-side as `HMAC-SHA256(PASSWORD_PEPPER, salt ‖ key)`. Verification and reset codes are 6 digits, stored hashed, expire in 10 minutes, allow 3 attempts. Rate limits per IP (D1-backed): 10 sign-ins per 5 minutes, 10 sign-ups per hour, 5 code requests per 5 minutes. Turnstile on sign-up, sign-in and reset when configured. Session cookies are `HttpOnly`, `Secure`, `SameSite=Lax`; Better Auth checks the request `Origin`.
 - **Share links:** 32 random bytes, stored as SHA-256 hash, with expiry and revocation; every open is logged.
 - **Files:** never public. Downloads go through an access-checked route that streams from R2. Uploads are size- and type-checked.
 - **Secrets:** `wrangler secret put` in production, `.dev.vars` locally (git-ignored). The SPA bundle is public by definition, so it holds no secrets at all.

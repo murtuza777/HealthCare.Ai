@@ -1,123 +1,89 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { authClient, useSession } from "../lib/auth-client";
-import { buttonClass, Card, inputClass, Shell } from "../components/Shell";
+import { derivePasswordKey } from "../lib/password";
+import { AuthLayout, authErrorMessage, Divider, GoogleButton, PasswordInput, safeNext, useAuthConfig } from "../lib/auth-ui";
+import { Turnstile } from "../components/Turnstile";
+import { buttonClass, inputClass } from "../components/Shell";
 
-// Passwordless: email → 6-digit code → signed in. New emails get an account automatically.
 export function Login() {
   const { data: session, isPending } = useSession();
+  const config = useAuthConfig();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
-  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState("");
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [error, setError] = useState<string | null>(params.get("error") === "google" ? "Google sign-in didn't complete. Please try again." : null);
+  const [busy, setBusy] = useState<false | "securing" | "signing-in">(false);
 
   if (!isPending && session) return <Navigate to={next} replace />;
+  const needsCaptcha = Boolean(config.data?.turnstileSiteKey);
 
-  async function sendCode(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    if (needsCaptcha && !captcha) return setError("Please complete the security check.");
     setError(null);
-    const { error } = await authClient.emailOtp.sendVerificationOtp({ email, type: "sign-in" });
+    setBusy("securing");
+    const key = await derivePasswordKey(email, password);
+    setBusy("signing-in");
+    const { error } = await authClient.signIn.email(
+      { email: email.trim(), password: key },
+      { headers: captcha ? { "x-captcha-response": captcha } : {} },
+    );
     setBusy(false);
-    if (error) {
-      setError(
-        error.status === 429
-          ? "Too many attempts. Wait a few minutes."
-          : error.status === 503
-            ? "Email sign-in isn't available yet. Please try again later."
-            : "Couldn't send the code. Check the email address.",
-      );
-      return;
+    if (!error) return navigate(next, { replace: true });
+    setCaptchaReset((n) => n + 1); // tokens are single-use
+    if (error.status === 403) {
+      // Email not verified yet: a fresh code is sent on sign-in attempts.
+      return navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(next)}`);
     }
-    setStep("code");
-  }
-
-  async function verify(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const { error } = await authClient.signIn.emailOtp({ email, otp });
-    setBusy(false);
-    if (error) {
-      setError("That code didn't work. Check it, or request a new one.");
-      return;
-    }
-    navigate(next, { replace: true });
+    setError(authErrorMessage(error));
   }
 
   return (
-    <Shell>
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4">
-        <Card>
-          <h1 className="text-2xl font-semibold">Sign in to Healthcare.AI</h1>
-          {step === "email" ? (
-            <form onSubmit={sendCode} className="mt-6 space-y-4">
-              <label className="block text-sm text-gray-300">
-                Email
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`mt-1 ${inputClass}`}
-                />
-              </label>
-              <button type="submit" disabled={busy} className={`w-full ${buttonClass}`}>
-                {busy ? "Sending…" : "Email me a sign-in code"}
-              </button>
-              <p className="text-xs text-gray-400">No password needed. New here? Signing in creates your account.</p>
-            </form>
-          ) : (
-            <form onSubmit={verify} className="mt-6 space-y-4">
-              <p className="text-sm text-gray-300">
-                We sent a 6-digit code to <span className="font-medium text-white">{email}</span>. It expires in 5
-                minutes.
-              </p>
-              <label className="block text-sm text-gray-300">
-                Code
-                <input
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  required
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className={`mt-1 text-center text-xl tracking-[0.5em] ${inputClass}`}
-                />
-              </label>
-              <button type="submit" disabled={busy || otp.length !== 6} className={`w-full ${buttonClass}`}>
-                {busy ? "Checking…" : "Sign in"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("email");
-                  setOtp("");
-                }}
-                className="w-full text-sm text-gray-400 hover:text-white"
-              >
-                Use a different email
-              </button>
-            </form>
-          )}
-          {error && (
-            <p role="alert" className="mt-4 text-sm text-red-400">
-              {error}
-            </p>
-          )}
-        </Card>
-      </main>
-    </Shell>
+    <AuthLayout
+      title="Sign in"
+      subtitle="Welcome back."
+      footer={
+        <>
+          New to Healthcare.AI?{" "}
+          <Link to={`/signup${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-medium text-red-400 hover:text-red-300">
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      {config.data?.google && (
+        <>
+          <GoogleButton next={next} />
+          <Divider />
+        </>
+      )}
+      <form onSubmit={submit} className="space-y-4">
+        {params.get("reset") === "1" && <p className="text-sm text-emerald-300">Password updated. Sign in with your new password.</p>}
+        <label className="block text-sm text-gray-300">
+          Email
+          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1 ${inputClass}`} />
+        </label>
+        <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
+        <div className="text-right text-sm">
+          <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="text-gray-300 hover:text-white">
+            Forgot password?
+          </Link>
+        </div>
+        <Turnstile siteKey={config.data?.turnstileSiteKey ?? null} onToken={setCaptcha} resetKey={captchaReset} />
+        <button type="submit" disabled={Boolean(busy)} className={`w-full ${buttonClass}`}>
+          {busy === "securing" ? "Securing…" : busy === "signing-in" ? "Signing in…" : "Sign in"}
+        </button>
+        {error && (
+          <p role="alert" className="text-sm text-red-400">
+            {error}
+          </p>
+        )}
+      </form>
+    </AuthLayout>
   );
-}
-
-/** Only allow in-app redirects (prevents open redirects via ?next=). */
-function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/app";
 }

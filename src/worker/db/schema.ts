@@ -73,6 +73,17 @@ export const verification = sqliteTable(
   (t) => [index("verification_identifier_idx").on(t.identifier)],
 );
 
+// Signing keys for the JWT plugin (private keys are encrypted with BETTER_AUTH_SECRET).
+export const jwks = sqliteTable("jwks", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  privateKey: text("private_key").notNull(),
+  createdAt: ts("created_at").notNull(),
+  expiresAt: ts("expires_at"),
+  alg: text("alg"),
+  crv: text("crv"),
+});
+
 export const rateLimit = sqliteTable("rate_limit", {
   id: text("id").primaryKey(),
   key: text("key").notNull().unique(),

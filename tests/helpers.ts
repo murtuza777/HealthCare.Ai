@@ -33,25 +33,44 @@ export async function call(path: string, init: CallInit = {}) {
   return res;
 }
 
-/** Sign in with an email code, read from the outbox (no email provider in tests). Returns the cookie header. */
-export async function signIn(email: string, ip: string, { checkWrongCode = false } = {}): Promise<string> {
-  const send = await call("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" }, ip });
-  expect(send.status).toBe(200);
-  const row = await db.select().from(outbox).where(eq(outbox.recipient, email)).orderBy(desc(outbox.createdAt)).get();
-  const otp = String(row!.payload.otp);
-  expect(otp).toMatch(/^\d{6}$/);
+/**
+ * A browser-derived password key (what the client sends instead of the password; see src/shared/auth.ts).
+ * The server can't tell how it was derived, so tests use random keys instead of running 600k PBKDF2 rounds.
+ */
+export const randomKey = () => [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, "0")).join("");
 
-  if (checkWrongCode) {
-    const wrong = await call("/api/auth/sign-in/email-otp", { body: { email, otp: otp === "000000" ? "111111" : "000000" }, ip });
-    expect(wrong.status).toBe(400);
-  }
-
-  const res = await call("/api/auth/sign-in/email-otp", { body: { email, otp }, ip });
-  expect(res.status).toBe(200);
-  const cookies = res.headers
+export const cookiesFrom = (res: Response) =>
+  res.headers
     .getSetCookie()
     .map((c) => c.split(";")[0])
     .join("; ");
+
+/** Latest code emailed to an address (tests run with EMAIL_MODE=outbox). */
+export async function latestCode(email: string, kind?: string): Promise<string> {
+  const rows = await db.select().from(outbox).where(eq(outbox.recipient, email)).orderBy(desc(outbox.createdAt));
+  const row = rows.find((r) => !kind || r.kind === kind);
+  const otp = String(row?.payload.otp ?? "");
+  expect(otp).toMatch(/^\d{6}$/);
+  return otp;
+}
+
+/**
+ * Sign up with email + password, verify the email with the emailed code, and return the session cookie.
+ * Verification signs the user in (autoSignInAfterVerification).
+ */
+export async function signIn(email: string, ip: string, { checkWrongCode = false, password = randomKey() } = {}): Promise<string> {
+  const up = await call("/api/auth/sign-up/email", { body: { email, password, name: email.split("@")[0] }, ip });
+  expect(up.status).toBe(200);
+  const otp = await latestCode(email, "otp:email-verification");
+
+  if (checkWrongCode) {
+    const wrong = await call("/api/auth/email-otp/verify-email", { body: { email, otp: otp === "000000" ? "111111" : "000000" }, ip });
+    expect(wrong.status).toBe(400);
+  }
+
+  const res = await call("/api/auth/email-otp/verify-email", { body: { email, otp }, ip });
+  expect(res.status).toBe(200);
+  const cookies = cookiesFrom(res);
   expect(cookies).toContain("session_token");
   return cookies;
 }
