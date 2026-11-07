@@ -1,143 +1,216 @@
-import { motion } from "framer-motion";
-import { Activity, ArrowRight, BellRing, ChevronDown, FileHeart, HeartPulse, ShieldCheck, Users } from "lucide-react";
 import { Link } from "react-router";
-import { MedicalAnimation } from "../components/MedicalAnimation";
+import { Clock, FileText, Link2, Pill, ShieldCheck, TriangleAlert } from "lucide-react";
+import type { ReactNode } from "react";
+import { HeartMark } from "../components/Shell";
+import { ButtonLink, StatusBadge } from "../components/ui";
+import { SampleTrace } from "../components/SampleTrace";
 
-// Ported from legacy/app/page.tsx + HomeClient.tsx. Removed: the artificial 2-second loading
-// screen. Added: the "Learn more" section the old button pointed to.
+// Persuade surface. Direction: clinic chart (docs/design/brief.md). The hero proves the product
+// with a chart sheet instead of claiming it; all figures on this page are labelled sample data.
 
-const FEATURES = [
-  {
-    icon: HeartPulse,
-    title: "Your heart health in one place",
-    body: "Log blood pressure, heart rate, oxygen and glucose. Every reading is checked against clinical ranges and charted over time.",
-  },
-  {
-    icon: BellRing,
-    title: "Never miss a dose",
-    body: "Medication schedules with reminders, so you and your family know the important ones were taken.",
-  },
-  {
-    icon: FileHeart,
-    title: "Reports, ready for your doctor",
-    body: "Keep lab results and prescriptions together and share them with a time-limited QR code.",
-  },
-  {
-    icon: Users,
-    title: "Family in the loop",
-    body: "Invite a caretaker to see what you choose, and alert them when a reading needs attention.",
-  },
-  {
-    icon: Activity,
-    title: "An assistant that knows your history",
-    body: "Ask questions about your readings, medicines and reports, with clear guidance on when to seek care.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Private by design",
-    body: "Your data is visible only to you and the people you invite. Passwords are protected on your device before they're sent, and checked against known breaches.",
-  },
-];
+const SAMPLE = (() => {
+  // 30 mornings of plausible readings drifting down after a medication change. Deterministic.
+  const out: { measuredAt: string; value: number; value2: number }[] = [];
+  const start = Date.UTC(2026, 9, 8, 7, 30);
+  for (let i = 0; i < 30; i++) {
+    const wobble = Math.round(Math.sin(i * 1.7) * 4 + Math.cos(i * 0.9) * 3);
+    const trend = Math.round(150 - i * 0.45);
+    out.push({ measuredAt: new Date(start + i * 86400000).toISOString(), value: trend + wobble, value2: Math.round(92 - i * 0.2 + wobble / 2) });
+  }
+  return out;
+})();
+const latest = SAMPLE[SAMPLE.length - 1]!;
+const SAMPLE_LABELS = [0, 10, 20, 29].map((i) => new Date(SAMPLE[i]!.measuredAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }));
 
 export function Landing() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white">
-      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-      <div className="absolute inset-0" aria-hidden="true">
-        <div className="absolute left-1/4 top-0 h-96 w-96 rounded-full bg-red-600/20 blur-3xl filter" />
-        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full bg-red-600/20 blur-3xl filter" />
-      </div>
-
-      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-red-900/30 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <span className="text-2xl font-bold">
-            Healthcare<span className="text-red-600">.AI</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="px-2 py-2 text-sm font-medium text-gray-200 hover:text-white">
+    <div className="min-h-screen bg-ground text-ink">
+      <header className="border-b border-line bg-sheet">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-lg font-bold tracking-tight">
+            <HeartMark />
+            Healthcare.AI
+          </Link>
+          <nav className="flex items-center gap-2" aria-label="Account">
+            <Link to="/login" className="rounded-control px-3 py-2 font-semibold text-ink hover:bg-well">
               Sign in
             </Link>
-            <Link
-              to="/signup"
-              className="inline-flex items-center rounded-full border border-red-600 px-4 py-2 text-sm font-medium transition-all duration-300 hover:bg-red-600/10"
-            >
-              Get started
-            </Link>
-          </div>
+            <ButtonLink to="/signup" size="sm" className="hidden sm:inline-flex">
+              Create account
+            </ButtonLink>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      <section className="relative pb-16 pt-32 text-center sm:pt-40">
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <MedicalAnimation />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative z-10 mx-auto max-w-6xl space-y-12 px-4 pt-20"
-        >
-          <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-wider text-red-500 md:text-base">
-              Heart health, managed together
+      <main>
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-16 lg:pt-20">
+          <div>
+            <h1 className="text-[2.375rem] leading-[1.08] tracking-[-0.025em] sm:text-5xl">Your heart readings, kept the way your cardiologist would keep them.</h1>
+            <p className="mt-6 max-w-prose text-lg text-ink-muted">
+              Log blood pressure, pulse and medicines in seconds. See straight away when a reading needs attention, and share your
+              reports with your doctor through a link that expires.
             </p>
-            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-8xl">
-              Healthcare
-              <span className="animate-pulse-glow ml-2 inline-block text-red-600 sm:ml-4">.AI</span>
-            </h1>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <ButtonLink to="/signup">Create a free account</ButtonLink>
+              <ButtonLink to="/login" variant="secondary">
+                Sign in
+              </ButtonLink>
+            </div>
+            <p className="mt-6 flex items-center gap-2 text-sm text-ink-muted">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-status-normal" aria-hidden="true" />
+              Only you, and the people you choose, can see your records.
+            </p>
           </div>
 
-          <p className="glass-effect mx-auto max-w-3xl rounded-2xl border border-white/10 p-6 text-lg leading-relaxed text-gray-300 backdrop-blur-lg sm:p-8 md:text-2xl">
-            A companion for people living with heart conditions and the family who care for them: track your readings,
-            stay on top of medicines, keep reports in one place, and get{" "}
-            <span className="font-semibold text-red-500">AI guidance grounded in your own data</span>.
-          </p>
+          <div className="rounded-sheet border border-line bg-sheet p-5 shadow-lift sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold text-ink-muted">Blood pressure, last 30 days</h2>
+                <p className="figures mt-1 text-4xl font-bold">
+                  {latest.value}/{latest.value2}
+                  <span className="ml-2 text-lg font-semibold text-ink-muted">mmHg</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <StatusBadge value="high" />
+                <p className="mt-1.5 text-sm text-ink-muted">This morning, 7:30</p>
+              </div>
+            </div>
+            <div className="mt-5">
+              <SampleTrace points={SAMPLE} labels={SAMPLE_LABELS} drawIn />
+            </div>
+            <p className="mt-3 text-xs text-ink-faint">Sample data for illustration.</p>
+          </div>
+        </section>
 
-          <div className="flex flex-col items-center justify-center gap-6 pt-4 sm:flex-row">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                to="/signup"
-                className="group inline-flex items-center rounded-full bg-gradient-to-r from-red-600 to-red-500 px-12 py-4 text-lg font-semibold shadow-lg transition-all duration-300 hover:shadow-red-500/50"
+        <section className="border-t border-line bg-sheet">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <h2 className="max-w-2xl text-2xl sm:text-3xl">What you can do today</h2>
+            <div className="mt-10 divide-y divide-line border-y border-line">
+              <Feature
+                title="Every reading, checked against clinical ranges"
+                body="Blood pressure, pulse, oxygen, glucose, temperature, cholesterol and weight. Each reading is classified the moment you enter it, and charted over time."
               >
-                Launch platform
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-              </Link>
-            </motion.div>
-            <motion.a
-              href="#learn-more"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group inline-flex items-center rounded-full border-2 border-red-600/50 px-12 py-4 text-lg font-semibold transition-all duration-300 hover:border-red-600 hover:bg-red-600/10"
-            >
-              Learn more
-              <ChevronDown className="ml-2 h-5 w-5 transition-transform group-hover:translate-y-1" aria-hidden="true" />
-            </motion.a>
+                <ul className="divide-y divide-line rounded-control border border-line">
+                  <Reading name="Blood pressure" value="118/76 mmHg" status="normal" />
+                  <Reading name="Pulse" value="104 bpm" status="high" />
+                  <Reading name="Oxygen" value="93 %" status="borderline" />
+                </ul>
+              </Feature>
+              <Feature title="Medicines on a clear schedule" body="Keep every medicine, dose and time in one list your family and doctor can trust. Reminders are coming next.">
+                <ul className="divide-y divide-line rounded-control border border-line">
+                  <Medicine name="Aspirin" dose="75 mg" times="08:00" />
+                  <Medicine name="Atorvastatin" dose="20 mg" times="21:00" />
+                  <Medicine name="Metoprolol" dose="25 mg" times="08:00, 20:00" />
+                </ul>
+              </Feature>
+              <Feature title="Reports ready when your doctor asks" body="Upload lab results and scans, then share chosen reports with a QR code. The link stops working when it expires or when you revoke it.">
+                <div className="flex items-center gap-4 rounded-control border border-line p-4">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-control bg-action-soft text-action">
+                    <Link2 className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold">Lipid profile, ECG report</p>
+                    <p className="flex items-center gap-1.5 text-sm text-ink-muted">
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" /> Link works for 24 hours, opened twice
+                    </p>
+                  </div>
+                </div>
+              </Feature>
+              <Feature title="Warnings that never wait for AI" body="Emergency readings and symptom combinations are caught by fixed medical rules, so the warning appears even if everything else is offline.">
+                <div role="presentation" className="rounded-control bg-danger p-4 text-white">
+                  <p className="flex items-center gap-2 font-semibold">
+                    <TriangleAlert className="h-5 w-5" aria-hidden="true" /> These symptoms can be an emergency.
+                  </p>
+                  <p className="mt-1 text-sm text-white/90">Chest pain with shortness of breath can be a heart attack. Call 112 now.</p>
+                </div>
+              </Feature>
+            </div>
           </div>
-        </motion.div>
-        </div>
-      </section>
+        </section>
 
-      <section id="learn-more" className="relative z-10 mx-auto max-w-6xl scroll-mt-20 px-4 pb-24">
-        <h2 className="text-center text-3xl font-bold sm:text-4xl">What you can do</h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, body }, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.05 }}
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur"
-            >
-              <Icon className="h-8 w-8 text-red-500" aria-hidden="true" />
-              <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-              <p className="mt-2 text-gray-300">{body}</p>
-            </motion.div>
-          ))}
+        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+            <div>
+              <h2 className="text-2xl">Being built next</h2>
+              <p className="mt-3 max-w-prose text-ink-muted">These aren't available yet. They'll arrive in this order.</p>
+            </div>
+            <ol className="space-y-5">
+              <Next icon={<FileText className="h-5 w-5" />} title="An assistant that reads your record">
+                Questions answered from your own readings, medicines and reports, with clear advice on when to see a doctor.
+              </Next>
+              <Next icon={<Pill className="h-5 w-5" />} title="Medicine reminders">
+                A nudge at each dose, and a note to your family if one is missed.
+              </Next>
+              <Next icon={<ShieldCheck className="h-5 w-5" />} title="Caretaker accounts">
+                Let a family member see exactly what you choose, and be alerted when a reading needs attention.
+              </Next>
+            </ol>
+          </div>
+        </section>
+
+        <section className="border-t border-line bg-sheet">
+          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-12 sm:flex-row sm:items-center sm:px-6">
+            <p className="max-w-xl text-xl font-semibold">Start your record with today's reading.</p>
+            <ButtonLink to="/signup">Create a free account</ButtonLink>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-line">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-ink-muted sm:px-6">
+          Healthcare.AI supports your care but doesn't replace your doctor. In an emergency, call your local emergency number.
         </div>
-        <p className="mx-auto mt-12 max-w-2xl text-center text-sm text-gray-500">
-          Healthcare.AI supports, but doesn't replace, your doctor. In an emergency, call your local emergency number.
-        </p>
-      </section>
+      </footer>
     </div>
+  );
+}
+
+function Feature({ title, body, children }: { title: string; body: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-6 py-8 md:grid-cols-[1fr_1fr] md:gap-12">
+      <div>
+        <h3 className="text-xl">{title}</h3>
+        <p className="mt-2 max-w-prose text-ink-muted">{body}</p>
+      </div>
+      <div className="self-center">{children}</div>
+    </div>
+  );
+}
+
+function Reading({ name, value, status }: { name: string; value: string; status: "normal" | "high" | "borderline" }) {
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-3">
+      <span className="text-ink-muted">{name}</span>
+      <span className="flex items-center gap-3">
+        <span className="figures font-semibold">{value}</span>
+        <StatusBadge value={status} />
+      </span>
+    </li>
+  );
+}
+
+function Medicine({ name, dose, times }: { name: string; dose: string; times: string }) {
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-3">
+      <span>
+        <span className="font-semibold">{name}</span> <span className="text-ink-muted">{dose}</span>
+      </span>
+      <span className="figures text-ink-muted">{times}</span>
+    </li>
+  );
+}
+
+function Next({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return (
+    <li className="flex gap-4">
+      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-control border border-line bg-sheet text-ink-muted" aria-hidden="true">
+        {icon}
+      </span>
+      <div>
+        <p className="font-semibold">{title}</p>
+        <p className="text-ink-muted">{children}</p>
+      </div>
+    </li>
   );
 }

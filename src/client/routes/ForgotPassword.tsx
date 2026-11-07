@@ -65,30 +65,30 @@ export function ForgotPassword() {
           : `If an account exists for ${email}, we emailed a code. It expires in 10 minutes. You'll be signed out on other devices.`
       }
       footer={
-        <Link to="/login" className="text-gray-300 hover:text-white">
+        <Link to="/login" className="font-semibold text-action hover:underline">
           Back to sign in
         </Link>
       }
     >
       {step === "request" ? (
         <form onSubmit={request} className="space-y-4">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm font-semibold text-ink">
             Email
-            <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1 ${inputClass}`} />
+            <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
           </label>
           <Turnstile siteKey={config.data?.turnstileSiteKey ?? null} onToken={setCaptcha} resetKey={captchaReset} />
           <button type="submit" disabled={busy} className={`w-full ${buttonClass}`}>
             {busy ? "Sending…" : "Send code"}
           </button>
           {error && (
-            <p role="alert" className="text-sm text-red-400">
+            <p role="alert" className="text-sm font-semibold text-danger">
               {error}
             </p>
           )}
         </form>
       ) : (
         <form onSubmit={reset} className="space-y-4">
-          <label className="block text-sm text-gray-300">
+          <label className="block text-sm font-semibold text-ink">
             Code
             <input
               inputMode="numeric"
@@ -98,7 +98,7 @@ export function ForgotPassword() {
               required
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              className={`mt-1 text-center text-xl tracking-[0.5em] ${inputClass}`}
+              className={`mt-1.5 text-center text-xl tracking-[0.5em] ${inputClass}`}
             />
           </label>
           <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" label="New password" />
@@ -107,7 +107,7 @@ export function ForgotPassword() {
             {busy ? "Saving…" : "Set new password"}
           </button>
           {error && (
-            <p role="alert" className="text-sm text-red-400">
+            <p role="alert" className="text-sm font-semibold text-danger">
               {error}
             </p>
           )}

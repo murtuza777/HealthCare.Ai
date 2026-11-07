@@ -60,7 +60,7 @@ export function SignUp() {
   }
 
   const rule = (ok: boolean, text: string) => (
-    <li key={text} className={`flex items-center gap-1.5 ${ok ? "text-emerald-300" : "text-gray-400"}`}>
+    <li key={text} className={`flex items-center gap-1.5 ${ok ? "text-status-normal" : "text-ink-muted"}`}>
       {ok ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <X className="h-3.5 w-3.5" aria-hidden="true" />} {text}
     </li>
   );
@@ -72,7 +72,7 @@ export function SignUp() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to={`/login${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-medium text-red-400 hover:text-red-300">
+          <Link to={`/login${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-action hover:underline">
             Sign in
           </Link>
         </>
@@ -85,13 +85,13 @@ export function SignUp() {
         </>
       )}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm font-semibold text-ink">
           Full name
-          <input required autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} className={`mt-1 ${inputClass}`} />
+          <input required autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm font-semibold text-ink">
           Email
-          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1 ${inputClass}`} />
+          <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
         <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
         {password && (
@@ -106,11 +106,11 @@ export function SignUp() {
           {busy === "checking" ? "Checking password…" : busy === "securing" ? "Securing…" : busy === "creating" ? "Creating account…" : "Create account"}
         </button>
         {error && (
-          <p role="alert" className="text-sm text-red-400">
+          <p role="alert" className="text-sm font-semibold text-danger">
             {error}
           </p>
         )}
-        <p className="text-xs text-gray-500">
+        <p className="text-sm text-ink-faint">
           Your password is protected on this device before it's sent, and checked against known data breaches without
           revealing it.
         </p>

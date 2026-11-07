@@ -40,17 +40,17 @@ export function VerifyEmail() {
       title="Verify your email"
       subtitle="We emailed you a 6-digit code. It expires in 10 minutes."
       footer={
-        <Link to="/login" className="text-gray-300 hover:text-white">
+        <Link to="/login" className="font-semibold text-action hover:underline">
           Back to sign in
         </Link>
       }
     >
       <form onSubmit={verify} className="space-y-4">
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm font-semibold text-ink">
           Email
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1 ${inputClass}`} />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
-        <label className="block text-sm text-gray-300">
+        <label className="block text-sm font-semibold text-ink">
           Code
           <input
             inputMode="numeric"
@@ -60,18 +60,18 @@ export function VerifyEmail() {
             required
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-            className={`mt-1 text-center text-xl tracking-[0.5em] ${inputClass}`}
+            className={`mt-1.5 text-center text-xl tracking-[0.5em] ${inputClass}`}
           />
         </label>
         <button type="submit" disabled={busy || otp.length !== 6} className={`w-full ${buttonClass}`}>
           {busy ? "Verifying…" : "Verify and continue"}
         </button>
-        <button type="button" onClick={resend} disabled={!email} className="w-full text-sm text-gray-300 hover:text-white disabled:opacity-50">
+        <button type="button" onClick={resend} disabled={!email} className="w-full text-sm font-semibold text-action hover:underline disabled:opacity-50">
           Send a new code
         </button>
-        {notice && <p className="text-sm text-emerald-300">{notice}</p>}
+        {notice && <p className="text-sm font-semibold text-status-normal">{notice}</p>}
         {error && (
-          <p role="alert" className="text-sm text-red-400">
+          <p role="alert" className="text-sm font-semibold text-danger">
             {error}
           </p>
         )}
