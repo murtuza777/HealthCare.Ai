@@ -15,6 +15,8 @@ import { shareInputSchema } from "../../shared/reports";
 import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
 import { addVital, latestVitals, listVitals } from "../dal/vitals";
+import { adherence, dosesForDay, markDose } from "../dal/doses";
+import { doseActionSchema } from "../../shared/doses";
 import { notFound, parse } from "../middleware/validate";
 import type { AppEnv } from "../types";
 
@@ -93,6 +95,31 @@ export const patients = new Hono<AppEnv>()
     if (!deleted) notFound();
     return c.json({ ok: true });
   })
+  // Doses and adherence
+  .get(
+    "/:patientId/doses",
+    validator("query", (v) => parse(z.object({ date: z.iso.date().optional() }), v)),
+    async (c) => {
+      const day = await dosesForDay(c.var.db, c.var.actor, patientId(c), { date: c.req.valid("query").date });
+      return c.json(day);
+    },
+  )
+  .post(
+    "/:patientId/doses",
+    validator("json", (v) => parse(doseActionSchema, v)),
+    async (c) => {
+      const event = (await markDose(c.var.db, c.var.actor, patientId(c), c.req.valid("json"))) ?? notFound();
+      return c.json({ status: event.status, actedAt: event.actedAt });
+    },
+  )
+  .get(
+    "/:patientId/adherence",
+    validator("query", (v) => parse(z.object({ days: z.coerce.number().int().min(1).max(90).optional() }), v)),
+    async (c) => {
+      const result = await adherence(c.var.db, c.var.actor, patientId(c), c.req.valid("query").days ?? 7);
+      return c.json(result);
+    },
+  )
   // Symptoms
   .get("/:patientId/symptoms", async (c) => {
     const items = await listSymptoms(c.var.db, c.var.actor, patientId(c));

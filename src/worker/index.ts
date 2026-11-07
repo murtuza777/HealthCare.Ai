@@ -4,12 +4,14 @@ import { secureHeaders } from "hono/secure-headers";
 import { emailAvailable, getAuth, googleEnabled, turnstileEnabled } from "./auth";
 import { AccessDenied } from "./dal/authz";
 import { getDb } from "./db/client";
-import { drainOutbox } from "./jobs/outbox";
 import { requireSession } from "./middleware/session";
 import { patients } from "./routes/patients";
 import { assistant } from "./routes/assistant";
+import { push } from "./routes/push";
 import { publicRoutes } from "./routes/public";
 import { ShareError } from "./dal/shares";
+import { DoseError } from "./dal/doses";
+import { runScheduled } from "./jobs/scheduler";
 import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>().basePath("/api");
@@ -54,7 +56,8 @@ const v1 = new Hono<AppEnv>()
   .use("*", requireSession)
   .get("/me", (c) => c.json({ user: c.var.user }))
   .route("/patients", patients)
-  .route("/assistant", assistant);
+  .route("/assistant", assistant)
+  .route("/push", push);
 
 const routes = app.route("/v1", v1).route("/public", publicRoutes);
 export type AppType = typeof routes;
@@ -62,6 +65,7 @@ export type AppType = typeof routes;
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 app.onError((err, c) => {
   if (err instanceof AccessDenied) return c.json({ error: "forbidden" }, 403);
+  if (err instanceof DoseError) return c.json({ error: "invalid_input", fields: [{ path: "scheduledAt", message: err.message }] }, 400);
   if (err instanceof ShareError) return c.json({ error: "invalid_input", fields: [{ path: "reportIds", message: err.message }] }, 400);
   if (err instanceof HTTPException) return err.getResponse();
   if (err instanceof SyntaxError) return c.json({ error: "invalid_json" }, 400);
@@ -72,7 +76,7 @@ app.onError((err, c) => {
 
 export default {
   fetch: routes.fetch,
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(drainOutbox(env));
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runScheduled(env, new Date(controller.scheduledTime)));
   },
 } satisfies ExportedHandler<Env>;

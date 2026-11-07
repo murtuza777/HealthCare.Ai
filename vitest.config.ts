@@ -23,6 +23,8 @@ export default defineConfig(async () => {
             GOOGLE_CLIENT_SECRET: "",
             TURNSTILE_SITE_KEY: "",
             TURNSTILE_SECRET_KEY: "",
+            VAPID_PUBLIC_KEY: "", // push is queued but never sent from tests
+            VAPID_PRIVATE_KEY: "",
           },
         },
       }),

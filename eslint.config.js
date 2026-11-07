@@ -20,8 +20,12 @@ export default tseslint.config(
     rules: { ...reactHooks.configs.recommended.rules },
   },
   {
-    files: ["src/worker/**/*.ts", "tests/**/*.ts"],
+    files: ["src/worker/**/*.ts", "tests/**/*.ts", "public/sw.js"],
     languageOptions: { globals: globals.serviceworker },
+  },
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
   },
   {
     // Only the data access layer may touch the database directly (authorization lives there).
