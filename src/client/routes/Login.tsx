@@ -50,7 +50,7 @@ export function Login() {
       footer={
         <>
           New to Healthcare.AI?{" "}
-          <Link to={`/signup${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-action hover:underline">
+          <Link to={`/signup${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Create an account
           </Link>
         </>
@@ -63,14 +63,14 @@ export function Login() {
         </>
       )}
       <form onSubmit={submit} className="space-y-4">
-        {params.get("reset") === "1" && <p className="text-sm font-semibold text-status-normal">Password updated. Sign in with your new password.</p>}
-        <label className="block text-sm font-semibold text-ink">
+        {params.get("reset") === "1" && <p className="text-sm text-status-normal">Password updated. Sign in with your new password.</p>}
+        <label className="block text-sm font-[540] text-ink">
           Email
           <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
         <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
         <div className="text-right text-sm">
-          <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="font-semibold text-action hover:underline">
+          <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Forgot password?
           </Link>
         </div>
@@ -79,7 +79,7 @@ export function Login() {
           {busy === "securing" ? "Securing…" : busy === "signing-in" ? "Signing in…" : "Sign in"}
         </button>
         {error && (
-          <p role="alert" className="text-sm font-semibold text-danger">
+          <p role="alert" className="text-sm font-[540] text-danger">
             {error}
           </p>
         )}

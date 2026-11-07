@@ -40,17 +40,17 @@ export function VerifyEmail() {
       title="Verify your email"
       subtitle="We emailed you a 6-digit code. It expires in 10 minutes."
       footer={
-        <Link to="/login" className="font-semibold text-action hover:underline">
+        <Link to="/login" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
           Back to sign in
         </Link>
       }
     >
       <form onSubmit={verify} className="space-y-4">
-        <label className="block text-sm font-semibold text-ink">
+        <label className="block text-sm font-[540] text-ink">
           Email
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
-        <label className="block text-sm font-semibold text-ink">
+        <label className="block text-sm font-[540] text-ink">
           Code
           <input
             inputMode="numeric"
@@ -66,12 +66,12 @@ export function VerifyEmail() {
         <button type="submit" disabled={busy || otp.length !== 6} className={`w-full ${buttonClass}`}>
           {busy ? "Verifying…" : "Verify and continue"}
         </button>
-        <button type="button" onClick={resend} disabled={!email} className="w-full text-sm font-semibold text-action hover:underline disabled:opacity-50">
+        <button type="button" onClick={resend} disabled={!email} className="w-full text-sm font-[540] text-ink-muted underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink disabled:opacity-50">
           Send a new code
         </button>
-        {notice && <p className="text-sm font-semibold text-status-normal">{notice}</p>}
+        {notice && <p className="text-sm text-status-normal">{notice}</p>}
         {error && (
-          <p role="alert" className="text-sm font-semibold text-danger">
+          <p role="alert" className="text-sm font-[540] text-danger">
             {error}
           </p>
         )}

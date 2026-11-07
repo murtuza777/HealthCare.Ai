@@ -1,10 +1,9 @@
 // Shared pieces for the sign-in, sign-up, verify and reset screens.
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { HeartMark } from "../components/Shell";
+import { Eye, EyeOff } from "lucide-react";
+import { Wordmark } from "../components/Shell";
 import { inputClass } from "../components/ui";
-import { Link } from "react-router";
 
 export type AuthConfig = { google: boolean; emailVerification: boolean; turnstileSiteKey: string | null };
 
@@ -38,40 +37,22 @@ export function authErrorMessage(error: { status?: number; code?: string; messag
   return error.message || "Something went wrong. Try again.";
 }
 
-/** Two-column on wide screens: the form on a sheet, and a quiet reassurance panel. */
+/** One quiet column: the form, and a single line on how the password is protected. */
 export function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: ReactNode; footer?: ReactNode }) {
   return (
-    <div className="min-h-screen bg-ground lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-      <main className="flex min-h-screen flex-col px-4 py-8 sm:px-8">
-        <Link to="/" className="inline-flex items-center gap-2 self-start text-lg font-bold tracking-tight text-ink">
-          <HeartMark />
-          Healthcare.AI
-        </Link>
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10">
-          <h1 className="text-3xl">{title}</h1>
-          {subtitle && <p className="mt-2 text-ink-muted">{subtitle}</p>}
-          <div className="mt-8">{children}</div>
-          {footer && <div className="mt-8 border-t border-line pt-6 text-ink-muted">{footer}</div>}
-        </div>
+    <div className="flex min-h-screen flex-col bg-ground">
+      <header className="mx-auto flex h-20 w-full max-w-5xl items-center px-5 sm:px-8">
+        <Wordmark />
+      </header>
+      <main className="mx-auto flex w-full max-w-[25rem] flex-1 flex-col justify-center px-5 pb-16 pt-6">
+        <h1 className="text-[2.25rem] font-light leading-[1.1] tracking-[-0.025em]">{title}</h1>
+        {subtitle && <p className="mt-3 text-ink-muted">{subtitle}</p>}
+        <div className="mt-9">{children}</div>
+        {footer && <div className="mt-9 border-t border-line pt-6 text-ink-muted">{footer}</div>}
       </main>
-      <aside className="hidden border-l border-line bg-sheet lg:flex lg:flex-col lg:justify-center lg:px-14" aria-hidden="true">
-        <div className="ecg-grid relative h-56 overflow-hidden rounded-sheet border border-grid-major/60">
-          <svg viewBox="0 0 400 160" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-            <path
-              d="M0 90 H70 l10 -6 l8 6 H120 l6 10 l10 -70 l10 92 l8 -32 H210 l12 -10 l12 10 H280 l6 10 l10 -70 l10 92 l8 -32 H400"
-              fill="none"
-              stroke="#14305A"
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <p className="mt-8 max-w-sm text-xl font-semibold text-ink">A careful record of your heart, for you and the people you trust.</p>
-        <p className="mt-3 flex max-w-sm items-start gap-2 text-ink-muted">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-status-normal" />
-          Your password is protected on this device before it's sent. We never see it.
-        </p>
-      </aside>
+      <p className="mx-auto max-w-[25rem] px-5 pb-8 text-center text-xs text-ink-faint">
+        Your password is scrambled on this device before it's sent. We never see it.
+      </p>
     </div>
   );
 }
@@ -80,7 +61,7 @@ export function PasswordInput({ value, onChange, autoComplete, label = "Password
   const [show, setShow] = useState(false);
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-semibold text-ink">{label}</span>
+      <span className="mb-1.5 block text-sm font-[540] text-ink">{label}</span>
       <span className="relative block">
         <input
           id={id}
@@ -96,9 +77,9 @@ export function PasswordInput({ value, onChange, autoComplete, label = "Password
           onClick={() => setShow((s) => !s)}
           aria-label={show ? "Hide password" : "Show password"}
           aria-pressed={show}
-          className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-control text-ink-muted hover:bg-well hover:text-ink"
+          className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-ink-faint transition-colors hover:bg-well hover:text-ink"
         >
-          {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          {show ? <EyeOff className="h-[1.125rem] w-[1.125rem]" /> : <Eye className="h-[1.125rem] w-[1.125rem]" />}
         </button>
       </span>
     </label>
@@ -117,9 +98,9 @@ export function GoogleButton({ next }: { next: string }) {
         await authClient.signIn.social({ provider: "google", callbackURL: next, errorCallbackURL: "/login?error=google" });
         setBusy(false);
       }}
-      className="flex min-h-11 w-full items-center justify-center gap-3 rounded-control border border-line-strong bg-sheet px-4 font-semibold text-ink transition-colors hover:bg-well disabled:opacity-60"
+      className="flex min-h-11 w-full items-center justify-center gap-3 rounded-full border border-line-strong bg-sheet px-4 text-[0.9375rem] font-[560] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97] disabled:opacity-50"
     >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-[1.125rem] w-[1.125rem]" aria-hidden="true">
         <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z" />
         <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3a7.2 7.2 0 0 1-10.7-3.8h-4v3.1A12 12 0 0 0 12 24z" />
         <path fill="#FBBC05" d="M5.4 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8l4-3.1z" />
@@ -132,8 +113,8 @@ export function GoogleButton({ next }: { next: string }) {
 
 export function Divider() {
   return (
-    <div className="my-6 flex items-center gap-3 text-sm text-ink-faint">
-      <span className="h-px flex-1 bg-line" /> or use your email <span className="h-px flex-1 bg-line" />
+    <div className="my-6 flex items-center gap-4 text-xs text-ink-faint">
+      <span className="h-px flex-1 bg-line" /> or <span className="h-px flex-1 bg-line" />
     </div>
   );
 }

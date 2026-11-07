@@ -72,7 +72,7 @@ export function SignUp() {
       footer={
         <>
           Already have an account?{" "}
-          <Link to={`/login${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-action hover:underline">
+          <Link to={`/login${next !== "/app" ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Sign in
           </Link>
         </>
@@ -85,11 +85,11 @@ export function SignUp() {
         </>
       )}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm font-semibold text-ink">
+        <label className="block text-sm font-[540] text-ink">
           Full name
           <input required autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
-        <label className="block text-sm font-semibold text-ink">
+        <label className="block text-sm font-[540] text-ink">
           Email
           <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
         </label>
@@ -106,7 +106,7 @@ export function SignUp() {
           {busy === "checking" ? "Checking password…" : busy === "securing" ? "Securing…" : busy === "creating" ? "Creating account…" : "Create account"}
         </button>
         {error && (
-          <p role="alert" className="text-sm font-semibold text-danger">
+          <p role="alert" className="text-sm font-[540] text-danger">
             {error}
           </p>
         )}

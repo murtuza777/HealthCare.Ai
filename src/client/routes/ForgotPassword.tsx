@@ -65,14 +65,14 @@ export function ForgotPassword() {
           : `If an account exists for ${email}, we emailed a code. It expires in 10 minutes. You'll be signed out on other devices.`
       }
       footer={
-        <Link to="/login" className="font-semibold text-action hover:underline">
+        <Link to="/login" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
           Back to sign in
         </Link>
       }
     >
       {step === "request" ? (
         <form onSubmit={request} className="space-y-4">
-          <label className="block text-sm font-semibold text-ink">
+          <label className="block text-sm font-[540] text-ink">
             Email
             <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={`mt-1.5 ${inputClass}`} />
           </label>
@@ -81,14 +81,14 @@ export function ForgotPassword() {
             {busy ? "Sending…" : "Send code"}
           </button>
           {error && (
-            <p role="alert" className="text-sm font-semibold text-danger">
+            <p role="alert" className="text-sm font-[540] text-danger">
               {error}
             </p>
           )}
         </form>
       ) : (
         <form onSubmit={reset} className="space-y-4">
-          <label className="block text-sm font-semibold text-ink">
+          <label className="block text-sm font-[540] text-ink">
             Code
             <input
               inputMode="numeric"
@@ -107,7 +107,7 @@ export function ForgotPassword() {
             {busy ? "Saving…" : "Set new password"}
           </button>
           {error && (
-            <p role="alert" className="text-sm font-semibold text-danger">
+            <p role="alert" className="text-sm font-[540] text-danger">
               {error}
             </p>
           )}
