@@ -70,3 +70,16 @@ export async function streamChat(env: Env, messages: ChatMessage[], onDone: (r: 
     }),
   );
 }
+
+/** One complete (non-streamed) reply, for short structured tasks. */
+export async function completeChat(env: Env, messages: ChatMessage[], maxTokens = 500): Promise<ChatResult> {
+  if (env.AI_MODE === "fake") {
+    return { text: "- [test model] How is my blood pressure trend?\n- [test model] Should my medicines be reviewed?", tokensIn: 10, tokensOut: 10 };
+  }
+  const model = (env.AI_MODEL || DEFAULT_MODEL) as Parameters<Ai["run"]>[0];
+  const out = (await env.AI.run(model, { messages, max_tokens: maxTokens, temperature: 0.2 } as never)) as {
+    response?: unknown;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  return { text: typeof out.response === "string" ? out.response : "", tokensIn: out.usage?.prompt_tokens ?? null, tokensOut: out.usage?.completion_tokens ?? null };
+}

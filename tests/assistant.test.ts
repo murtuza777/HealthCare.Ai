@@ -93,6 +93,13 @@ describe("assistant API", () => {
     await ok.text();
   });
 
+  it("suggests questions for a doctor's visit", async () => {
+    const cookie = await signIn("assist-visit@example.com", "198.51.100.47");
+    const res = (await (await call("/api/v1/assistant/visit-questions", { cookie, method: "POST" })).json()) as { kind: string; questions: string[] };
+    expect(res.kind).toBe("ok");
+    expect(res.questions).toEqual(["[test model] How is my blood pressure trend?", "[test model] Should my medicines be reviewed?"]);
+  });
+
   it("stops at the daily limit", async () => {
     const cookie = await signIn("assist-quota@example.com", "198.51.100.44");
     const actor = { userId: await userId(cookie) };

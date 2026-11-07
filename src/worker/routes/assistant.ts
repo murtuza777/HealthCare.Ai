@@ -5,8 +5,8 @@ import { validator } from "hono/validator";
 import { z } from "zod";
 import { chatInputSchema, emergencyInText, emergencyReply } from "../../shared/assistant";
 import { buildPatientContext } from "../ai/context";
-import { aiAvailable, streamChat, type ChatMessage } from "../ai/model";
-import { systemPrompt } from "../ai/prompt";
+import { aiAvailable, completeChat, streamChat, type ChatMessage } from "../ai/model";
+import { systemPrompt, visitQuestionsPrompt } from "../ai/prompt";
 import {
   addAssistantMessage,
   addTokens,
@@ -59,6 +59,27 @@ export const assistant = new Hono<AppEnv>()
       return c.json({ ok: true });
     },
   )
+  // Suggested questions for the visit summary. Same consent and quota as chat.
+  .post("/visit-questions", async (c) => {
+    const { db, actor } = c.var;
+    if (!aiAvailable(c.env)) return c.json({ kind: "unavailable" as const }, 503);
+    if (!(await consentStatus(db, actor)).ai_processing) return c.json({ kind: "consent" as const }, 403);
+    if (!(await takeQuota(db, actor, dailyLimit(c.env)))) return c.json({ kind: "quota" as const }, 429);
+    const ctx = await buildPatientContext(db, actor);
+    try {
+      const result = await completeChat(c.env, [{ role: "user", content: visitQuestionsPrompt(ctx.text) }]);
+      await addTokens(db, actor, (result.tokensIn ?? 0) + (result.tokensOut ?? 0));
+      const questions = result.text
+        .split("\n")
+        .map((l) => l.replace(/^\s*([-*•]|\d+[.)])\s*/, "").trim())
+        .filter((l) => l.length > 3 && l.length < 300)
+        .slice(0, 6);
+      return c.json({ kind: "ok" as const, questions });
+    } catch (err) {
+      console.error("visit questions model error", err instanceof Error ? err.name : "unknown");
+      return c.json({ kind: "unavailable" as const }, 503);
+    }
+  })
   .post(
     "/chat",
     validator("json", (v) => parse(chatInputSchema, v)),

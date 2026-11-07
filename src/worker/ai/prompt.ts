@@ -16,3 +16,10 @@ Style: warm, plain and brief. Short paragraphs or a few bullet points. Under 180
 Patient record:
 ${record}`;
 }
+
+export function visitQuestionsPrompt(record: string): string {
+  return `You help a patient with a heart condition prepare for a visit to their doctor. From the patient record below, write 3 to 6 short questions the patient could ask, in the patient's own voice ("Is my...", "Should we..."). Focus on what stands out: readings outside normal ranges or changing, missed doses, symptoms, and risk factors. Never suggest changing a medicine yourself; asking the doctor whether to review one is fine. Output only the questions, one per line, each starting with "- ". No introduction.
+
+Patient record:
+${record}`;
+}

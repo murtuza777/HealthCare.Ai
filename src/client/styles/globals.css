@@ -78,6 +78,12 @@
     background: rgb(28 29 31 / 0.35);
   }
 
+  @media print {
+    html, body { background: #fff; }
+    .settle { animation: none; }
+    @page { margin: 16mm; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;

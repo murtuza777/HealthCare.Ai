@@ -47,9 +47,14 @@ export function Overview() {
             {facts.length > 0 && <span className="ml-4 hidden text-ink-faint sm:inline">{facts.join(", ")}</span>}
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink to="/app/visit" variant="secondary">
+            Prepare for a visit
+          </ButtonLink>
         <ButtonLink to="/app/vitals">
           Log a reading
         </ButtonLink>
+        </div>
       </div>
 
       <CaringStrip />

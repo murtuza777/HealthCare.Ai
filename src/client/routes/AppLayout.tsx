@@ -56,7 +56,7 @@ export function AppLayout() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-white">
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-line bg-ground/90 backdrop-blur-md">
+      <header className="sticky top-0 z-30 print:hidden border-b border-line bg-ground/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-5 sm:px-8 lg:gap-8">
           <Link to="/app" className="inline-flex items-center gap-2 rounded-md text-ink" aria-label="Healthcare.AI, overview">
             <HeartMark />
@@ -96,11 +96,11 @@ export function AppLayout() {
                 `inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] transition-colors duration-150 ${isActive ? "bg-ink/[0.06] font-[560] text-ink" : "text-ink-muted hover:text-ink"}`
               }
             >
-              <UserRound className="h-[1.125rem] w-[1.125rem] xl:hidden" aria-hidden="true" />
-              <span className="hidden xl:inline">
+              <UserRound className="h-[1.125rem] w-[1.125rem] min-[1400px]:hidden" aria-hidden="true" />
+              <span className="hidden min-[1400px]:inline">
                 <AccountName fallback={session.user.email} />
               </span>
-              <span className="sr-only xl:hidden">Profile</span>
+              <span className="sr-only min-[1400px]:hidden">Profile</span>
             </NavLink>
             <button onClick={signOut} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] text-ink-muted transition-colors duration-150 hover:text-ink">
               <LogOut className="h-[1.125rem] w-[1.125rem] sm:hidden" aria-hidden="true" />
@@ -111,13 +111,13 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+      <main id="main" className="mx-auto max-w-5xl px-5 py-10 sm:px-8 sm:py-14 print:p-0">
         <div key={location.pathname} className="settle">
           <Outlet />
         </div>
       </main>
 
-      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+      <nav aria-label="Sections" className="fixed inset-x-0 bottom-0 z-30 print:hidden border-t border-line bg-ground/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         <ul className="grid grid-cols-6">
           {NAV.map(({ to, short, icon: Icon, end }) => (
             <li key={to}>
