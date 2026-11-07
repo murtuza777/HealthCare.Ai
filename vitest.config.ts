@@ -13,7 +13,14 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             BETTER_AUTH_SECRET: "test-secret-0123456789abcdef0123456789abcdef",
-            EMAIL_MODE: "outbox", // read login codes from the outbox in tests
+            EMAIL_MODE: "outbox", // read verification codes from the outbox in tests
+            PASSWORD_PEPPER: "test-pepper-0123456789abcdef0123456789abcdef",
+            // Pin optional features off so a developer's .dev.vars can't change test behaviour.
+            RESEND_API_KEY: "",
+            GOOGLE_CLIENT_ID: "",
+            GOOGLE_CLIENT_SECRET: "",
+            TURNSTILE_SITE_KEY: "",
+            TURNSTILE_SECRET_KEY: "",
           },
         },
       }),
