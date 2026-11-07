@@ -49,7 +49,7 @@ export function AppLayout() {
         Skip to content
       </a>
       <header className="sticky top-0 z-30 border-b border-line bg-ground/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center gap-8 px-5 sm:px-8">
+        <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-5 sm:px-8 lg:gap-8">
           <Link to="/app" className="inline-flex items-center gap-2 rounded-md text-ink" aria-label="Healthcare.AI, overview">
             <HeartMark />
             <span className="hidden font-serif text-[1.3125rem] leading-none tracking-[-0.02em] sm:inline">Healthcare.AI</span>
@@ -88,11 +88,11 @@ export function AppLayout() {
                 `inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] transition-colors duration-150 ${isActive ? "bg-ink/[0.06] font-[560] text-ink" : "text-ink-muted hover:text-ink"}`
               }
             >
-              <UserRound className="h-[1.125rem] w-[1.125rem] lg:hidden" aria-hidden="true" />
-              <span className="hidden lg:inline">
+              <UserRound className="h-[1.125rem] w-[1.125rem] xl:hidden" aria-hidden="true" />
+              <span className="hidden xl:inline">
                 <AccountName fallback={session.user.email} />
               </span>
-              <span className="sr-only lg:hidden">Profile</span>
+              <span className="sr-only xl:hidden">Profile</span>
             </NavLink>
             <button onClick={signOut} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] text-ink-muted transition-colors duration-150 hover:text-ink">
               <LogOut className="h-[1.125rem] w-[1.125rem] sm:hidden" aria-hidden="true" />

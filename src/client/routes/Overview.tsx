@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ageFrom, riskFactors, type RiskFactorStatus } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
-import { useLatestVitals, useMedications, useProfile, useSymptoms, useVitals } from "../lib/queries";
+import { useLatestVitals, useProfile, useSymptoms, useVitals } from "../lib/queries";
 import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
 import { ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
+import { TodayDoses } from "../components/Doses";
 
 // The overview answers one question first: "are my latest readings OK?" Readings are a chart
 // table, not a grid of identical cards. No made-up defaults when data is missing.
@@ -106,6 +107,8 @@ export function Overview() {
         </table>
       </section>
 
+      <TodayDoses compact />
+
       <div className="grid gap-x-12 gap-y-14 lg:grid-cols-2">
         <TrendCard type="blood_pressure" title="Blood pressure trend" unit="mmHg" dual />
         <TrendCard type="heart_rate" title="Heart rate trend" unit="bpm" />
@@ -114,7 +117,6 @@ export function Overview() {
       <div className="grid gap-x-12 gap-y-14 lg:grid-cols-[1.15fr_1fr]">
         <RiskCard profile={p ?? null} latest={l} />
         <div className="space-y-14">
-          <MedicationsCard />
           <SymptomsCard />
         </div>
       </div>
@@ -180,43 +182,6 @@ function RiskCard({ profile, latest }: { profile: Parameters<typeof riskFactors>
           );
         })}
       </ul>
-    </Card>
-  );
-}
-
-function MedicationsCard() {
-  const { data, isPending } = useMedications();
-  return (
-    <Card>
-      <SheetHeader
-        title="Medicines"
-        action={
-          <Link to="/app/medications" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
-            Manage
-          </Link>
-        }
-      />
-      {isPending ? (
-        <Loading lines={2} />
-      ) : !data?.length ? (
-        <p className="text-ink-muted">
-          No medicines added.{" "}
-          <Link to="/app/medications" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
-            Add your first
-          </Link>
-        </p>
-      ) : (
-        <ul className="divide-y divide-line border-y border-line">
-          {data.slice(0, 5).map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-3 py-3.5">
-              <span>
-                <span className="font-[540]">{m.name}</span> <span className="text-ink-muted">{m.dose}</span>
-              </span>
-              <span className="figures text-ink-muted">{m.schedule.times.join(", ")}</span>
-            </li>
-          ))}
-        </ul>
-      )}
     </Card>
   );
 }

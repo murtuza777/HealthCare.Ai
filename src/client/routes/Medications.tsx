@@ -3,6 +3,7 @@ import { Pill, Plus, Trash2, X } from "lucide-react";
 import { useAddMedication, useDeleteMedication, useMedications, useSetMedicationActive } from "../lib/queries";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { localDate, formatDay } from "../lib/format";
+import { AdherenceWeek, RemindersSetting, TodayDoses } from "../components/Doses";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const today = () => localDate();
@@ -16,7 +17,7 @@ export function Medications() {
     <div className="space-y-14">
       <PageHeader
         title="Medicines"
-        subtitle="Keep your medicines, doses and times up to date. Reminders are coming in a later update."
+        subtitle="Mark each dose as you take it, keep your list up to date, and get a reminder when a medicine is due."
         action={
           !adding && (
             <Button onClick={() => setAdding(true)}>
@@ -26,6 +27,11 @@ export function Medications() {
         }
       />
       {adding && <AddMedication onDone={() => setAdding(false)} />}
+      <TodayDoses />
+      <AdherenceWeek />
+      <Card boxed>
+        <RemindersSetting />
+      </Card>
       <Card>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xl">{showAll ? "All medicines" : "Current medicines"}</h2>
