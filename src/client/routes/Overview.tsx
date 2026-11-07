@@ -7,6 +7,7 @@ import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
 import { ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 import { TodayDoses } from "../components/Doses";
+import { usePatientsCaredFor } from "../lib/care";
 
 // The overview answers one question first: "are my latest readings OK?" Readings are a chart
 // table, not a grid of identical cards. No made-up defaults when data is missing.
@@ -50,6 +51,8 @@ export function Overview() {
           Log a reading
         </ButtonLink>
       </div>
+
+      <CaringStrip />
 
       {!p?.onboardedAt && (
         <Card boxed>
@@ -235,4 +238,19 @@ function useToastFromNavigation() {
     return () => clearTimeout(t);
   }, [toast]);
   return toast;
+}
+
+function CaringStrip() {
+  const { data } = usePatientsCaredFor();
+  if (!data?.length) return null;
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-control bg-well px-4 py-3 text-ink">
+      <span className="text-ink-muted">You care for</span>
+      {data.map((p) => (
+        <Link key={p.patientId} to={`/app/care/${p.patientId}`} className="font-[540] underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+          {p.name}
+        </Link>
+      ))}
+    </p>
+  );
 }

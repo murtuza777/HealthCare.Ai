@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { CareTeam } from "../components/CareTeam";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { useNavigate } from "react-router";
 import { COUNTRIES } from "../../shared/emergency";
@@ -63,7 +64,14 @@ export function Profile() {
   const { data: profile, isPending } = useProfile();
   if (isPending) return <Loading />;
   // Remount the form when the profile first arrives so defaults come from saved data.
-  return <ProfileForm key={profile?.updatedAt ?? "new"} profile={profile ?? null} />;
+  return (
+    <div className="space-y-16">
+      <ProfileForm key={profile?.updatedAt ?? "new"} profile={profile ?? null} />
+      <div className="mx-auto max-w-3xl">
+        <CareTeam />
+      </div>
+    </div>
+  );
 }
 
 function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof useProfile>["data"]> | null }) {

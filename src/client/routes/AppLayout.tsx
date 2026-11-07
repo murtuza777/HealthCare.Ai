@@ -5,6 +5,7 @@ import { Activity, FileText, LayoutGrid, LogOut, MessagesSquare, Pill, Stethosco
 import type { LucideIcon } from "lucide-react";
 import { authClient, useSession } from "../lib/auth-client";
 import { useProfile } from "../lib/queries";
+import { usePatientsCaredFor } from "../lib/care";
 import { EmergencyDialog } from "../components/EmergencyDialog";
 import { HeartMark } from "../components/Shell";
 import { Loading } from "../components/ui";
@@ -21,12 +22,15 @@ const NAV: { to: string; label: string; short: string; icon: LucideIcon; end?: b
   { to: "/app/reports", label: "Reports", short: "Reports", icon: FileText },
 ];
 
+const CARE_TAB = { to: "/app/care", label: "Caring for", short: "Caring", icon: UserRound, end: false };
+
 export function AppLayout() {
   const { data: session, isPending } = useSession();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [emergencyOpen, setEmergencyOpen] = useState(false);
+  const caring = usePatientsCaredFor();
 
   if (isPending) {
     return (
@@ -57,7 +61,7 @@ export function AppLayout() {
 
           <nav aria-label="Sections" className="hidden md:block">
             <ul className="flex items-center gap-1">
-              {NAV.map((item) => (
+              {[...NAV, ...(caring.data?.length ? [CARE_TAB] : [])].map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}

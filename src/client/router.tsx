@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate, useParams } from "react-router";
 import { Landing } from "./routes/Landing";
 import { Login } from "./routes/Login";
 import { NotFound } from "./routes/NotFound";
@@ -23,8 +23,18 @@ export const router = createBrowserRouter([
       { path: "symptoms", lazy: async () => ({ Component: (await import("./routes/Symptoms")).Symptoms }) },
       { path: "reports", lazy: async () => ({ Component: (await import("./routes/Reports")).Reports }) },
       { path: "reports/share", lazy: async () => ({ Component: (await import("./routes/ShareReports")).ShareReports }) },
+      { path: "care", lazy: async () => ({ Component: (await import("./routes/Caring")).CaringList }) },
+      { path: "care/accept/:token", lazy: async () => ({ Component: (await import("./routes/Caring")).AcceptInvite }) },
+      { path: "care/:patientId", lazy: async () => ({ Component: (await import("./routes/Caring")).CareDashboard }) },
       { path: "profile", lazy: async () => ({ Component: (await import("./routes/Profile")).Profile }) },
     ],
   },
+  // Invite links in emails point here; the app route asks for sign-in first if needed.
+  { path: "/care/accept/:token", element: <InviteRedirect /> },
   { path: "*", element: <NotFound /> },
 ]);
+
+function InviteRedirect() {
+  const { token = "" } = useParams();
+  return <Navigate to={`/app/care/accept/${token}`} replace />;
+}
