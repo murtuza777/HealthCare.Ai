@@ -114,6 +114,17 @@ export function SignUp() {
           Your password is protected on this device before it's sent, and checked against known data breaches without
           revealing it.
         </p>
+        <p className="text-sm text-ink-faint">
+          By creating an account you agree to the{" "}
+          <Link to="/terms" className="underline underline-offset-4 hover:text-ink">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="underline underline-offset-4 hover:text-ink">
+            Privacy notice
+          </Link>
+          .
+        </p>
       </form>
     </AuthLayout>
   );

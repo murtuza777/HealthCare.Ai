@@ -6,6 +6,8 @@ import type { LucideIcon } from "lucide-react";
 import { authClient, useSession } from "../lib/auth-client";
 import { useProfile } from "../lib/queries";
 import { usePatientsCaredFor } from "../lib/care";
+import { useConsents } from "../lib/account";
+import { ConsentGate } from "../components/Account";
 import { EmergencyDialog } from "../components/EmergencyDialog";
 import { HeartMark } from "../components/Shell";
 import { Loading } from "../components/ui";
@@ -31,6 +33,7 @@ export function AppLayout() {
   const queryClient = useQueryClient();
   const [emergencyOpen, setEmergencyOpen] = useState(false);
   const caring = usePatientsCaredFor();
+  const consents = useConsents(Boolean(session));
 
   if (isPending) {
     return (
@@ -40,6 +43,7 @@ export function AppLayout() {
     );
   }
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  if (consents.data && !(consents.data.terms && consents.data.privacy)) return <ConsentGate />;
 
   async function signOut() {
     await authClient.signOut();

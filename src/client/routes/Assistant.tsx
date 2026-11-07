@@ -16,6 +16,7 @@ import {
 import { useProfile } from "../lib/queries";
 import { timeAgo } from "../lib/format";
 import { Button, Loading } from "../components/ui";
+import { AiConsent } from "../components/Account";
 
 // The assistant answers from the patient's own record. Emergencies are caught by fixed rules
 // (in the browser as you type, and again on the server) and never wait for the model.
@@ -62,6 +63,9 @@ export function Assistant() {
         setPending({ user: message, reply: "", streaming: false, error: "You've used today's questions. The assistant will be back tomorrow. Your record and charts still work as usual." });
       } else if (result.kind === "unavailable") {
         setPending({ user: message, reply: "", streaming: false, error: "The assistant isn't available right now. Your question was saved; try again in a little while." });
+      } else if (result.kind === "consent") {
+        setPending(null);
+        void qc.invalidateQueries({ queryKey: assistantKeys.status });
       } else if (result.kind === "error") {
         setPending({ user: message, reply: "", streaming: false, error: result.message });
       } else {
@@ -106,6 +110,10 @@ export function Assistant() {
           </div>
         </div>
 
+        {status.data && !status.data.consented ? (
+          <AiConsent />
+        ) : (
+          <>
         <div className="flex-1 space-y-8" aria-live="polite">
           {activeId && convo.isPending && <Loading label="Loading conversation" />}
           {!activeId && !pending && <Suggestions onPick={ask} disabled={busy || status.data?.available === false} />}
@@ -130,6 +138,8 @@ export function Assistant() {
         </div>
 
         <Composer onSend={ask} busy={busy} status={status.data} />
+          </>
+        )}
       </section>
     </div>
   );

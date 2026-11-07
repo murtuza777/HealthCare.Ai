@@ -11,6 +11,8 @@ export const router = createBrowserRouter([
   { path: "/signup", lazy: async () => ({ Component: (await import("./routes/SignUp")).SignUp }) },
   { path: "/verify-email", lazy: async () => ({ Component: (await import("./routes/VerifyEmail")).VerifyEmail }) },
   { path: "/forgot-password", lazy: async () => ({ Component: (await import("./routes/ForgotPassword")).ForgotPassword }) },
+  { path: "/privacy", lazy: async () => ({ Component: (await import("./routes/Legal")).Privacy }) },
+  { path: "/terms", lazy: async () => ({ Component: (await import("./routes/Legal")).Terms }) },
   { path: "/share/:token", lazy: async () => ({ Component: (await import("./routes/SharedView")).SharedView }) },
   {
     path: "/app",

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { CareTeam } from "../components/CareTeam";
+import { AccountSection } from "../components/Account";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { useNavigate } from "react-router";
 import { COUNTRIES } from "../../shared/emergency";
@@ -67,8 +68,9 @@ export function Profile() {
   return (
     <div className="space-y-16">
       <ProfileForm key={profile?.updatedAt ?? "new"} profile={profile ?? null} />
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl space-y-16">
         <CareTeam />
+        <AccountSection />
       </div>
     </div>
   );

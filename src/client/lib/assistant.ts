@@ -43,7 +43,7 @@ export function useRateMessage() {
 export type SendResult =
   | { kind: "reply"; conversationId: string }
   | { kind: "emergency"; conversationId: string; reason: string; number: string; content: string }
-  | { kind: "quota" | "unavailable"; conversationId: string | null }
+  | { kind: "quota" | "unavailable" | "consent"; conversationId: string | null }
   | { kind: "error"; message: string; conversationId: string | null };
 
 /** Send a message; `onText` receives the reply as it streams in. */
@@ -67,7 +67,7 @@ export async function sendMessage(message: string, conversationId: string | null
     if (body.kind === "emergency") {
       return { kind: "emergency", conversationId: body.conversationId!, reason: body.reason!, number: body.number!, content: body.message!.content };
     }
-    if (body.kind === "quota" || body.kind === "unavailable") return { kind: body.kind, conversationId: body.conversationId ?? null };
+    if (body.kind === "quota" || body.kind === "unavailable" || body.kind === "consent") return { kind: body.kind, conversationId: body.conversationId ?? null };
     return { kind: "error", message: body.error === "not_found" ? "That conversation no longer exists." : "Something went wrong. Try again.", conversationId: null };
   }
   const id = res.headers.get("x-conversation-id")!;

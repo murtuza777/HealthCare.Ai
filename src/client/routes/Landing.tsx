@@ -150,7 +150,15 @@ export function Landing() {
       <footer className="border-t border-line">
         <div className={`${wrap} flex flex-col gap-2 py-8 text-sm text-ink-muted sm:flex-row sm:justify-between`}>
           <p>Healthcare.AI supports your care. It doesn't replace your doctor.</p>
-          <p>In an emergency, call your local emergency number.</p>
+          <p className="flex gap-4">
+            <Link to="/privacy" className="hover:text-ink">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-ink">
+              Terms
+            </Link>
+            <span>In an emergency, call your local emergency number.</span>
+          </p>
         </div>
       </footer>
     </div>
