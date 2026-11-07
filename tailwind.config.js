@@ -1,50 +1,48 @@
 /** @type {import('tailwindcss').Config} */
-// Clinic chart design tokens. See docs/design/brief.md and DESIGN.md.
+// "Quiet record" design tokens. See DESIGN.md and docs/design/brief.md.
+// Neutral paper, near-black ink, one accent for links and focus, red only for alerts.
 export default {
   content: ['./index.html', './src/client/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        ground: '#F5F8FA', // porcelain page ground
-        sheet: '#FFFFFF', // chart sheets, inputs
-        well: '#EEF3F7', // second neutral layer: table heads, sidebars
-        line: { DEFAULT: '#D6DFE8', strong: '#B8C6D4' },
-        ink: { DEFAULT: '#14305A', muted: '#4A5F7A', faint: '#6B7F96' },
-        action: { DEFAULT: '#1F5FD1', hover: '#1A4FB0', soft: '#E6EEFB' },
-        danger: { DEFAULT: '#C3122F', hover: '#A20F27', soft: '#FBE7EA' },
-        grid: { minor: '#F0D8D3', major: '#E3B7AF' }, // ECG paper, charts only
+        ground: '#FAFAF9', // page
+        sheet: '#FFFFFF', // inputs, raised surfaces (rare)
+        well: '#F3F3F1', // hover rows, skeletons, quiet fills
+        line: { DEFAULT: '#E7E7E4', strong: '#D2D2CE' }, // hairlines
+        ink: { DEFAULT: '#1C1D1F', muted: '#5C5E63', faint: '#73757A' },
+        action: { DEFAULT: '#2952CC', hover: '#1F42A8', soft: '#EDF1FC' }, // links, focus, selection
+        danger: { DEFAULT: '#C0172F', hover: '#A0122A', soft: '#FCEEF0' }, // alerts only
+        grid: { minor: '#F1F1EE', major: '#E4E4E0' }, // chart rules
         status: {
-          normal: '#1E6B45',
-          'normal-bg': '#E2F2E9',
-          borderline: '#7A4E00',
-          'borderline-bg': '#FDF0D5',
-          high: '#9A3A0A',
-          'high-bg': '#FBE5D9',
-          low: '#1A4FA8',
-          'low-bg': '#E3ECFB',
+          normal: '#2E8555',
+          borderline: '#B7791F',
+          high: '#C4501A',
+          low: '#3B6FD4',
         },
       },
       fontFamily: {
-        sans: ['"Atkinson Hyperlegible Next Variable"', 'system-ui', 'sans-serif'],
+        sans: ['"Mona Sans Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['"Source Serif 4 Variable"', 'ui-serif', 'Georgia', 'serif'],
       },
       fontSize: {
-        // Fixed rem scale (~1.2 ratio) with a 17px base for older eyes.
         xs: ['0.8125rem', { lineHeight: '1.25rem' }],
-        sm: ['0.9375rem', { lineHeight: '1.4rem' }],
-        base: ['1.0625rem', { lineHeight: '1.65rem' }],
-        lg: ['1.25rem', { lineHeight: '1.75rem' }],
-        xl: ['1.5rem', { lineHeight: '2rem' }],
-        '2xl': ['1.875rem', { lineHeight: '2.375rem' }],
-        '3xl': ['2.25rem', { lineHeight: '2.75rem' }],
-        '4xl': ['3rem', { lineHeight: '3.25rem' }],
-        '5xl': ['3.75rem', { lineHeight: '3.9rem' }],
+        sm: ['0.875rem', { lineHeight: '1.375rem' }],
+        base: ['1rem', { lineHeight: '1.625rem' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem' }],
+        xl: ['1.375rem', { lineHeight: '1.875rem', letterSpacing: '-0.01em' }],
+        '2xl': ['1.75rem', { lineHeight: '2.125rem', letterSpacing: '-0.015em' }],
+        '3xl': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em' }],
+        '4xl': ['3rem', { lineHeight: '3.125rem', letterSpacing: '-0.025em' }],
+        '5xl': ['4rem', { lineHeight: '4rem', letterSpacing: '-0.03em' }],
       },
-      borderRadius: { control: '8px', sheet: '12px' },
+      borderRadius: { control: '10px', sheet: '14px' },
       boxShadow: {
-        sheet: '0 1px 2px rgba(20, 48, 90, 0.06), 0 4px 12px -6px rgba(20, 48, 90, 0.10)',
-        lift: '0 2px 4px rgba(20, 48, 90, 0.08), 0 12px 28px -12px rgba(20, 48, 90, 0.22)',
+        sheet: '0 1px 2px rgba(28, 29, 31, 0.04)',
+        lift: '0 1px 2px rgba(28, 29, 31, 0.06), 0 12px 32px -12px rgba(28, 29, 31, 0.18)',
       },
-      maxWidth: { prose: '68ch' },
+      transitionTimingFunction: { out: 'cubic-bezier(0.23, 1, 0.32, 1)' },
+      maxWidth: { prose: '62ch' },
     },
   },
   plugins: [],

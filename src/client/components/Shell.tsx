@@ -6,19 +6,18 @@ import { buttonClasses, inputClass as kitInputClass } from "./ui";
 
 export function Wordmark({ to = "/" }: { to?: string }) {
   return (
-    <Link to={to} className="inline-flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
+    <Link to={to} className="inline-flex items-center gap-2 rounded-md text-ink">
       <HeartMark />
-      Healthcare.AI
+      <span className="font-serif text-[1.3125rem] leading-none tracking-[-0.02em]">Healthcare.AI</span>
     </Link>
   );
 }
 
-/** The mark: a single heartbeat stroke inside a rounded square. */
-export function HeartMark({ className = "h-7 w-7" }: { className?: string }) {
+/** The mark: one heartbeat stroke, drawn in ink. */
+export function HeartMark({ className = "h-5 w-6" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 28 28" className={className} aria-hidden="true">
-      <rect x="0.5" y="0.5" width="27" height="27" rx="7" fill="#14305A" />
-      <path d="M4 15h5l2-5 3.5 10 2.5-7 1.5 2H24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 24 20" className={className} aria-hidden="true">
+      <path d="M1 11h5l2.2-6 3.6 11 2.6-8 1.6 3H23" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -28,7 +27,7 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-sheet border border-line bg-sheet p-6 shadow-sheet sm:p-8 ${className}`}>{children}</div>;
+  return <div className={`rounded-sheet border border-line bg-sheet p-6 sm:p-8 ${className}`}>{children}</div>;
 }
 
 export const inputClass = kitInputClass;

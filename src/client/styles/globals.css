@@ -1,10 +1,11 @@
-@import "@fontsource-variable/atkinson-hyperlegible-next/index.css";
+@import "@fontsource-variable/mona-sans/index.css";
+@import "@fontsource-variable/source-serif-4/opsz.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Clinic chart. Tokens live in tailwind.config.js; this file themes the browser itself. */
+/* Quiet record. Tokens live in tailwind.config.js; this file themes the browser itself. */
 
 @layer base {
   :root {
@@ -22,16 +23,29 @@
     @apply bg-ground font-sans text-base text-ink antialiased;
     caret-color: theme("colors.action.DEFAULT");
     font-variant-numeric: lining-nums;
+    font-weight: 420;
   }
 
-  h1, h2, h3 {
-    @apply font-bold text-ink;
+  /* Headings are set in the serif at a light weight; size carries hierarchy, not boldness. */
+  h1, h2 {
+    @apply font-serif text-ink;
+    font-weight: 400;
+    font-optical-sizing: auto;
     text-wrap: balance;
-    letter-spacing: -0.012em;
+  }
+
+  h3 {
+    @apply text-ink;
+    font-weight: 560;
+    text-wrap: balance;
   }
 
   p {
     text-wrap: pretty;
+  }
+
+  strong, b {
+    font-weight: 600;
   }
 
   ::selection {
@@ -40,7 +54,7 @@
   }
 
   a {
-    text-underline-offset: 0.2em;
+    text-underline-offset: 0.22em;
     text-decoration-thickness: 1px;
   }
 
@@ -48,7 +62,7 @@
   :focus-visible {
     outline: 2px solid theme("colors.action.DEFAULT");
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 
   input, select, textarea, button {
@@ -61,7 +75,7 @@
   }
 
   dialog::backdrop {
-    background: rgb(20 48 90 / 0.45);
+    background: rgb(28 29 31 / 0.35);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -78,28 +92,30 @@
   /* Readings are measurements: tabular figures so columns of numbers align. */
   .figures {
     font-variant-numeric: tabular-nums lining-nums;
-    letter-spacing: -0.01em;
   }
 
-  /* ECG paper: 1 mm minor and 5 mm major squares. Only ever behind charts. */
-  .ecg-grid {
-    background-color: #fffdfc;
-    background-image:
-      linear-gradient(theme("colors.grid.major") 1px, transparent 1px),
-      linear-gradient(90deg, theme("colors.grid.major") 1px, transparent 1px),
-      linear-gradient(theme("colors.grid.minor") 1px, transparent 1px),
-      linear-gradient(90deg, theme("colors.grid.minor") 1px, transparent 1px);
-    background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px;
-    background-position: -1px -1px;
+  /* Large readings use the serif's lining figures, like a printed record. */
+  .reading {
+    @apply font-serif;
+    font-weight: 380;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.02em;
   }
 
-  /* The one authored motion moment: the trace sweeps across the grid like a recorder.
-     A clip reveal keeps each line's own dash pattern and brings the dots in with it. */
+  /* The one authored motion moment: the landing trace draws in once. */
   .trace-draw .recharts-line {
     clip-path: inset(0 100% 0 0);
-    animation: trace 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
+    animation: trace 1.6s cubic-bezier(0.23, 1, 0.32, 1) 0.2s forwards;
   }
   @keyframes trace {
     to { clip-path: inset(0 0 0 0); }
+  }
+
+  /* Page content settles in once, quickly. Never on every re-render. */
+  .settle {
+    animation: settle 360ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(6px); }
   }
 }
