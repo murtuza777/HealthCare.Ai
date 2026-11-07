@@ -24,5 +24,24 @@ export function renderEmail(kind: string, payload: Record<string, unknown>): Omi
       html: `<p>Your Healthcare.AI sign-in code is</p><p style="font-size:28px;font-weight:700;letter-spacing:4px">${code}</p><p>It expires in 5 minutes. If you didn't request it, ignore this email.</p>`,
     };
   }
+  if (kind === "care:invite") {
+    const name = escapeHtml(String(payload.patientName || "Someone"));
+    const url = escapeHtml(String(payload.url ?? ""));
+    return {
+      subject: `${name} invited you to Healthcare.AI`,
+      text: `${name} would like you to help look after their heart health on Healthcare.AI. Accept the invite (it expires in 7 days): ${url}`,
+      html: `<p>${name} would like you to help look after their heart health on Healthcare.AI.</p><p><a href="${url}">Accept the invite</a> (it expires in 7 days).</p><p>If you weren't expecting this, you can ignore this email.</p>`,
+    };
+  }
+  if (kind === "care:alert") {
+    const title = escapeHtml(String(payload.title ?? "Healthcare.AI alert"));
+    const body = escapeHtml(String(payload.body ?? ""));
+    const url = escapeHtml(String(payload.url ?? ""));
+    return {
+      subject: title,
+      text: `${title}\n\n${body}\n\n${url}`,
+      html: `<p><strong>${title}</strong></p><p>${body}</p><p><a href="${url}">Open Healthcare.AI</a></p>`,
+    };
+  }
   throw new Error(`No email template for ${kind}`);
 }

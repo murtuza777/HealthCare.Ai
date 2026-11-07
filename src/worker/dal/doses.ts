@@ -181,8 +181,18 @@ export async function markReminded(db: Db, ids: string[], now = new Date()) {
 export async function markMissed(db: Db, now = new Date(), batch = 100) {
   const cutoff = new Date(now.getTime() - MISSED_AFTER_MS);
   const rows = await db
-    .select({ id: doseEvents.id, userId: doseEvents.userId, medicationId: doseEvents.medicationId, scheduledAt: doseEvents.scheduledAt })
+    .select({
+      id: doseEvents.id,
+      userId: doseEvents.userId,
+      medicationId: doseEvents.medicationId,
+      scheduledAt: doseEvents.scheduledAt,
+      name: medications.name,
+      dose: medications.dose,
+      timezone: profiles.timezone,
+    })
     .from(doseEvents)
+    .innerJoin(medications, eq(medications.id, doseEvents.medicationId))
+    .leftJoin(profiles, eq(profiles.userId, doseEvents.userId))
     .where(and(eq(doseEvents.status, "pending"), lt(doseEvents.scheduledAt, cutoff)))
     .limit(batch);
   if (rows.length) await db.update(doseEvents).set({ status: "missed" }).where(inArray(doseEvents.id, rows.map((r) => r.id)));

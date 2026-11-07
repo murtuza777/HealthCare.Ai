@@ -4,7 +4,7 @@ import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import { profileInputSchema } from "../../shared/profile";
-import { VITAL_TYPES, vitalInputSchema } from "../../shared/vitals";
+import { VITAL_TYPES, vitalInputSchema, type VitalType } from "../../shared/vitals";
 import { medicationInputSchema, medicationUpdateSchema } from "../../shared/medications";
 import { symptomInputSchema } from "../../shared/symptoms";
 import { addMedication, deleteMedication, listMedications, setMedicationActive } from "../dal/medications";
@@ -16,6 +16,8 @@ import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
 import { addVital, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
+import { listAlerts, raiseAlert } from "../dal/alerts";
+import { patientNames } from "../dal/care";
 import { doseActionSchema } from "../../shared/doses";
 import { notFound, parse } from "../middleware/validate";
 import type { AppEnv } from "../types";
@@ -31,6 +33,17 @@ const patientId = (c: Context<AppEnv>) => {
   const id = c.req.param("patientId");
   return !id || id === "me" ? c.var.actor.userId : id;
 };
+
+const VITAL_NAMES: Record<VitalType, string> = {
+  blood_pressure: "Blood pressure",
+  heart_rate: "Heart rate",
+  spo2: "Oxygen",
+  weight: "Weight",
+  glucose: "Blood glucose",
+  temperature: "Temperature",
+  cholesterol: "Cholesterol",
+};
+const firstName = async (c: Context<AppEnv>, id: string) => (await patientNames(c.var.db, [id])).get(id)?.split(" ")[0] || "Your patient";
 
 export const patients = new Hono<AppEnv>()
   .get("/:patientId/profile", async (c) => {
@@ -58,6 +71,17 @@ export const patients = new Hono<AppEnv>()
     validator("json", (v) => parse(vitalInputSchema, v)),
     async (c) => {
       const vital = await addVital(c.var.db, c.var.actor, patientId(c), c.req.valid("json"));
+      if (vital.classification === "critical") {
+        const who = await firstName(c, vital.userId);
+        const reading = vital.type === "blood_pressure" ? `${vital.value}/${vital.value2}` : String(vital.value);
+        await raiseAlert(c.env, c.var.db, vital.userId, {
+          severity: "critical",
+          kind: "critical-reading",
+          title: `${who} logged an emergency-range reading`,
+          body: `${VITAL_NAMES[vital.type as VitalType]} ${reading} ${vital.unit}. Check on them now.`,
+          data: { vitalId: vital.id },
+        });
+      }
       return c.json({ vital }, 201);
     },
   )
@@ -120,6 +144,10 @@ export const patients = new Hono<AppEnv>()
       return c.json(result);
     },
   )
+  .get("/:patientId/alerts", async (c) => {
+    const items = await listAlerts(c.var.db, c.var.actor, patientId(c));
+    return c.json({ items });
+  })
   // Symptoms
   .get("/:patientId/symptoms", async (c) => {
     const items = await listSymptoms(c.var.db, c.var.actor, patientId(c));
@@ -130,6 +158,16 @@ export const patients = new Hono<AppEnv>()
     validator("json", (v) => parse(symptomInputSchema, v)),
     async (c) => {
       const result = await addSymptom(c.var.db, c.var.actor, patientId(c), c.req.valid("json"));
+      if (result.redFlag.emergency) {
+        const who = await firstName(c, result.symptom.userId);
+        await raiseAlert(c.env, c.var.db, result.symptom.userId, {
+          severity: "critical",
+          kind: "red-flag-symptom",
+          title: `${who} reported symptoms that can be an emergency`,
+          body: `${result.redFlag.reason} Check on them now.`,
+          data: { symptomId: result.symptom.id },
+        });
+      }
       return c.json(result, 201);
     },
   )

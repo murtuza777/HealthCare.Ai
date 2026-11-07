@@ -8,6 +8,8 @@ import { requireSession } from "./middleware/session";
 import { patients } from "./routes/patients";
 import { assistant } from "./routes/assistant";
 import { push } from "./routes/push";
+import { care } from "./routes/care";
+import { CareError } from "./dal/care";
 import { publicRoutes } from "./routes/public";
 import { ShareError } from "./dal/shares";
 import { DoseError } from "./dal/doses";
@@ -57,7 +59,8 @@ const v1 = new Hono<AppEnv>()
   .get("/me", (c) => c.json({ user: c.var.user }))
   .route("/patients", patients)
   .route("/assistant", assistant)
-  .route("/push", push);
+  .route("/push", push)
+  .route("/care", care);
 
 const routes = app.route("/v1", v1).route("/public", publicRoutes);
 export type AppType = typeof routes;
@@ -65,6 +68,7 @@ export type AppType = typeof routes;
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 app.onError((err, c) => {
   if (err instanceof AccessDenied) return c.json({ error: "forbidden" }, 403);
+  if (err instanceof CareError) return c.json({ error: "invalid_input", fields: [{ path: "", message: err.message }] }, 400);
   if (err instanceof DoseError) return c.json({ error: "invalid_input", fields: [{ path: "scheduledAt", message: err.message }] }, 400);
   if (err instanceof ShareError) return c.json({ error: "invalid_input", fields: [{ path: "reportIds", message: err.message }] }, 400);
   if (err instanceof HTTPException) return err.getResponse();
