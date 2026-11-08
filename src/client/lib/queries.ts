@@ -15,6 +15,13 @@ export const keys = {
   symptoms: ["symptoms", "me"] as const,
 };
 
+/** Medicines drive today's doses and adherence, so refresh all three together. */
+function invalidateMedicines(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({ queryKey: keys.medications });
+  void qc.invalidateQueries({ queryKey: ["doses", "me"] });
+  void qc.invalidateQueries({ queryKey: ["adherence", "me"] });
+}
+
 // --- Profile ---------------------------------------------------------------
 export function useProfile() {
   return useQuery({ queryKey: keys.profile, queryFn: async () => (await ok(await p.profile.$get({ param: me }))).profile });
@@ -25,7 +32,10 @@ export function useSaveProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (json: ProfileUpdate) => (await ok(await p.profile.$put({ param: me, json }))).profile,
-    onSuccess: (profile) => qc.setQueryData(keys.profile, profile),
+    onSuccess: (profile) => {
+      qc.setQueryData(keys.profile, profile);
+      void qc.invalidateQueries({ queryKey: ["doses", "me"] });
+    },
   });
 }
 
@@ -63,7 +73,7 @@ export function useAddMedication() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (json: MedicationNew) => (await ok(await p.medications.$post({ param: me, json }))).medication,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.medications }),
+    onSuccess: () => invalidateMedicines(qc),
   });
 }
 
@@ -72,7 +82,7 @@ export function useSetMedicationActive() {
   return useMutation({
     mutationFn: async ({ id, active }: { id: string; active: boolean }) =>
       (await ok(await p.medications[":id"].$patch({ param: { ...me, id }, json: { active } }))).medication,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.medications }),
+    onSuccess: () => invalidateMedicines(qc),
   });
 }
 
@@ -80,7 +90,7 @@ export function useDeleteMedication() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => ok(await p.medications[":id"].$delete({ param: { ...me, id } })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.medications }),
+    onSuccess: () => invalidateMedicines(qc),
   });
 }
 

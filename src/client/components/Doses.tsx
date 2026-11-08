@@ -46,15 +46,15 @@ export function TodayDoses({ compact = false }: { compact?: boolean }) {
             const busy = mark.isPending && mark.variables?.medicationId === d.medicationId && new Date(mark.variables.scheduledAt).getTime() === at.getTime();
             const set = (status: "taken" | "skipped" | "pending") => mark.mutate({ medicationId: d.medicationId, scheduledAt: at, status });
             return (
-              <li key={`${d.medicationId}-${d.scheduledAt}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3.5">
+              <li key={`${d.medicationId}-${d.scheduledAt}`} className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 py-3.5 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto]">
                 <span className="figures w-14 shrink-0 text-ink-muted">{d.time}</span>
-                <span className={`min-w-0 flex-1 ${done ? "text-ink-muted" : ""}`}>
+                <span className={`min-w-0 ${done ? "text-ink-muted" : ""}`}>
                   <span className={`font-[540] ${d.status === "taken" ? "line-through decoration-ink/30" : ""}`}>{d.name}</span>{" "}
                   <span className="text-ink-muted">{d.dose}</span>
                   {d.instructions && !compact && <span className="block text-sm text-ink-faint">{d.instructions}</span>}
                 </span>
                 {done ? (
-                  <span className="flex items-center gap-2">
+                  <span className="col-start-2 flex items-center gap-2 sm:col-start-auto sm:justify-self-end">
                     <span className={`inline-flex items-center gap-2 text-sm ${d.status === "taken" ? "text-ink" : "text-ink-muted"}`}>
                       <span aria-hidden="true" className={`h-2 w-2 rounded-full ${d.status === "taken" ? "bg-status-normal" : "bg-ink-faint"}`} />
                       {STATUS_TEXT[d.status]}
@@ -64,9 +64,9 @@ export function TodayDoses({ compact = false }: { compact?: boolean }) {
                     </Button>
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5">
+                  <span className="col-start-2 -ml-3 flex items-center gap-1.5 sm:col-start-auto sm:ml-0 sm:justify-self-end">
                     {d.status === "missed" && (
-                      <span className="mr-1 inline-flex items-center gap-2 text-sm text-ink-muted">
+                      <span className="ml-3 mr-1 inline-flex items-center gap-2 text-sm text-ink-muted sm:ml-0">
                         <span aria-hidden="true" className="h-2 w-2 rounded-full bg-status-high" />
                         Missed
                       </span>
