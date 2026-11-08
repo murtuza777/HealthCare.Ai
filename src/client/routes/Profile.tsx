@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { useSession } from "../lib/auth-client";
 import { CareTeam } from "../components/CareTeam";
 import { AccountSection } from "../components/Account";
 import { ChevronLeft, ChevronRight, Save } from "lucide-react";
@@ -80,7 +81,14 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
   const navigate = useNavigate();
   const save = useSaveProfile();
   const addVital = useAddVital();
+  const { data: session } = useSession();
   const [step, setStep] = useState(0);
+  const top = useRef<HTMLDivElement>(null);
+  const goTo = (s: number) => {
+    setStep(s);
+    // A new step starts at its heading, not wherever the last one was scrolled to.
+    requestAnimationFrame(() => top.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  };
   const [stepError, setStepError] = useState<string | null>(null);
 
   const knownConditions = (profile?.conditions ?? []).filter((c) => HEART_CONDITIONS.includes(c));
@@ -89,7 +97,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
   const otherFamily = (profile?.familyHistory ?? []).filter((c) => !FAMILY.includes(c));
 
   const [f, setF] = useState<Form>({
-    name: profile?.name ?? "",
+    name: profile?.name || session?.user.name || "",
     dateOfBirth: profile?.dateOfBirth ?? "",
     sex: profile?.sex ?? "",
     heightCm: profile?.heightCm?.toString() ?? "",
@@ -134,7 +142,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
   function next() {
     const err = validate(step);
     setStepError(err);
-    if (!err) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    if (!err) goTo(Math.min(step + 1, STEPS.length - 1));
   }
 
   async function submit(e: FormEvent) {
@@ -186,6 +194,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title={profile ? "Update your health profile" : "Set up your health profile"} subtitle="This helps us check your readings and personalise guidance. Only you can see it unless you invite a caretaker." />
+      <div ref={top} className="scroll-mt-24" />
       <Card boxed>
         <div className="mb-6">
           <div className="mb-2 flex justify-between text-sm font-[540] text-ink-muted">
@@ -360,7 +369,7 @@ function ProfileForm({ profile }: { profile: NonNullable<ReturnType<typeof usePr
           <ErrorText error={save.error ?? addVital.error} />
 
           <div className="mt-6 flex justify-between">
-            <Button type="button" variant="secondary" disabled={step === 0 || busy} onClick={() => setStep((s) => s - 1)}>
+            <Button type="button" variant="secondary" disabled={step === 0 || busy} onClick={() => goTo(step - 1)}>
               <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Back
             </Button>
             {/* Distinct keys: otherwise React reuses the same <button> and the click that

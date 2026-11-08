@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSession } from "../lib/auth-client";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ageFrom, riskFactors, type RiskFactorStatus } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
@@ -21,6 +22,7 @@ function greeting(d = new Date()) {
 
 export function Overview() {
   const profile = useProfile();
+  const { data: session } = useSession();
   const latest = useLatestVitals();
   const toast = useToastFromNavigation();
 
@@ -29,7 +31,7 @@ export function Overview() {
   const p = profile.data;
   const l = latest.data ?? {};
   const age = ageFrom(p?.dateOfBirth);
-  const first = p?.name?.split(" ")[0];
+  const first = (p?.name || session?.user.name)?.trim().split(/\s+/)[0];
   const facts = [age !== null && `Age ${age}`, p?.heightCm && `${p.heightCm} cm`, l.weight && `${l.weight.value} kg`].filter(Boolean) as string[];
 
   return (
