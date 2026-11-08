@@ -47,7 +47,7 @@ export function riskFactors(profile: ProfileLike, latest: LatestReadings, now = 
     "heart_attack",
     "Previous heart attack",
     profile ? (profile.hadHeartAttack ? "present" : "absent") : "unknown",
-    profile?.hadHeartAttack ? "A previous heart attack is the strongest predictor of another one." : "None recorded.",
+    profile?.hadHeartAttack ? "A previous heart attack is the strongest predictor of another one." : profile ? "Not in your history." : "Not recorded yet.",
   );
 
   const listedHeartDisease = mentions(conditions, "coronary", "heart failure", "atrial fibrillation", "angina", "heart disease", "cardiomyopathy");
@@ -76,7 +76,7 @@ export function riskFactors(profile: ProfileLike, latest: LatestReadings, now = 
   const diabetes = mentions(conditions, "diabetes");
   push("diabetes", "Diabetes or high blood sugar",
     diabetes || (glucose && (glucose.classification === "high" || glucose.classification === "critical")) ? "present" : glucose || profile ? "absent" : "unknown",
-    diabetes ? "Diabetes is in your conditions." : glucose ? `Latest glucose ${glucose.value} mg/dL.` : "No glucose reading yet.");
+    diabetes ? "Diabetes is in your conditions." : glucose ? `Latest glucose ${glucose.value} mg/dL.` : profile ? "Not in your conditions. Log a glucose reading to check." : "No glucose reading yet.");
 
   const smoker = profile?.lifestyle?.smoker;
   push("smoking", "Smoking", smoker === undefined ? "unknown" : smoker ? "present" : "absent",

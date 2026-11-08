@@ -144,13 +144,23 @@ export function Visit() {
       </Block>
 
       {bpStats && (
-        <Block title="Blood pressure, last 30 days" note={`${bpStats.count} readings. Average ${bpStats.avg[0]}/${bpStats.avg[1]}, highest ${bpStats.max[0]}/${bpStats.max[1]}, lowest ${bpStats.min[0]}/${bpStats.min[1]} mmHg.`}>
-          <TrendChart points={bpStats.points} unit="mmHg" dual height={200} />
+        <Block
+          title="Blood pressure, last 30 days"
+          note={
+            bpStats.count === 1
+              ? `1 reading: ${bpStats.avg[0]}/${bpStats.avg[1]} mmHg.`
+              : `${bpStats.count} readings. Average ${bpStats.avg[0]}/${bpStats.avg[1]}, highest ${bpStats.max[0]}/${bpStats.max[1]}, lowest ${bpStats.min[0]}/${bpStats.min[1]} mmHg.`
+          }
+        >
+          {bpStats.count > 1 && <TrendChart points={bpStats.points} unit="mmHg" dual height={200} />}
         </Block>
       )}
       {hrStats && (
-        <Block title="Heart rate, last 30 days" note={`${hrStats.count} readings. Average ${hrStats.avg[0]}, highest ${hrStats.max[0]}, lowest ${hrStats.min[0]} bpm.`}>
-          <TrendChart points={hrStats.points} unit="bpm" height={180} />
+        <Block
+          title="Heart rate, last 30 days"
+          note={hrStats.count === 1 ? `1 reading: ${hrStats.avg[0]} bpm.` : `${hrStats.count} readings. Average ${hrStats.avg[0]}, highest ${hrStats.max[0]}, lowest ${hrStats.min[0]} bpm.`}
+        >
+          {hrStats.count > 1 && <TrendChart points={hrStats.points} unit="bpm" height={180} />}
         </Block>
       )}
 

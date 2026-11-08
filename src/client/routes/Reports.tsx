@@ -1,10 +1,9 @@
 import { useMemo, useState, type DragEvent, type FormEvent } from "react";
-import { Link } from "react-router";
 import { Download, Eye, FileText, FolderOpen, QrCode, Search, Trash2, Upload, X } from "lucide-react";
 import { ALLOWED_MIME, MAX_REPORT_BYTES, REPORT_TYPES } from "../../shared/reports";
 import { reportFileUrl, useDeleteReport, useReports, useUploadReport, type Report } from "../lib/queries";
 import { localDate, formatDay } from "../lib/format";
-import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
+import { Button, ButtonLink, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 
 // Ported from legacy/app/reports/{add,gallery}. Files go to a private R2 bucket and are only
 // served through access-checked routes.
@@ -18,11 +17,9 @@ export function Reports() {
         subtitle="Keep lab results, scans and prescriptions together, and share them with your doctor."
         action={
           <div className="flex gap-2">
-            <Link to="/app/reports/share">
-              <Button variant="secondary">
-                <QrCode className="h-4 w-4" aria-hidden="true" /> Share with QR
-              </Button>
-            </Link>
+            <ButtonLink to="/app/reports/share" variant="secondary">
+              <QrCode className="h-4 w-4" aria-hidden="true" /> Share with QR
+            </ButtonLink>
             {!uploading && (
               <Button onClick={() => setUploading(true)}>
                 <Upload className="h-4 w-4" aria-hidden="true" /> Upload report
@@ -32,7 +29,7 @@ export function Reports() {
         }
       />
       {uploading && <UploadReport onDone={() => setUploading(false)} />}
-      <Gallery onUpload={() => setUploading(true)} />
+      <Gallery uploading={uploading} onUpload={() => setUploading(true)} />
     </div>
   );
 }
@@ -164,7 +161,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
   );
 }
 
-function Gallery({ onUpload }: { onUpload: () => void }) {
+function Gallery({ uploading, onUpload }: { uploading: boolean; onUpload: () => void }) {
   const { data, isPending, error } = useReports();
   const [q, setQ] = useState("");
   const [type, setType] = useState("All");
@@ -199,7 +196,7 @@ function Gallery({ onUpload }: { onUpload: () => void }) {
       </div>
       {isPending && <Loading />}
       <ErrorText error={error} />
-      {data?.length === 0 && (
+      {data?.length === 0 && !uploading && (
         <EmptyState
           icon={<FolderOpen className="h-12 w-12" />}
           title="No reports yet"
