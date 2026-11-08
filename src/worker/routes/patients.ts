@@ -14,7 +14,7 @@ import { createShare, listShares, revokeShare } from "../dal/shares";
 import { shareInputSchema } from "../../shared/reports";
 import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
-import { addVital, latestVitals, listVitals } from "../dal/vitals";
+import { addVital, deleteVital, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
 import { listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
@@ -95,6 +95,10 @@ export const patients = new Hono<AppEnv>()
       return c.json({ vital }, 201);
     },
   )
+  .delete("/:patientId/vitals/:id", async (c) => {
+    if (!(await deleteVital(c.var.db, c.var.actor, patientId(c), c.req.param("id")))) notFound();
+    return c.json({ ok: true });
+  })
   .get("/:patientId/vitals/latest", async (c) => {
     const latest = await latestVitals(c.var.db, c.var.actor, patientId(c));
     return c.json({ latest });

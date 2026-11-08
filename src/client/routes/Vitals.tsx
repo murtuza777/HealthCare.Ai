@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Activity } from "lucide-react";
+import { Activity, Trash2 } from "lucide-react";
 import { CANONICAL_UNITS, classifyVital, type VitalType } from "../../shared/vitals";
-import { useAddVital, useVitals } from "../lib/queries";
-import { formatReading, localDateTime, VITAL_LABELS } from "../lib/format";
+import { useAddVital, useDeleteVital, useVitals } from "../lib/queries";
+import { formatDateTime, formatReading, localDateTime, VITAL_LABELS } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 import { CriticalBanner } from "../components/CriticalBanner";
@@ -96,6 +96,7 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
 
 function History({ type }: { type: VitalType }) {
   const { data, isPending, error } = useVitals(type, 100);
+  const del = useDeleteVital();
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
@@ -105,17 +106,27 @@ function History({ type }: { type: VitalType }) {
       <Card>
         <h2 className="mb-4 text-xl">History</h2>
         {isPending && <Loading />}
-        <ErrorText error={error} />
+        <ErrorText error={error ?? del.error} />
         {data?.length === 0 && (
           <EmptyState icon={<Activity className="h-10 w-10" />} title="No readings yet" body={`Your ${VITAL_LABELS[type].toLowerCase()} readings will appear here.`} />
         )}
         <ul className="max-h-80 divide-y divide-line border-y border-line overflow-y-auto">
           {data?.map((v) => (
-            <li key={v.id} className="flex items-center justify-between gap-4 py-2">
-              <span className="text-sm text-ink-muted">{new Date(v.measuredAt).toLocaleString()}</span>
+            <li key={v.id} className="group flex items-center justify-between gap-3 py-2.5">
+              <span className="text-sm text-ink-muted">{formatDateTime(v.measuredAt)}</span>
               <span className="flex items-center gap-3">
-                <span className="tabular-nums">{formatReading(v)}</span>
+                <span className="figures">{formatReading(v)}</span>
                 <StatusBadge value={v.classification} />
+                <button
+                  aria-label={`Delete the ${formatReading(v)} reading from ${formatDateTime(v.measuredAt)}`}
+                  disabled={del.isPending}
+                  onClick={() => {
+                    if (confirm(`Delete the ${formatReading(v)} reading from ${formatDateTime(v.measuredAt)}?`)) del.mutate(v.id);
+                  }}
+                  className="grid h-8 w-8 place-items-center rounded-full text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
               </span>
             </li>
           ))}

@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Eye, FileText, Link2Off } from "lucide-react";
 import { publicApi } from "../lib/api";
-import { formatReading, VITAL_LABELS, formatDay } from "../lib/format";
+import { formatReading, VITAL_LABELS, formatDay, formatDateTime } from "../lib/format";
 import { Card, Loading, StatusBadge } from "../components/ui";
 import { Shell, Wordmark } from "../components/Shell";
 
@@ -38,7 +38,7 @@ export function SharedView() {
           <div className="mt-10 space-y-14">
             <div>
               <h1 className="text-2xl font-[560]">Reports shared by {q.data.patientName}</h1>
-              <p className="text-ink-muted">Read-only. This link works until {new Date(q.data.expiresAt).toLocaleString()}.</p>
+              <p className="text-ink-muted">Read-only. This link works until {formatDateTime(q.data.expiresAt)}.</p>
             </div>
 
             {q.data.vitals && q.data.vitals.length > 0 && (

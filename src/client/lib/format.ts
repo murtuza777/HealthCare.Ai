@@ -43,3 +43,10 @@ export function timeAgo(iso: string | Date, now = Date.now()) {
   const d = Math.round(h / 24);
   return d === 1 ? "yesterday" : `${d} days ago`;
 }
+
+/** "8 Nov, 8:00 pm" in the user's locale; adds the year when it isn't this year. */
+export function formatDateTime(iso: string | Date, now = new Date()) {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleString(undefined, { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }), hour: "numeric", minute: "2-digit" });
+}

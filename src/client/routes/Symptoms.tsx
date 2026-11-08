@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Stethoscope, Trash2 } from "lucide-react";
 import { detectRedFlags, SYMPTOM_TYPES, type RedFlag } from "../../shared/symptoms";
 import { useAddSymptom, useDeleteSymptom, useSymptoms } from "../lib/queries";
-import { timeAgo } from "../lib/format";
+import { formatDateTime, timeAgo } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { CriticalBanner } from "../components/CriticalBanner";
 
@@ -80,7 +80,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           </Field>
         </div>
         <Field label={`Severity: ${severity} of 10`}>
-          <input type="range" min={1} max={10} className="w-full accent-action" value={severity} onChange={(e) => setSeverity(Number(e.target.value))} />
+          <input type="range" min={1} max={10} className="w-full accent-ink" value={severity} onChange={(e) => setSeverity(Number(e.target.value))} />
         </Field>
         <fieldset>
           <legend className="mb-2 text-sm font-[540] text-ink">Also feeling</legend>
@@ -129,7 +129,7 @@ function SymptomList() {
                 {s.type}, <span className="figures">severity {s.severity}/10</span>
               </p>
               <p className="text-sm text-ink-muted">
-                {new Date(s.occurredAt).toLocaleString()} ({timeAgo(s.occurredAt)})
+                {formatDateTime(s.occurredAt)} ({timeAgo(s.occurredAt)})
                 {s.durationMin ? `, lasted ${s.durationMin} min` : ""}
               </p>
               {s.accompaniedBy.length > 0 && <p className="text-sm text-ink-muted">Also: {s.accompaniedBy.join(", ")}</p>}

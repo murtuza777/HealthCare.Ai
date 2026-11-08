@@ -101,3 +101,16 @@ describe("API", () => {
     expect(badTz.status).toBe(400);
   });
 });
+
+describe("deleting readings", () => {
+  it("lets the owner delete a reading and nobody else", async () => {
+    const owner = await signIn("vital-delete@example.com", "198.51.100.120");
+    const other = await signIn("vital-delete-other@example.com", "198.51.100.121");
+    const { vital } = (await (await call("/api/v1/patients/me/vitals", { cookie: owner, body: { type: "heart_rate", value: 71 } })).json()) as { vital: { id: string } };
+    expect((await call(`/api/v1/patients/me/vitals/${vital.id}`, { cookie: other, method: "DELETE" })).status).toBe(404);
+    expect((await call(`/api/v1/patients/me/vitals/${vital.id}`, { cookie: owner, method: "DELETE" })).status).toBe(200);
+    expect((await call(`/api/v1/patients/me/vitals/${vital.id}`, { cookie: owner, method: "DELETE" })).status).toBe(404);
+    const left = (await (await call("/api/v1/patients/me/vitals", { cookie: owner })).json()) as { items: unknown[] };
+    expect(left.items).toHaveLength(0);
+  });
+});

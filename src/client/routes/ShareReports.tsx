@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Check, Copy, Link2, QrCode, Share2 } from "lucide-react";
 import { useCreateShare, useReports, useRevokeShare, useShares, type ShareNew } from "../lib/queries";
-import { timeAgo, formatDay } from "../lib/format";
+import { timeAgo, formatDay, formatDateTime } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Loading, PageHeader } from "../components/ui";
 
 // Ported from legacy/app/reports/qr-code. Links now expire (1 hour / 24 hours / 7 days),
@@ -110,7 +110,7 @@ function NewLink({ url, expiresAt }: { url: string; expiresAt: string }) {
       <div className="rounded-sheet border border-line bg-sheet p-3">
         <QRCodeSVG value={url} size={220} level="M" title="QR code for the share link" />
       </div>
-      <p className="text-sm text-ink-muted">Works until {new Date(expiresAt).toLocaleString()}</p>
+      <p className="text-sm text-ink-muted">Works until {formatDateTime(expiresAt)}</p>
       <div className="flex w-full items-center gap-2 rounded-control border border-line bg-well p-2">
         <code className="flex-1 truncate text-left text-xs text-ink-muted">{url}</code>
         <Button variant="secondary" onClick={copy} aria-label="Copy link">

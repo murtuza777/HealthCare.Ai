@@ -60,6 +60,14 @@ export function useAddVital() {
   });
 }
 
+export function useDeleteVital() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => ok(await p.vitals[":id"].$delete({ param: { ...me, id } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["vitals", "me"] }),
+  });
+}
+
 // --- Medications -----------------------------------------------------------
 export function useMedications(includeInactive = false) {
   return useQuery({

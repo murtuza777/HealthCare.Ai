@@ -3,6 +3,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 type Point = { measuredAt: string; value: number; value2: number | null };
 
 const fmtDay = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 const INK = "#1C1D1F";
 const SECOND = "#8A8C91";
 const MUTED = "#73757A";
@@ -38,6 +39,8 @@ export function TrendChart({
 
   const first = data[0]!;
   const last = data[data.length - 1]!;
+  // Readings within about a day share a date, so label the axis with times instead.
+  const tick = +new Date(last.t) - +new Date(first.t) < 36 * 3600 * 1000 ? fmtTime : fmtDay;
   const summary = dual
     ? `From ${first.value}/${first.value2} to ${last.value}/${last.value2} ${unit} over ${data.length} readings.`
     : `From ${first.value} to ${last.value} ${unit} over ${data.length} readings.`;
@@ -48,7 +51,7 @@ export function TrendChart({
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="#E7E7E4" />
-            <XAxis dataKey="t" tickFormatter={fmtDay} stroke={MUTED} tick={{ fill: MUTED, fontSize: 12 }} tickLine={false} axisLine={false} minTickGap={28} tickMargin={10} />
+            <XAxis dataKey="t" tickFormatter={tick} stroke={MUTED} tick={{ fill: MUTED, fontSize: 12 }} tickLine={false} axisLine={false} minTickGap={28} tickMargin={10} />
             <YAxis stroke={MUTED} tick={{ fill: MUTED, fontSize: 12 }} tickLine={false} axisLine={false} width={40} tickMargin={6} tickCount={4} domain={["auto", "auto"]} />
             <Tooltip
               cursor={{ stroke: INK, strokeOpacity: 0.25 }}

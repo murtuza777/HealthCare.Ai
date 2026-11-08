@@ -69,3 +69,12 @@ export async function addVital(db: Db, actor: Actor, patientId: string, input: V
     .returning();
   return row!;
 }
+
+export async function deleteVital(db: Db, actor: Actor, patientId: string, id: string): Promise<boolean> {
+  await assertAccess(db, actor, patientId, "owner");
+  const rows = await db
+    .delete(vitals)
+    .where(and(eq(vitals.id, id), eq(vitals.userId, patientId)))
+    .returning({ id: vitals.id });
+  return rows.length > 0;
+}
