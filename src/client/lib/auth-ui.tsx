@@ -29,6 +29,7 @@ export function authErrorMessage(error: { status?: number; code?: string; messag
   if (!error) return "";
   const code = error.code ?? "";
   if (error.status === 429) return "Too many attempts. Wait a few minutes, then try again.";
+  if (/origin/i.test(error.message ?? "")) return "This page can't sign you in from this address. Open the app from its usual link and try again.";
   if (error.status === 503) return "Email isn't set up yet, so codes can't be sent. Try again later.";
   if (code.includes("CAPTCHA") || /captcha/i.test(error.message ?? "")) return "Complete the security check, then try again.";
   if (code === "INVALID_EMAIL_OR_PASSWORD") return "That email and password don't match. Check both, or reset your password.";

@@ -36,7 +36,7 @@ export function Login() {
     setBusy(false);
     if (!error) return navigate(next, { replace: true });
     setCaptchaReset((n) => n + 1); // tokens are single-use
-    if (error.status === 403) {
+    if (error.code === "EMAIL_NOT_VERIFIED") {
       // Email not verified yet: a fresh code is sent on sign-in attempts.
       return navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(next)}`);
     }
