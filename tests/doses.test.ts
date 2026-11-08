@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { dosesOn, localDateIn, zonedToUtc } from "../src/shared/doses";
-import { doseEvents, outbox } from "../src/worker/db/schema";
+import { doseEvents, medications, outbox } from "../src/worker/db/schema";
 import { generateUpcomingDoses, markMissed } from "../src/worker/dal/doses";
 import { sendDoseReminders } from "../src/worker/jobs/scheduler";
 import { b64urlToBytes, bytesToB64url, encryptPayload } from "../src/worker/notifications/push";
@@ -18,6 +18,13 @@ describe("schedules in the patient's timezone", () => {
   ])("%s %s in %s is %s", (date, time, tz, iso) => {
     expect(zonedToUtc(date, time, tz).toISOString()).toBe(iso);
     expect(localDateIn(new Date(iso), tz)).toBe(date);
+  });
+
+  it("leaves out doses scheduled well before the medicine was added", () => {
+    const med = { id: "m", schedule: { times: ["08:00", "13:00", "21:00"] }, startDate: "2026-11-08", endDate: null, createdAt: new Date("2026-11-08T14:30:00Z") };
+    // UTC: 08:00 is 6.5 h before it was added (left out); 13:00 is 1.5 h before (kept, still markable).
+    expect(dosesOn([med], "2026-11-08", "UTC").map((d) => d.time)).toEqual(["13:00", "21:00"]);
+    expect(dosesOn([med], "2026-11-09", "UTC").map((d) => d.time)).toEqual(["08:00", "13:00", "21:00"]);
   });
 
   it("respects weekdays, start and end dates", () => {
@@ -37,6 +44,8 @@ async function setup(email: string, ip: string) {
     body: { name: "Metoprolol", dose: "25 mg", schedule: { times: ["08:00", "20:00"] }, startDate: "2026-01-01" },
   });
   const { medication } = (await res.json()) as { medication: { id: string } };
+  // Treat the medicine as added long ago, so past dates have doses.
+  await db.update(medications).set({ createdAt: new Date("2026-01-01T00:00:00Z") }).where(eq(medications.id, medication.id));
   return { cookie, medId: medication.id, uid: await userId(cookie) };
 }
 

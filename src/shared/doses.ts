@@ -61,16 +61,24 @@ const weekday = (date: string) => {
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 };
 
-type Expandable = { id: string; schedule: MedSchedule; startDate: string; endDate: string | null };
+type Expandable = { id: string; schedule: MedSchedule; startDate: string; endDate: string | null; createdAt?: Date | string };
 
-/** Every scheduled dose of these medicines on one local date. */
+/**
+ * Every scheduled dose of these medicines on one local date. Doses scheduled well before a
+ * medicine was added to the app are left out (they were never "missed"); a dose that came due
+ * shortly before it was added is kept so it can still be marked.
+ */
 export function dosesOn<M extends Expandable>(meds: M[], date: string, tz: string): { medication: M; scheduledAt: Date; time: string }[] {
   const out: { medication: M; scheduledAt: Date; time: string }[] = [];
   const dow = weekday(date);
   for (const m of meds) {
     if (date < m.startDate || (m.endDate && date > m.endDate)) continue;
     if (m.schedule.days?.length && !m.schedule.days.includes(dow)) continue;
-    for (const time of [...m.schedule.times].sort()) out.push({ medication: m, scheduledAt: zonedToUtc(date, time, tz), time });
+    const addedAt = m.createdAt ? new Date(m.createdAt).getTime() - MISSED_AFTER_MS : -Infinity;
+    for (const time of [...m.schedule.times].sort()) {
+      const scheduledAt = zonedToUtc(date, time, tz);
+      if (scheduledAt.getTime() >= addedAt) out.push({ medication: m, scheduledAt, time });
+    }
   }
   return out.sort((a, b) => +a.scheduledAt - +b.scheduledAt);
 }
