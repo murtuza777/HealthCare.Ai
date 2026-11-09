@@ -163,5 +163,36 @@ describe("assistant API", () => {
     expect(ctx.text).toMatch(/Blood pressure: 140\/90 mmHg \(high\)/);
     expect(ctx.text).toMatch(/Blood pressure trend: 2 readings/);
     expect(ctx.text).toContain("Current medicines: none recorded.");
+
+    await call("/api/v1/patients/me/vitals", { cookie, body: { type: "blood_pressure", value: 185, value2: 121 } });
+    const after = await buildPatientContext(db, { userId: await userId(cookie) });
+    expect(after.text).toMatch(/Blood pressure: 185\/121 mmHg \(EMERGENCY RANGE\)/);
+  });
+
+  it("answers questions that only mention an emergency symptom", async () => {
+    const cookie = await signIn("assist-mention@example.com", "198.51.100.48");
+    const res = await call("/api/v1/assistant/chat", { cookie, body: { message: "Could I have a heart attack if my blood pressure stays this high?" } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/plain");
+    expect(await res.text()).toContain("[test model]");
+  });
+
+  it("saves nothing when a question is refused", async () => {
+    const cookie = await baseSignIn("assist-refused@example.com", "198.51.100.49");
+    expect((await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high?" } })).status).toBe(403);
+    const list = (await (await call("/api/v1/assistant/conversations", { cookie })).json()) as { items: unknown[] };
+    expect(list.items).toHaveLength(0);
+
+    // In an existing conversation, a refused question doesn't leave a message without a reply.
+    await call("/api/v1/account/consents", { cookie, body: { kinds: ["ai_processing"] } });
+    const first = await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high?" } });
+    const id = first.headers.get("x-conversation-id")!;
+    await first.text();
+    const actor = { userId: await userId(cookie) };
+    const limit = Number(env.AI_DAILY_LIMIT);
+    while (await takeQuota(db, actor, limit));
+    expect((await call("/api/v1/assistant/chat", { cookie, body: { conversationId: id, message: "And my heart rate?" } })).status).toBe(429);
+    const convo = (await (await call(`/api/v1/assistant/conversations/${id}`, { cookie })).json()) as { messages: { role: string }[] };
+    expect(convo.messages.map((m) => m.role)).toEqual(["user", "assistant"]);
   });
 });

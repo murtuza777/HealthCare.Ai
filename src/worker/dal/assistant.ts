@@ -14,7 +14,7 @@ export async function listConversations(db: Db, actor: Actor): Promise<Conversat
   return db.select().from(conversations).where(eq(conversations.userId, actor.userId)).orderBy(desc(conversations.updatedAt)).limit(50);
 }
 
-async function ownConversation(db: Db, actor: Actor, id: string): Promise<Conversation | null> {
+export async function ownConversation(db: Db, actor: Actor, id: string): Promise<Conversation | null> {
   const row = await db
     .select()
     .from(conversations)
@@ -63,6 +63,12 @@ export async function addAssistantMessage(db: Db, conversationId: string, conten
     .values({ conversationId, role: "assistant", content, tokensIn: tokens.tokensIn ?? null, tokensOut: tokens.tokensOut ?? null, createdAt: new Date(Date.now() + 1) })
     .returning();
   return row!;
+}
+
+/** Undo a question the model never answered: drop the message, and the conversation if it was new. */
+export async function withdrawUserMessage(db: Db, saved: { conversation: Conversation; message: Message }, createdConversation: boolean) {
+  if (createdConversation) await db.delete(conversations).where(eq(conversations.id, saved.conversation.id));
+  else await db.delete(messages).where(eq(messages.id, saved.message.id));
 }
 
 export async function rateMessage(db: Db, actor: Actor, messageId: string, rating: -1 | 0 | 1): Promise<boolean> {

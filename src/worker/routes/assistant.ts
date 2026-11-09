@@ -14,6 +14,8 @@ import {
   deleteConversation,
   getConversation,
   listConversations,
+  ownConversation,
+  withdrawUserMessage,
   rateMessage,
   recentTurns,
   takeQuota,
@@ -87,18 +89,20 @@ export const assistant = new Hono<AppEnv>()
       const { db, actor } = c.var;
       const input = c.req.valid("json");
 
-      const saved = await addUserMessage(db, actor, input.conversationId, input.message);
-      if (!saved) notFound();
-      const conversationId = saved.conversation.id;
+      if (input.conversationId && !(await ownConversation(db, actor, input.conversationId))) notFound();
+      const conversationId = input.conversationId ?? null;
 
       // 1. Emergencies get a fixed, human-written answer, whether or not AI is available.
       const emergency = emergencyInText(input.message);
       if (emergency.emergency) {
-        const ctx = await buildPatientContext(db, actor);
-        const reply = await addAssistantMessage(db, conversationId, emergencyReply(emergency, ctx.emergencyNumber));
-        return c.json({ kind: "emergency" as const, conversationId, reason: emergency.reason, number: ctx.emergencyNumber, message: { id: reply.id, content: reply.content } });
+        const [saved, ctx] = await Promise.all([addUserMessage(db, actor, input.conversationId, input.message), buildPatientContext(db, actor)]);
+        const id = saved!.conversation.id;
+        const reply = await addAssistantMessage(db, id, emergencyReply(emergency, ctx.emergencyNumber));
+        return c.json({ kind: "emergency" as const, conversationId: id, reason: emergency.reason, number: ctx.emergencyNumber, message: { id: reply.id, content: reply.content } });
       }
 
+      // Nothing is saved until the model can actually answer, so a refused question never
+      // sits in the history without a reply (or reaches the model twice when it's asked again).
       // The patient must have agreed to their record being processed by the AI model.
       if (!(await consentStatus(db, actor)).ai_processing) {
         return c.json({ kind: "consent" as const, conversationId }, 403);
@@ -113,10 +117,12 @@ export const assistant = new Hono<AppEnv>()
         return c.json({ kind: "quota" as const, conversationId }, 429);
       }
 
+      const saved = (await addUserMessage(db, actor, input.conversationId, input.message))!;
+
       // 3. Context, loaded server-side.
-      const [ctx, history] = await Promise.all([buildPatientContext(db, actor), recentTurns(db, conversationId)]);
+      const [ctx, history] = await Promise.all([buildPatientContext(db, actor), recentTurns(db, saved.conversation.id)]);
       const chat: ChatMessage[] = [
-        { role: "system", content: systemPrompt(ctx.text, ctx.emergencyNumber) },
+        { role: "system", content: systemPrompt(ctx.text, ctx.emergencyNumber, emergency.mention) },
         ...history.filter((m) => m.role !== "tool").map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
       ];
 
@@ -126,7 +132,7 @@ export const assistant = new Hono<AppEnv>()
         stream = await streamChat(c.env, chat, async (result) => {
           const text = result.text.trim() || "Sorry, I couldn't put an answer together. Please try asking another way.";
           const work = Promise.all([
-            addAssistantMessage(db, conversationId, text, result),
+            addAssistantMessage(db, saved.conversation.id, text, result),
             addTokens(db, actor, (result.tokensIn ?? 0) + (result.tokensOut ?? 0)),
           ]);
           try {
@@ -137,6 +143,7 @@ export const assistant = new Hono<AppEnv>()
         });
       } catch (err) {
         console.error("assistant model error", err instanceof Error ? err.name : "unknown");
+        await withdrawUserMessage(db, saved, !input.conversationId);
         return c.json({ kind: "unavailable" as const, conversationId }, 503);
       }
 
@@ -144,7 +151,7 @@ export const assistant = new Hono<AppEnv>()
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-store",
-          "X-Conversation-Id": conversationId,
+          "X-Conversation-Id": saved.conversation.id,
           "X-Content-Type-Options": "nosniff",
         },
       });
