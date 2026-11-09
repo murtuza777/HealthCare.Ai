@@ -151,7 +151,8 @@ export function Assistant() {
               )}
             </>
           )}
-          <div ref={bottom} />
+          {/* Lands the newest message above the sticky composer (and the phone tab bar). */}
+          <div ref={bottom} className="scroll-mb-48 md:scroll-mb-32" />
         </div>
 
         <Composer draft={draft} setDraft={setDraft} number={number} onSend={ask} busy={busy} status={status.data} />
