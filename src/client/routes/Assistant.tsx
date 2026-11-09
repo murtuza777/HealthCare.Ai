@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type R
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
-import { emergencyInText, SUGGESTED_PROMPTS } from "../../shared/assistant";
+import { EMERGENCY_REASONS, emergencyInText, emergencyKindOf, SUGGESTED_PROMPTS } from "../../shared/assistant";
 import { emergencyNumber } from "../../shared/emergency";
 import {
   assistantKeys,
@@ -31,6 +31,9 @@ export function Assistant() {
   const convo = useConversation(activeId);
   const [pending, setPending] = useState<Pending | null>(null);
   const [showList, setShowList] = useState(false);
+  const [draft, setDraft] = useState("");
+  const { data: profile } = useProfile();
+  const number = emergencyNumber(profile?.country);
   const bottom = useRef<HTMLDivElement>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -60,13 +63,17 @@ export function Assistant() {
       if (result.kind === "emergency") {
         setPending({ user: message, reply: "", streaming: false, emergency: { reason: result.reason, number: result.number, content: result.content } });
       } else if (result.kind === "quota") {
-        setPending({ user: message, reply: "", streaming: false, error: "You've used today's questions. The assistant will be back tomorrow. Your record and charts still work as usual." });
+        setDraft(message);
+        setPending({ user: message, reply: "", streaming: false, error: "You've used today's questions. The assistant will be back tomorrow; your question is still in the box below. Your record and charts work as usual." });
       } else if (result.kind === "unavailable") {
-        setPending({ user: message, reply: "", streaming: false, error: "The assistant isn't available right now. Your question was saved; try again in a little while." });
+        setDraft(message);
+        setPending({ user: message, reply: "", streaming: false, error: `The assistant isn't available right now. Your question is still in the box below, so you can send it again in a little while. If you have symptoms that worry you now, call ${number}.` });
       } else if (result.kind === "consent") {
+        setDraft(message);
         setPending(null);
         void qc.invalidateQueries({ queryKey: assistantKeys.status });
       } else if (result.kind === "error") {
+        setDraft(message);
         setPending({ user: message, reply: "", streaming: false, error: result.message });
       } else {
         setPending((p) => p && { ...p, streaming: false });
@@ -82,6 +89,7 @@ export function Assistant() {
       if (result.kind === "reply" || result.kind === "emergency") setPending(null);
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
+      setDraft(message);
       setPending({ user: message, reply: "", streaming: false, error: "Couldn't reach the assistant. Check your connection and try again." });
     }
   }
@@ -117,9 +125,18 @@ export function Assistant() {
         <div className="flex-1 space-y-8" aria-live="polite">
           {activeId && convo.isPending && <Loading label="Loading conversation" />}
           {!activeId && !pending && <Suggestions onPick={ask} disabled={busy || status.data?.available === false} />}
-          {messages.map((m) =>
-            m.role === "user" ? <UserBubble key={m.id}>{m.content}</UserBubble> : <AssistantReply key={m.id} id={m.id} text={m.content} rating={m.rating} />,
-          )}
+          {messages.map((m, i) => {
+            if (m.role === "user") return <UserBubble key={m.id}>{m.content}</UserBubble>;
+            const kind = emergencyKindOf(m.content);
+            if (kind) return <EmergencyReply key={m.id} reason={EMERGENCY_REASONS[kind]} number={number} content={m.content} />;
+            const asked = messages[i - 1]?.role === "user" ? emergencyInText(messages[i - 1]!.content) : null;
+            return (
+              <div key={m.id}>
+                <AssistantReply id={m.id} text={m.content} rating={m.rating} />
+                {asked && !asked.emergency && asked.mention && <MentionNote number={number} />}
+              </div>
+            );
+          })}
           {pending && (
             <>
               <UserBubble>{pending.user}</UserBubble>
@@ -137,7 +154,7 @@ export function Assistant() {
           <div ref={bottom} />
         </div>
 
-        <Composer onSend={ask} busy={busy} status={status.data} />
+        <Composer draft={draft} setDraft={setDraft} number={number} onSend={ask} busy={busy} status={status.data} />
           </>
         )}
       </section>
@@ -278,10 +295,34 @@ function EmergencyReply({ reason, number, content }: { reason: string; number: s
   );
 }
 
-function Composer({ onSend, busy, status }: { onSend: (text: string) => void; busy: boolean; status?: { available: boolean; remaining: number } }) {
-  const [draft, setDraft] = useState("");
+function MentionNote({ number }: { number: string }) {
+  return (
+    <p className="mt-3 max-w-prose rounded-control bg-danger-soft px-4 py-2.5 text-sm text-danger">
+      If this happens to you, call{" "}
+      <a href={`tel:${number}`} className="figures font-[600] underline underline-offset-2">
+        {number}
+      </a>{" "}
+      straight away.
+    </p>
+  );
+}
+
+function Composer({
+  draft,
+  setDraft,
+  number,
+  onSend,
+  busy,
+  status,
+}: {
+  draft: string;
+  setDraft: (s: string) => void;
+  number: string;
+  onSend: (text: string) => void;
+  busy: boolean;
+  status?: { available: boolean; remaining: number };
+}) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { data: profile } = useProfile();
   const live = emergencyInText(draft);
   const unavailable = status?.available === false;
 
@@ -303,7 +344,7 @@ function Composer({ onSend, busy, status }: { onSend: (text: string) => void; bu
     <div className="sticky bottom-20 mt-10 bg-ground pb-2 pt-3 md:bottom-0">
       {live.emergency && (
         <p role="alert" className="mb-3 rounded-control bg-danger-soft px-4 py-3 text-sm font-[540] text-danger">
-          {live.reason} If this is happening now, call {emergencyNumber(profile?.country)}.
+          {live.reason} If this is happening now, call {number}.
         </p>
       )}
       <form onSubmit={submit} className="flex items-end gap-2 rounded-[1.5rem] border border-line-strong bg-sheet p-2 pl-4 transition-[border-color,box-shadow] focus-within:border-ink focus-within:ring-4 focus-within:ring-ink/[0.06]">
