@@ -113,6 +113,14 @@ export async function takeQuota(db: Db, actor: Actor, limit: number, now = new D
   return Boolean(row);
 }
 
+/** Give back a request the model failed to answer. */
+export async function refundQuota(db: Db, actor: Actor, now = new Date()) {
+  await db
+    .update(aiUsage)
+    .set({ requests: sql`max(${aiUsage.requests} - 1, 0)` })
+    .where(and(eq(aiUsage.userId, actor.userId), eq(aiUsage.day, today(now))));
+}
+
 export async function addTokens(db: Db, actor: Actor, tokens: number, now = new Date()) {
   if (!tokens) return;
   await db

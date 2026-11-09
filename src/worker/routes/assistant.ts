@@ -17,6 +17,7 @@ import {
   ownConversation,
   withdrawUserMessage,
   rateMessage,
+  refundQuota,
   recentTurns,
   takeQuota,
   usageToday,
@@ -79,6 +80,7 @@ export const assistant = new Hono<AppEnv>()
       return c.json({ kind: "ok" as const, questions });
     } catch (err) {
       console.error("visit questions model error", err instanceof Error ? err.name : "unknown");
+      await refundQuota(db, actor);
       return c.json({ kind: "unavailable" as const }, 503);
     }
   })
@@ -143,7 +145,7 @@ export const assistant = new Hono<AppEnv>()
         });
       } catch (err) {
         console.error("assistant model error", err instanceof Error ? err.name : "unknown");
-        await withdrawUserMessage(db, saved, !input.conversationId);
+        await Promise.all([withdrawUserMessage(db, saved, !input.conversationId), refundQuota(db, actor)]);
         return c.json({ kind: "unavailable" as const, conversationId }, 503);
       }
 

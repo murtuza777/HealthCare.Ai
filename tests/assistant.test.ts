@@ -177,6 +177,16 @@ describe("assistant API", () => {
     expect(await res.text()).toContain("[test model]");
   });
 
+  it("gives the question and the quota back when the model fails", async () => {
+    const cookie = await signIn("assist-failure@example.com", "198.51.100.50");
+    const res = await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high? [fake model failure]" } });
+    expect(res.status).toBe(503);
+    const list = (await (await call("/api/v1/assistant/conversations", { cookie })).json()) as { items: unknown[] };
+    expect(list.items).toHaveLength(0);
+    const status = (await (await call("/api/v1/assistant/status", { cookie })).json()) as { remaining: number; limit: number };
+    expect(status.remaining).toBe(status.limit);
+  });
+
   it("saves nothing when a question is refused", async () => {
     const cookie = await baseSignIn("assist-refused@example.com", "198.51.100.49");
     expect((await call("/api/v1/assistant/chat", { cookie, body: { message: "Is 138/86 high?" } })).status).toBe(403);

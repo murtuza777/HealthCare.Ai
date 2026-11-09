@@ -17,6 +17,7 @@ export async function streamChat(env: Env, messages: ChatMessage[], onDone: (r: 
 
   if (env.AI_MODE === "fake") {
     const last = messages[messages.length - 1]?.content ?? "";
+    if (last.includes("[fake model failure]")) throw new Error("fake model failure");
     const text = `[test model] You asked: ${last.slice(0, 80)}`;
     return new ReadableStream({
       async start(controller) {
