@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
-import { emergencyInText } from "../src/shared/assistant";
+import { emergencyInText, emergencyKindOf, emergencyReply } from "../src/shared/assistant";
 import { buildPatientContext } from "../src/worker/ai/context";
 import { takeQuota } from "../src/worker/dal/assistant";
 import { call, db, signIn as baseSignIn, userId } from "./helpers";
@@ -22,19 +22,64 @@ describe("emergencyInText (rule-based, runs before any model)", () => {
     ["I can't breathe properly", "breathing"],
     ["I fainted this morning", "fainting"],
     ["I want to end my life", "self_harm"],
+    ["I'm thinking about suicide", "self_harm"],
+    // Plain present-tense descriptions, with nothing else said.
+    ["chest pain", "cardiac"],
+    ["I have chest pain", "cardiac"],
+    ["I feel pressure in my chest", "cardiac"],
+    ["my chest hurts right now", "cardiac"],
+    ["I have chest pain, could it be angina?", "cardiac"],
+    ["I don't know why my chest hurts", "cardiac"],
+    ["my left arm is numb and my chest feels tight", "cardiac"],
+    ["my heart is racing and I feel dizzy", "cardiac"],
+    ["seene mein dard ho raha hai", "cardiac"],
+    ["worst headache of my life", "stroke"],
+    ["my vision went blurry suddenly and I can't move my arm", "stroke"],
+    ["I can't catch my breath", "breathing"],
+    ["I'm short of breath at rest", "breathing"],
+    ["my lips are turning blue", "breathing"],
+    ["I have no chest pain but I'm short of breath at rest", "breathing"],
+    ["I feel like passing out", "fainting"],
+    ["I took too many pills", "overdose"],
   ])("flags %j as %s", (text, kind) => {
     const r = emergencyInText(text);
     expect(r.emergency).toBe(true);
     if (r.emergency) expect(r.kind).toBe(kind);
   });
 
+  // Talking about an emergency symptom is not having one: the assistant answers, with the number shown.
+  it.each([
+    ["Could I have a heart attack if my blood pressure stays this high?", "cardiac"],
+    ["What should I do if someone is having a heart attack?", "cardiac"],
+    ["I do not have chest pain or shortness of breath, just a mild headache", "cardiac"],
+    ["Had some chest pain last year, what questions should I ask my doctor?", "cardiac"],
+    ["What can cause chest pain?", "cardiac"],
+    ["what if I have chest pain at night", "cardiac"],
+    ["I fainted last year, should I tell my doctor?", "fainting"],
+    ["Should I worry about fainting?", "fainting"],
+  ])("treats %j as a mention of %s", (text, kind) => {
+    expect(emergencyInText(text)).toEqual({ emergency: false, mention: kind });
+  });
+
   it.each([
     "How has my blood pressure changed this month?",
     "What does a heart rate of 74 mean?",
-    "Had some chest pain last year, what questions should I ask my doctor?",
     "Is 138/86 high?",
+    "What are the signs of a stroke?",
+    "When can I end my amlodipine course?",
+    "I hurt myself while exercising",
+    "I took a double dose by mistake",
   ])("does not flag %j", (text) => {
-    expect(emergencyInText(text).emergency).toBe(false);
+    expect(emergencyInText(text)).toEqual({ emergency: false });
+  });
+
+  it("gives instructions that fit the emergency", () => {
+    const stroke = emergencyInText("her face is drooping");
+    if (!stroke.emergency) throw new Error("expected an emergency");
+    const reply = emergencyReply(stroke, "112");
+    expect(reply).toContain("Call 112 now");
+    expect(reply).not.toMatch(/nitroglycerin/i);
+    expect(emergencyKindOf(reply)).toBe("stroke");
   });
 });
 
