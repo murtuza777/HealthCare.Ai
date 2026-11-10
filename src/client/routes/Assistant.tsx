@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
 import { EMERGENCY_REASONS, emergencyInText, emergencyKindOf, SUGGESTED_PROMPTS } from "../../shared/assistant";
 import { emergencyNumber } from "../../shared/emergency";
 import {
@@ -34,17 +34,69 @@ export function Assistant() {
   const [draft, setDraft] = useState("");
   const { data: profile } = useProfile();
   const number = emergencyNumber(profile?.country);
-  const bottom = useRef<HTMLDivElement>(null);
+  // The composer is sticky and sits last in the page, so the very bottom of the page shows the
+  // newest message right above it, however tall the composer has grown.
+  const toBottom = (behavior: ScrollBehavior = "auto") => window.scrollTo({ top: document.documentElement.scrollHeight, behavior });
   const abort = useRef<AbortController | null>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const thread = useRef<HTMLDivElement>(null);
+  // Follow new text while the reader is at the bottom. Only the reader scrolling up stops it
+  // (scroll events alone can't tell, because the page also moves when a reply grows).
+  const follow = useRef(true);
+  const [away, setAway] = useState(false);
 
   const messages = activeId ? (convo.data?.messages ?? []) : [];
   const busy = pending?.streaming ?? false;
+  const hasThread = messages.length > 0 || pending !== null;
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "end" });
-  }, [messages.length, pending?.reply, pending?.user]);
+    const gap = () => document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+    const onScroll = () => {
+      if (gap() < 120) follow.current = true;
+      setAway(gap() > 480);
+    };
+    const stop = () => {
+      if (gap() > 4) follow.current = false;
+    };
+    const onWheel = (e: WheelEvent) => e.deltaY < 0 && (follow.current = false);
+    const onKey = (e: globalThis.KeyboardEvent) => ["ArrowUp", "PageUp", "Home"].includes(e.key) && !(e.target instanceof HTMLTextAreaElement) && (follow.current = false);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchmove", stop, { passive: true });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchmove", stop);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  // Opening a conversation lands on its newest message; a new one starts at the top.
+  useEffect(() => {
+    follow.current = true;
+    if (!activeId) window.scrollTo({ top: 0 });
+  }, [activeId]);
+
+  // Whenever the thread grows (streamed text, a saved reply, its rating row), keep the newest in view.
+  useEffect(() => {
+    const el = thread.current;
+    if (!el || !hasThread) return;
+    if (follow.current) toBottom();
+    const ro = new ResizeObserver(() => follow.current && toBottom());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasThread]);
+  useEffect(() => {
+    if (follow.current) toBottom();
+  }, [messages.length, pending?.reply, pending?.error, pending?.emergency]);
 
   useEffect(() => () => abort.current?.abort(), []);
+
+  function toLatest() {
+    follow.current = true;
+    toBottom("smooth");
+  }
 
   function open(id: string | null) {
     abort.current?.abort();
@@ -53,27 +105,33 @@ export function Assistant() {
     setParams(id ? { c: id } : {}, { replace: false });
   }
 
+  function restore(message: string) {
+    setDraft(message);
+    requestAnimationFrame(() => input.current?.focus());
+  }
+
   async function ask(text: string) {
     const message = text.trim();
     if (!message || busy) return;
     abort.current = new AbortController();
+    follow.current = true;
     setPending({ user: message, reply: "", streaming: true });
     try {
       const result = await sendMessage(message, activeId, (soFar) => setPending((p) => p && { ...p, reply: soFar }), abort.current.signal);
       if (result.kind === "emergency") {
         setPending({ user: message, reply: "", streaming: false, emergency: { reason: result.reason, number: result.number, content: result.content } });
       } else if (result.kind === "quota") {
-        setDraft(message);
+        restore(message);
         setPending({ user: message, reply: "", streaming: false, error: "You've used today's questions. The assistant will be back tomorrow; your question is still in the box below. Your record and charts work as usual." });
       } else if (result.kind === "unavailable") {
-        setDraft(message);
+        restore(message);
         setPending({ user: message, reply: "", streaming: false, error: `The assistant isn't available right now. Your question is still in the box below, so you can send it again in a little while. If you have symptoms that worry you now, call ${number}.` });
       } else if (result.kind === "consent") {
-        setDraft(message);
+        restore(message);
         setPending(null);
         void qc.invalidateQueries({ queryKey: assistantKeys.status });
       } else if (result.kind === "error") {
-        setDraft(message);
+        restore(message);
         setPending({ user: message, reply: "", streaming: false, error: result.message });
       } else {
         setPending((p) => p && { ...p, streaming: false });
@@ -89,14 +147,14 @@ export function Assistant() {
       if (result.kind === "reply" || result.kind === "emergency") setPending(null);
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
-      setDraft(message);
+      restore(message);
       setPending({ user: message, reply: "", streaming: false, error: "Couldn't reach the assistant. Check your connection and try again." });
     }
   }
 
   return (
     <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-14">
-      <aside className={`${showList ? "block" : "hidden"} lg:block`} aria-label="Conversations">
+      <aside className="hidden lg:block" aria-label="Conversations">
         <ConversationList activeId={activeId} onOpen={open} />
       </aside>
 
@@ -107,7 +165,7 @@ export function Assistant() {
             <p className="mt-2 max-w-prose text-ink-muted">Ask about your readings, medicines and symptoms. Answers come from your own record.</p>
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setShowList((s) => !s)} aria-expanded={showList}>
+            <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setShowList((s) => !s)} aria-expanded={showList} aria-controls="assistant-history">
               {showList ? "Hide history" : "History"}
             </Button>
             {activeId && (
@@ -118,12 +176,27 @@ export function Assistant() {
           </div>
         </div>
 
+        {/* On phones the history opens here, under the button that shows it. */}
+        {showList && (
+          <nav id="assistant-history" aria-label="Conversations" className="mb-8 rounded-sheet border border-line p-2 lg:hidden">
+            <ConversationList activeId={activeId} onOpen={open} />
+          </nav>
+        )}
+
         {status.data && !status.data.consented ? (
           <AiConsent />
         ) : (
           <>
-        <div className="flex-1 space-y-8" aria-live="polite">
+        <div ref={thread} className="flex-1 space-y-8" aria-busy={busy}>
           {activeId && convo.isPending && <Loading label="Loading conversation" />}
+          {activeId && convo.isError && (
+            <div className="rounded-control bg-well px-4 py-3 text-ink">
+              This conversation couldn't be opened. It may have been deleted.{" "}
+              <button onClick={() => open(null)} className="font-[560] underline underline-offset-2">
+                Start a new one
+              </button>
+            </div>
+          )}
           {!activeId && !pending && <Suggestions onPick={ask} disabled={busy || status.data?.available === false} />}
           {messages.map((m, i) => {
             if (m.role === "user") return <UserBubble key={m.id}>{m.content}</UserBubble>;
@@ -143,7 +216,7 @@ export function Assistant() {
               {pending.emergency ? (
                 <EmergencyReply {...pending.emergency} />
               ) : pending.error ? (
-                <p role="alert" className="rounded-control bg-well px-4 py-3 text-ink">
+                <p role="alert" className="max-w-prose rounded-control bg-well px-4 py-3 text-ink">
                   {pending.error}
                 </p>
               ) : (
@@ -151,11 +224,18 @@ export function Assistant() {
               )}
             </>
           )}
-          {/* Lands the newest message above the sticky composer (and the phone tab bar). */}
-          <div ref={bottom} className="scroll-mb-48 md:scroll-mb-32" />
         </div>
 
-        <Composer draft={draft} setDraft={setDraft} number={number} onSend={ask} busy={busy} status={status.data} />
+        <Composer
+          inputRef={input}
+          draft={draft}
+          setDraft={setDraft}
+          number={number}
+          onSend={ask}
+          busy={busy}
+          status={status.data}
+          onLatest={hasThread && away ? toLatest : undefined}
+        />
           </>
         )}
       </section>
@@ -167,7 +247,7 @@ function ConversationList({ activeId, onOpen }: { activeId: string | null; onOpe
   const { data, isPending } = useConversations();
   const del = useDeleteConversation();
   return (
-    <div className="lg:sticky lg:top-24">
+    <div className="max-h-[50dvh] overflow-y-auto overscroll-contain lg:sticky lg:top-24 lg:max-h-[calc(100dvh-8rem)]">
       <button
         onClick={() => onOpen(null)}
         className={`mb-3 w-full rounded-full px-3.5 py-2 text-left text-[0.9375rem] transition-colors ${!activeId ? "bg-ink/[0.06] font-[560] text-ink" : "text-ink-muted hover:text-ink"}`}
@@ -195,7 +275,7 @@ function ConversationList({ activeId, onOpen }: { activeId: string | null; onOpe
                   if (!confirm("Delete this conversation?")) return;
                   del.mutate(c.id, { onSuccess: () => c.id === activeId && onOpen(null) });
                 }}
-                className="absolute right-1.5 top-2 grid h-7 w-7 place-items-center rounded-full text-ink-faint opacity-0 transition-opacity hover:bg-danger-soft hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+                className="absolute right-1 top-1.5 grid h-9 w-9 place-items-center rounded-full text-ink-faint transition-opacity hover:bg-danger-soft hover:text-danger focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0"
               >
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -309,32 +389,40 @@ function MentionNote({ number }: { number: string }) {
 }
 
 function Composer({
+  inputRef: ref,
   draft,
   setDraft,
   number,
   onSend,
   busy,
   status,
+  onLatest,
 }: {
+  inputRef: RefObject<HTMLTextAreaElement | null>;
   draft: string;
   setDraft: (s: string) => void;
   number: string;
   onSend: (text: string) => void;
   busy: boolean;
   status?: { available: boolean; remaining: number };
+  onLatest?: () => void;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
   const live = emergencyInText(draft);
   const unavailable = status?.available === false;
+
+  // Size the box to its text however it changes: typing, sending, or a question put back.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [draft, ref]);
 
   function submit(e?: FormEvent) {
     e?.preventDefault();
     if (!draft.trim() || busy) return;
     onSend(draft);
     setDraft("");
-    requestAnimationFrame(() => {
-      if (ref.current) ref.current.style.height = "";
-    });
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -342,7 +430,18 @@ function Composer({
   }
 
   return (
-    <div className="sticky bottom-20 mt-10 bg-ground pb-2 pt-3 md:bottom-0">
+    // On phones the negative margin cancels the page's bottom padding, so the composer rests where
+    // it sticks while scrolling (just above the tab bar) instead of jumping up at the end.
+    <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] -mb-16 mt-10 bg-ground pb-2 pt-3 sm:-mb-20 md:bottom-0 md:mb-0">
+      {onLatest && (
+        <button
+          onClick={onLatest}
+          className="absolute -top-11 left-1/2 inline-flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm text-ink shadow-sm transition-transform duration-150 ease-out active:scale-[0.96]"
+        >
+          <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+          Latest
+        </button>
+      )}
       {live.emergency && (
         <p role="alert" className="mb-3 rounded-control bg-danger-soft px-4 py-3 text-sm font-[540] text-danger">
           {live.reason} If this is happening now, call {number}.
@@ -359,11 +458,7 @@ function Composer({
           value={draft}
           maxLength={2000}
           disabled={unavailable}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            e.target.style.height = "auto";
-            e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
-          }}
+          onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKey}
           placeholder={unavailable ? "The assistant isn't available right now" : "Ask about your record"}
           className="max-h-[200px] min-h-10 flex-1 resize-none bg-transparent py-2 text-base text-ink outline-none placeholder:text-ink-faint focus-visible:outline-none"
