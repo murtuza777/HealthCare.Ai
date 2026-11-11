@@ -4,7 +4,7 @@ import { Hono, type Context } from "hono";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import { profileInputSchema } from "../../shared/profile";
-import { VITAL_TYPES, vitalInputSchema, type VitalType } from "../../shared/vitals";
+import { VITAL_TYPES, vitalImportSchema, vitalInputSchema, type VitalType } from "../../shared/vitals";
 import { medicationInputSchema, medicationUpdateSchema } from "../../shared/medications";
 import { symptomInputSchema } from "../../shared/symptoms";
 import { addMedication, deleteMedication, listMedications, setMedicationActive } from "../dal/medications";
@@ -19,7 +19,7 @@ import { createShare, listShares, revokeShare } from "../dal/shares";
 import { shareInputSchema } from "../../shared/reports";
 import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
-import { addVital, deleteVital, latestVitals, listVitals } from "../dal/vitals";
+import { addVital, deleteVital, importVitals, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
 import { acknowledgeAlert, listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
@@ -103,6 +103,12 @@ export const patients = new Hono<AppEnv>()
       }
       return c.json({ vital }, 201);
     },
+  )
+  // Readings from a file (parsed in the browser). No alerts: these are old readings.
+  .post(
+    "/:patientId/vitals/import",
+    validator("json", (v) => parse(vitalImportSchema, v)),
+    async (c) => c.json(await importVitals(c.var.db, c.var.actor, patientId(c), c.req.valid("json").items)),
   )
   .delete("/:patientId/vitals/:id", async (c) => {
     if (!(await deleteVital(c.var.db, c.var.actor, patientId(c), c.req.param("id")))) notFound();

@@ -2,7 +2,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InferRequestType } from "hono/client";
 import { api, ok } from "./api";
-import type { VitalType } from "../../shared/vitals";
+import { IMPORT_BATCH, type VitalType } from "../../shared/vitals";
+import type { ImportedReading } from "../../shared/csv-import";
 
 const p = api.patients[":patientId"];
 const me = { patientId: "me" } as const;
@@ -325,5 +326,27 @@ export function useDeleteReminder() {
   return useMutation({
     mutationFn: async (id: string) => ok(await p.reminders[":id"].$delete({ param: { ...me, id } })),
     onSuccess: () => qc.invalidateQueries({ queryKey: remindersKey }),
+  });
+}
+
+// --- Import readings from a file ---------------------------------------------
+
+/** Sends the readings in batches; resolves with the totals. */
+export function useImportVitals() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (readings: ImportedReading[]) => {
+      const total = { added: 0, duplicates: 0 };
+      for (let i = 0; i < readings.length; i += IMPORT_BATCH) {
+        const items = readings.slice(i, i + IMPORT_BATCH).map((r) => ({ ...r, measuredAt: r.measuredAt.toISOString() }));
+        const res = await ok<{ added: number; duplicates: number }>(
+          await fetch("/api/v1/patients/me/vitals/import", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items }) }),
+        );
+        total.added += res.added;
+        total.duplicates += res.duplicates;
+      }
+      return total;
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["vitals", "me"] }),
   });
 }

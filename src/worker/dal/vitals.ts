@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, lt, type SQL, gte, lte } from "drizzle-orm";
 import { CANONICAL_UNITS, classifyVital, VITAL_TYPES, type VitalInput, type VitalType } from "../../shared/vitals";
 import type { Db } from "../db/client";
 import { vitals } from "../db/schema";
@@ -77,4 +77,40 @@ export async function deleteVital(db: Db, actor: Actor, patientId: string, id: s
     .where(and(eq(vitals.id, id), eq(vitals.userId, patientId)))
     .returning({ id: vitals.id });
   return rows.length > 0;
+}
+
+/**
+ * Add readings from a file. Readings already in the record (same type, time and values) are
+ * left alone, so importing the same file twice is harmless. Old readings never raise alerts.
+ */
+export async function importVitals(db: Db, actor: Actor, patientId: string, items: VitalInput[]): Promise<{ added: number; duplicates: number }> {
+  await assertAccess(db, actor, patientId, "owner");
+  const now = new Date();
+  const key = (v: { type: string; value: number; value2?: number | null; measuredAt: Date }) => `${v.type}|${v.measuredAt.getTime()}|${v.value}|${v.value2 ?? ""}`;
+  const times = items.map((i) => (i.measuredAt ?? now).getTime());
+  const existing = await db
+    .select({ type: vitals.type, value: vitals.value, value2: vitals.value2, measuredAt: vitals.measuredAt })
+    .from(vitals)
+    .where(and(eq(vitals.userId, patientId), gte(vitals.measuredAt, new Date(Math.min(...times))), lte(vitals.measuredAt, new Date(Math.max(...times)))));
+  const seen = new Set(existing.map(key));
+  const fresh = [];
+  for (const i of items) {
+    const row = { ...i, measuredAt: i.measuredAt ?? now };
+    if (seen.has(key(row))) continue;
+    seen.add(key(row));
+    fresh.push({
+      userId: patientId,
+      type: row.type,
+      value: row.value,
+      value2: row.value2 ?? null,
+      unit: CANONICAL_UNITS[row.type],
+      measuredAt: row.measuredAt,
+      classification: classifyVital(row.type, row.value, row.value2),
+      note: row.note ?? null,
+      source: "import" as const,
+    });
+  }
+  // D1 allows 100 bound values per statement; each row binds 10.
+  for (let n = 0; n < fresh.length; n += 9) await db.insert(vitals).values(fresh.slice(n, n + 9));
+  return { added: fresh.length, duplicates: items.length - fresh.length };
 }

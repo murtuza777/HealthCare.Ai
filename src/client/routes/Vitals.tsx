@@ -6,14 +6,27 @@ import { formatDateTime, formatReading, localDateTime, VITAL_LABELS } from "../l
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 import { CriticalBanner } from "../components/CriticalBanner";
+import { ImportReadings } from "../components/ImportReadings";
 
 const TYPES: VitalType[] = ["blood_pressure", "heart_rate", "spo2", "glucose", "weight", "temperature", "cholesterol"];
 
 export function Vitals() {
   const [type, setType] = useState<VitalType>("blood_pressure");
+  const [importing, setImporting] = useState(false);
   return (
     <div className="space-y-14">
-      <PageHeader title="Readings" subtitle="Log a reading and see how it changes over time." />
+      <PageHeader
+        title="Readings"
+        subtitle="Log a reading and see how it changes over time."
+        action={
+          !importing && (
+            <Button variant="secondary" onClick={() => setImporting(true)}>
+              Import from a file
+            </Button>
+          )
+        }
+      />
+      {importing && <ImportReadings onClose={() => setImporting(false)} />}
       <LogReading type={type} onTypeChange={setType} />
       <History type={type} />
     </div>

@@ -100,3 +100,7 @@ export function classifyVital(type: VitalType, value: number, value2?: number | 
       return null;
   }
 }
+
+/** How many readings one import request may carry (the browser sends a large file in several requests). */
+export const IMPORT_BATCH = 200;
+export const vitalImportSchema = z.object({ items: z.array(vitalInputSchema).min(1, "Nothing to import").max(IMPORT_BATCH) });
