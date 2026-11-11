@@ -2,7 +2,7 @@
 // Every read of a patient's data still goes through the DAL's permission checks.
 import { Hono } from "hono";
 import { validator } from "hono/validator";
-import { careAcceptSchema, careInviteSchema, carePermissionsSchema } from "../../shared/care";
+import { careAcceptSchema, careInviteSchema, carePermissionsSchema, quietHoursSchema } from "../../shared/care";
 import { emergencyNumber } from "../../shared/emergency";
 import { acknowledgeAlert, listAlerts } from "../dal/alerts";
 import {
@@ -12,6 +12,7 @@ import {
   listPatientsCaredFor,
   previewInvite,
   revokeCareLink,
+  setQuietHours,
   updateCarePermissions,
 } from "../dal/care";
 import { adherence, dosesForDay } from "../dal/doses";
@@ -99,6 +100,7 @@ export const care = new Hono<AppEnv>()
         conditions: profile?.conditions ?? [],
       },
       permissions: link.permissions,
+      quietHours: link.quietHours,
       latest,
       trends: bp && hr ? { bloodPressure: bp, heartRate: hr } : null,
       symptoms,
@@ -109,6 +111,14 @@ export const care = new Hono<AppEnv>()
       alerts,
     });
   })
+  .put(
+    "/patients/:patientId/quiet-hours",
+    validator("json", (v) => parse(quietHoursSchema, v)),
+    async (c) => {
+      if (!(await setQuietHours(c.var.db, c.var.actor, c.req.param("patientId"), c.req.valid("json").quietHours))) notFound();
+      return c.json({ ok: true });
+    },
+  )
   .post("/patients/:patientId/alerts/:alertId/ack", async (c) => {
     if (!(await acknowledgeAlert(c.var.db, c.var.actor, c.req.param("patientId"), c.req.param("alertId")))) notFound();
     return c.json({ ok: true });

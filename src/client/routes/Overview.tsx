@@ -3,9 +3,9 @@ import { useSession } from "../lib/auth-client";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ageFrom, riskFactors, type RiskFactorStatus } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
-import { useLatestVitals, useProfile, useSymptoms, useVitals } from "../lib/queries";
+import { useDismissAlert, useLatestVitals, useMyAlerts, useProfile, useSymptoms, useVitals } from "../lib/queries";
 import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
-import { ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
+import { Button, ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 import { TodayDoses } from "../components/Doses";
 import { usePatientsCaredFor } from "../lib/care";
@@ -63,6 +63,7 @@ export function Overview() {
       </div>
 
       <CaringStrip />
+      <Insights />
 
       {!p?.onboardedAt && (
         <Card boxed>
@@ -262,5 +263,34 @@ function CaringStrip() {
         </Link>
       ))}
     </p>
+  );
+}
+
+/** Slow changes the daily review found (rising blood pressure, missed doses, and so on). */
+function Insights() {
+  const { data } = useMyAlerts();
+  const dismiss = useDismissAlert();
+  const recent = (data ?? []).filter((a) => a.kind.startsWith("insight:") && !a.acknowledgedAt && Date.now() - +new Date(a.createdAt) < 14 * 86_400_000);
+  if (!recent.length) return null;
+  return (
+    <section aria-label="Worth a look">
+      <SheetHeader title="Worth a look" description="Changes over the past weeks that a single reading doesn't show." />
+      <ul className="divide-y divide-line border-y border-line">
+        {recent.map((a) => (
+          <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 py-4">
+            <div className="flex min-w-0 flex-1 gap-3">
+              <span aria-hidden="true" className={`mt-2 h-2 w-2 shrink-0 rounded-full ${a.severity === "warning" ? "bg-status-high" : "bg-line-strong"}`} />
+              <div className="min-w-0">
+                <p className="font-[540]">{a.title}</p>
+                <p className="mt-0.5 max-w-prose text-ink-muted">{a.body}</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" disabled={dismiss.isPending} onClick={() => dismiss.mutate(a.id)}>
+              Got it
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -75,3 +75,14 @@ export function useAcknowledgeAlert(patientId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: careKeys.summary(patientId) }),
   });
 }
+
+export function useSetQuietHours(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (quietHours: { from: string; to: string } | null) => ok(await c.patients[":patientId"]["quiet-hours"].$put({ param: { patientId }, json: { quietHours } })),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: careKeys.summary(patientId) });
+      void qc.invalidateQueries({ queryKey: careKeys.patients });
+    },
+  });
+}

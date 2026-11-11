@@ -288,3 +288,18 @@ export function useDeleteFinding(reportId: string) {
 export function useOutOfRange() {
   return useQuery({ queryKey: ["reports", "me", "out-of-range"], queryFn: async () => (await ok(await p.reports["out-of-range"].$get({ param: me }))).items });
 }
+
+// --- Things worth a look (found by the daily review of the record) ----------
+const insightsKey = ["alerts", "me"] as const;
+
+export function useMyAlerts() {
+  return useQuery({ queryKey: insightsKey, queryFn: async () => (await ok(await p.alerts.$get({ param: me }))).items });
+}
+
+export function useDismissAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (alertId: string) => ok(await p.alerts[":alertId"].ack.$post({ param: { ...me, alertId } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: insightsKey }),
+  });
+}

@@ -21,7 +21,7 @@ import { fileResponse, readUpload } from "./files";
 import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
 import { addVital, deleteVital, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
-import { listAlerts, raiseAlert } from "../dal/alerts";
+import { acknowledgeAlert, listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
 import { audit } from "../dal/account";
 import { timeline } from "../dal/timeline";
@@ -168,6 +168,10 @@ export const patients = new Hono<AppEnv>()
   .get("/:patientId/alerts", async (c) => {
     const items = await listAlerts(c.var.db, c.var.actor, patientId(c));
     return c.json({ items });
+  })
+  .post("/:patientId/alerts/:alertId/ack", async (c) => {
+    if (!(await acknowledgeAlert(c.var.db, c.var.actor, patientId(c), c.req.param("alertId")))) notFound();
+    return c.json({ ok: true });
   })
   // Everything in one feed
   .get(

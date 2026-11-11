@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { CARE_PERMISSION_LABELS, type CarePermissionName } from "../../shared/care";
 import type { VitalType } from "../../shared/vitals";
-import { useAcceptInvite, useAcknowledgeAlert, useCareSummary, useInvitePreview, usePatientsCaredFor, useRemoveCareLink } from "../lib/care";
+import { useAcceptInvite, useAcknowledgeAlert, useCareSummary, useInvitePreview, usePatientsCaredFor, useRemoveCareLink, useSetQuietHours } from "../lib/care";
 import { useSession } from "../lib/auth-client";
 import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
 import { Button, ButtonLink, EmptyState, ErrorText, Loading, PageHeader, SheetHeader, StatusBadge } from "../components/ui";
@@ -59,7 +59,7 @@ export function CareDashboard() {
   if (error || !data) {
     return <EmptyState title="Not available" body="You no longer have access to this person's record, or the link is wrong." action={<ButtonLink to="/app/care">Back</ButtonLink>} />;
   }
-  const first = data.patient.name.split(" ")[0];
+  const first = data.patient.name.split(" ")[0] || data.patient.name;
   const openAlerts = data.alerts?.filter((a) => !a.acknowledgedAt) ?? [];
   const linkId = patients.data?.find((p) => p.patientId === patientId)?.linkId;
 
@@ -91,7 +91,9 @@ export function CareDashboard() {
         <section>
           <SheetHeader title="Alerts" description={openAlerts.length ? `${openAlerts.length} not yet seen` : "Nothing new"} />
           {!data.alerts.length ? (
-            <p className="text-ink-muted">No alerts. You'll be notified if a reading is in the emergency range, urgent symptoms are logged, or a dose is missed.</p>
+            <p className="text-ink-muted">
+              No alerts. You'll be notified if a reading is in the emergency range, urgent symptoms are logged, a dose is missed, or a trend over the week needs attention.
+            </p>
           ) : (
             <ul className="divide-y divide-line border-y border-line">
               {data.alerts.map((a) => (
@@ -114,8 +116,15 @@ export function CareDashboard() {
               ))}
             </ul>
           )}
+          <QuietHours patientId={patientId} first={first} value={data.quietHours} />
         </section>
       )}
+
+      <p>
+        <Link to={`/app/timeline?p=${patientId}`} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+          See {first}'s full history
+        </Link>
+      </p>
 
       {data.latest && (
         <section>
@@ -292,5 +301,59 @@ export function AcceptInvite() {
         </>
       )}
     </div>
+  );
+}
+
+/** The caretaker's own choice: hours when only emergencies should make their phone buzz. */
+function QuietHours({ patientId, first, value }: { patientId: string; first: string; value: { from: string; to: string } | null }) {
+  const save = useSetQuietHours(patientId);
+  const [open, setOpen] = useState(false);
+  const [from, setFrom] = useState(value?.from ?? "22:00");
+  const [to, setTo] = useState(value?.to ?? "07:00");
+  const link = "font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink";
+
+  if (!open) {
+    return (
+      <p className="mt-4 text-sm text-ink-muted">
+        {value ? `Quiet hours ${value.from} to ${value.to}: only emergencies notify you then.` : "You're notified at any hour."}{" "}
+        <button className={link} onClick={() => setOpen(true)}>
+          {value ? "Change" : "Set quiet hours"}
+        </button>
+      </p>
+    );
+  }
+  return (
+    <form
+      className="mt-4 rounded-control bg-well p-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate({ from, to }, { onSuccess: () => setOpen(false) });
+      }}
+    >
+      <p className="max-w-prose text-sm text-ink-muted">
+        During quiet hours, missed doses and trends wait on this page. Emergency-range readings and urgent symptoms from {first} always notify you.
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="text-sm">
+          <span className="mb-1 block text-ink-muted">From</span>
+          <input type="time" required value={from} onChange={(e) => setFrom(e.target.value)} className="h-11 rounded-control border border-line-strong bg-sheet px-3 text-base" />
+        </label>
+        <label className="text-sm">
+          <span className="mb-1 block text-ink-muted">To</span>
+          <input type="time" required value={to} onChange={(e) => setTo(e.target.value)} className="h-11 rounded-control border border-line-strong bg-sheet px-3 text-base" />
+        </label>
+        <Button type="submit" size="sm" disabled={save.isPending}>
+          Save
+        </Button>
+        {value && (
+          <Button type="button" variant="ghost" size="sm" disabled={save.isPending} onClick={() => save.mutate(null, { onSuccess: () => setOpen(false) })}>
+            Turn off
+          </Button>
+        )}
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

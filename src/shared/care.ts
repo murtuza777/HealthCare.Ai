@@ -23,3 +23,23 @@ export type CareInvite = z.infer<typeof careInviteSchema>;
 
 export const carePermissionsSchema = z.object({ permissions });
 export const careAcceptSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{20,100}$/) });
+
+// --- Quiet hours (chosen by the caretaker) ---------------------------------
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a time like 22:00");
+export const quietHoursSchema = z.object({ quietHours: z.object({ from: hhmm, to: hhmm }).nullable() });
+export type QuietHours = { from: string; to: string };
+
+/**
+ * Is `now` inside the caretaker's quiet hours, in their own time zone? A range may cross
+ * midnight (22:00 to 07:00). Emergencies ignore quiet hours; the caller decides that.
+ */
+export function inQuietHours(q: QuietHours | null | undefined, now: Date, timezone: string | null | undefined): boolean {
+  if (!q || q.from === q.to) return false;
+  let local: string;
+  try {
+    local = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: timezone || "UTC" });
+  } catch {
+    local = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
+  }
+  return q.from < q.to ? local >= q.from && local < q.to : local >= q.from || local < q.to;
+}

@@ -123,21 +123,51 @@ export async function listPatientsCaredFor(db: Db, actor: Actor) {
     .innerJoin(user, eq(user.id, careLinks.patientId))
     .leftJoin(profiles, eq(profiles.userId, careLinks.patientId))
     .where(and(eq(careLinks.caretakerId, actor.userId), eq(careLinks.status, "active")));
-  return rows.map(({ link, name, email, country }) => ({ linkId: link.id, patientId: link.patientId, name, email, country, permissions: link.permissions }));
+  return rows.map(({ link, name, email, country }) => ({
+    linkId: link.id,
+    patientId: link.patientId,
+    name,
+    email,
+    country,
+    permissions: link.permissions,
+    quietHours: link.alertPrefs?.quietHours ?? null,
+  }));
 }
 
 /** Active caretakers who asked to be alerted about this patient. */
 export async function alertRecipients(db: Db, patientId: string) {
   const rows = await db
-    .select({ caretakerId: careLinks.caretakerId, email: user.email, permissions: careLinks.permissions, prefs: careLinks.alertPrefs })
+    .select({ caretakerId: careLinks.caretakerId, email: user.email, permissions: careLinks.permissions, prefs: careLinks.alertPrefs, timezone: profiles.timezone })
     .from(careLinks)
     .innerJoin(user, eq(user.id, careLinks.caretakerId))
+    .leftJoin(profiles, eq(profiles.userId, careLinks.caretakerId))
     .where(and(eq(careLinks.patientId, patientId), eq(careLinks.status, "active")));
-  return rows.filter((r) => r.permissions.includes("alerts") && r.caretakerId) as { caretakerId: string; email: string; prefs: { channels: ("email" | "push")[] } | null }[];
+  return rows.filter((r) => r.permissions.includes("alerts") && r.caretakerId) as {
+    caretakerId: string;
+    email: string;
+    prefs: { channels: ("email" | "push")[]; quietHours?: { from: string; to: string } } | null;
+    timezone: string | null;
+  }[];
 }
 
 export async function patientNames(db: Db, ids: string[]) {
   if (!ids.length) return new Map<string, string>();
   const rows = await db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, ids));
   return new Map(rows.map((r) => [r.id, r.name]));
+}
+
+/** A caretaker chooses when non-urgent alerts about a patient should stay silent. */
+export async function setQuietHours(db: Db, actor: Actor, patientId: string, quietHours: { from: string; to: string } | null): Promise<boolean> {
+  const link = await db
+    .select()
+    .from(careLinks)
+    .where(and(eq(careLinks.patientId, patientId), eq(careLinks.caretakerId, actor.userId), eq(careLinks.status, "active")))
+    .get();
+  if (!link) return false;
+  const { quietHours: _old, ...rest } = link.alertPrefs ?? { channels: ["push", "email"] as ("email" | "push")[] };
+  await db
+    .update(careLinks)
+    .set({ alertPrefs: quietHours ? { ...rest, quietHours } : rest, updatedAt: new Date() })
+    .where(eq(careLinks.id, link.id));
+  return true;
 }
