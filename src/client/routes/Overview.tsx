@@ -8,6 +8,7 @@ import { formatReading, timeAgo, VITAL_LABELS } from "../lib/format";
 import { Button, ButtonLink, Card, Loading, Notice, SheetHeader, StatusBadge } from "../components/ui";
 import { TrendChart } from "../components/TrendChart";
 import { TodayDoses } from "../components/Doses";
+import { ComingUp } from "../components/ComingUp";
 import { usePatientsCaredFor } from "../lib/care";
 
 // The overview answers one question first: "are my latest readings OK?" Readings are a chart
@@ -122,6 +123,8 @@ export function Overview() {
       </section>
 
       <TodayDoses compact />
+
+      <ComingUp />
 
       <div className="grid gap-x-12 gap-y-14 lg:grid-cols-2">
         <TrendCard type="blood_pressure" title="Blood pressure trend" unit="mmHg" dual />

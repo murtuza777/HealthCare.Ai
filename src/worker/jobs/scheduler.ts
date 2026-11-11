@@ -5,6 +5,7 @@ import { queuePush } from "../dal/push";
 import { drainOutbox } from "./outbox";
 import { onMissedDoses } from "./care";
 import { runDailyReview } from "./monitor";
+import { sendReminders } from "./reminders";
 
 export async function runScheduled(env: Env, now = new Date()) {
   const db = getDb(env);
@@ -21,6 +22,7 @@ export async function runScheduled(env: Env, now = new Date()) {
   if (minute === 0 || minute === 30) await run("generate-doses", () => generateUpcomingDoses(db, now));
   await run("dose-reminders", () => sendDoseReminders(db, now));
   if (minute % 5 === 0) await run("missed-doses", async () => onMissedDoses(env, db, await markMissed(db, now), now));
+  await run("reminders", () => sendReminders(db, now));
   await run("daily-review", () => runDailyReview(env, db, now));
   await run("outbox", () => drainOutbox(env));
 }

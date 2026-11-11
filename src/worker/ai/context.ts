@@ -9,6 +9,8 @@ import { adherence } from "../dal/doses";
 import { listMedications } from "../dal/medications";
 import { listReports, outOfRangeFindings } from "../dal/reports";
 import { getProfile } from "../dal/profile";
+import { listReminders } from "../dal/reminders";
+import { whenText } from "../../shared/reminders";
 import { listSymptoms } from "../dal/symptoms";
 import { latestVitals, listVitals, type Vital } from "../dal/vitals";
 
@@ -48,7 +50,7 @@ export type PatientContext = { text: string; emergencyNumber: string; firstName:
 
 export async function buildPatientContext(db: Db, actor: Actor, now = new Date()): Promise<PatientContext> {
   const id = actor.userId;
-  const [profile, latest, bp, hr, meds, symptoms, taken, reports, abnormal] = await Promise.all([
+  const [profile, latest, bp, hr, meds, symptoms, taken, reports, abnormal, upcoming] = await Promise.all([
     getProfile(db, actor, id),
     latestVitals(db, actor, id),
     listVitals(db, actor, id, { type: "blood_pressure", limit: 30 }),
@@ -58,6 +60,7 @@ export async function buildPatientContext(db: Db, actor: Actor, now = new Date()
     adherence(db, actor, id, 7, now),
     listReports(db, actor, id),
     outOfRangeFindings(db, actor, id, 15),
+    listReminders(db, actor, id, now),
   ]);
   const tz = profile?.timezone || "UTC";
   const lines: string[] = [];
@@ -120,6 +123,9 @@ export async function buildPatientContext(db: Db, actor: Actor, now = new Date()
     );
     lines.push(`Report results outside the range printed on the report (read from the patient's uploads; worth raising with their doctor):\n${rows.join("\n")}`);
   }
+
+  const appointments = upcoming.filter((r) => r.kind === "appointment" && r.dueAt.getTime() > now.getTime()).slice(0, 5);
+  if (appointments.length) lines.push(`Upcoming appointments:\n${appointments.map((r) => `- ${r.title}: ${whenText(r.dueAt, now, tz)}`).join("\n")}`);
 
   const present = riskFactors(profile, latest, now).filter((f) => f.status === "present");
   if (present.length) lines.push(`Heart risk factors present: ${present.map((f) => f.label).join(", ")}.`);

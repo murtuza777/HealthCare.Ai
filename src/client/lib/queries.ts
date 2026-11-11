@@ -303,3 +303,27 @@ export function useDismissAlert() {
     onSuccess: () => qc.invalidateQueries({ queryKey: insightsKey }),
   });
 }
+
+// --- Appointments and reminders ----------------------------------------------
+const remindersKey = ["reminders", "me"] as const;
+
+export function useReminders() {
+  return useQuery({ queryKey: remindersKey, queryFn: async () => (await ok(await p.reminders.$get({ param: me }))).items });
+}
+
+export function useAddReminder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (json: { kind: "appointment" | "custom"; title: string; dueAt: string }) =>
+      ok(await fetch("/api/v1/patients/me/reminders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(json) })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: remindersKey }),
+  });
+}
+
+export function useDeleteReminder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => ok(await p.reminders[":id"].$delete({ param: { ...me, id } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: remindersKey }),
+  });
+}

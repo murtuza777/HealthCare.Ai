@@ -3,22 +3,7 @@
 import { desc, eq, inArray, or } from "drizzle-orm";
 import { CONSENT_VERSIONS, type ConsentKind } from "../../shared/account";
 import type { Db } from "../db/client";
-import {
-  alerts,
-  auditLog,
-  careLinks,
-  consents,
-  conversations,
-  doseEvents,
-  medications,
-  messages,
-  profiles,
-  reports,
-  shares,
-  symptoms,
-  user,
-  vitals,
-} from "../db/schema";
+import { alerts, auditLog, careLinks, consents, conversations, doseEvents, medications, messages, profiles, reports, shares, symptoms, user, vitals, reminders, reportFindings } from "../db/schema";
 import type { Actor } from "./authz";
 
 export async function audit(db: Db, entry: { actorId: string | null; subjectUserId: string; action: string; entity: string; entityId?: string | null }) {
@@ -71,6 +56,14 @@ export async function exportAccount(db: Db, actor: Actor) {
     db.select().from(consents).where(eq(consents.userId, id)),
     convos.length ? db.select().from(messages).where(inArray(messages.conversationId, convos.map((c) => c.id))) : Promise.resolve([]),
   ]);
+  const [reminderRows, findingRows] = await Promise.all([
+    db.select().from(reminders).where(eq(reminders.userId, id)),
+    db
+      .select({ finding: reportFindings })
+      .from(reportFindings)
+      .innerJoin(reports, eq(reports.id, reportFindings.reportId))
+      .where(eq(reports.userId, id)),
+  ]);
   return {
     exportedAt: new Date().toISOString(),
     format: "healthcare-ai-export/1",
@@ -81,6 +74,8 @@ export async function exportAccount(db: Db, actor: Actor) {
     doseEvents: doses,
     symptoms: symptomRows,
     reports: reportRows.map(({ r2Key: _key, ...r }) => ({ ...r, file: `/api/v1/patients/me/reports/${r.id}/file?download=1` })),
+    reportValues: findingRows.map((r) => r.finding),
+    reminders: reminderRows,
     shareLinks: shareRows,
     careTeam: care,
     alerts: alertRows,

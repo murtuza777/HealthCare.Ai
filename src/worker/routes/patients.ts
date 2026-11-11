@@ -25,6 +25,8 @@ import { acknowledgeAlert, listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
 import { audit } from "../dal/account";
 import { timeline } from "../dal/timeline";
+import { addReminder, deleteReminder, listReminders } from "../dal/reminders";
+import { reminderInputSchema } from "../../shared/reminders";
 import { TIMELINE_KINDS } from "../../shared/timeline";
 import { doseActionSchema } from "../../shared/doses";
 import { notFound, parse } from "../middleware/validate";
@@ -171,6 +173,17 @@ export const patients = new Hono<AppEnv>()
   })
   .post("/:patientId/alerts/:alertId/ack", async (c) => {
     if (!(await acknowledgeAlert(c.var.db, c.var.actor, patientId(c), c.req.param("alertId")))) notFound();
+    return c.json({ ok: true });
+  })
+  // Appointments and one-off reminders
+  .get("/:patientId/reminders", async (c) => c.json({ items: await listReminders(c.var.db, c.var.actor, patientId(c)) }))
+  .post(
+    "/:patientId/reminders",
+    validator("json", (v) => parse(reminderInputSchema, v)),
+    async (c) => c.json({ reminder: await addReminder(c.var.db, c.var.actor, patientId(c), c.req.valid("json")) }, 201),
+  )
+  .delete("/:patientId/reminders/:id", async (c) => {
+    if (!(await deleteReminder(c.var.db, c.var.actor, patientId(c), c.req.param("id")))) notFound();
     return c.json({ ok: true });
   })
   // Everything in one feed

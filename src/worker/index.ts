@@ -14,6 +14,7 @@ import { CareError } from "./dal/care";
 import { publicRoutes } from "./routes/public";
 import { ShareError } from "./dal/shares";
 import { DoseError } from "./dal/doses";
+import { ReminderError } from "./dal/reminders";
 import { runScheduled } from "./jobs/scheduler";
 import type { AppEnv } from "./types";
 
@@ -71,6 +72,7 @@ app.notFound((c) => c.json({ error: "not_found" }, 404));
 app.onError((err, c) => {
   if (err instanceof AccessDenied) return c.json({ error: "forbidden" }, 403);
   if (err instanceof CareError) return c.json({ error: "invalid_input", fields: [{ path: "", message: err.message }] }, 400);
+  if (err instanceof ReminderError) return c.json({ error: "invalid_input", fields: [{ path: "", message: err.message }] }, 400);
   if (err instanceof DoseError) return c.json({ error: "invalid_input", fields: [{ path: "scheduledAt", message: err.message }] }, 400);
   if (err instanceof ShareError) return c.json({ error: "invalid_input", fields: [{ path: "reportIds", message: err.message }] }, 400);
   if (err instanceof HTTPException) return err.getResponse();
