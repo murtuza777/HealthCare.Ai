@@ -50,6 +50,9 @@ export function Overview() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ButtonLink to="/app/timeline" variant="ghost">
+            History
+          </ButtonLink>
           <ButtonLink to="/app/visit" variant="secondary">
             Prepare for a visit
           </ButtonLink>

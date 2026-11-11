@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
       { path: "care", lazy: async () => ({ Component: (await import("./routes/Caring")).CaringList }) },
       { path: "care/accept/:token", lazy: async () => ({ Component: (await import("./routes/Caring")).AcceptInvite }) },
       { path: "care/:patientId", lazy: async () => ({ Component: (await import("./routes/Caring")).CareDashboard }) },
+      { path: "timeline", lazy: async () => ({ Component: (await import("./routes/Timeline")).Timeline }) },
       { path: "visit", lazy: async () => ({ Component: (await import("./routes/Visit")).Visit }) },
       { path: "profile", lazy: async () => ({ Component: (await import("./routes/Profile")).Profile }) },
     ],

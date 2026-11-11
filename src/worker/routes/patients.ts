@@ -19,6 +19,8 @@ import { adherence, dosesForDay, markDose } from "../dal/doses";
 import { listAlerts, raiseAlert } from "../dal/alerts";
 import { patientNames } from "../dal/care";
 import { audit } from "../dal/account";
+import { timeline } from "../dal/timeline";
+import { TIMELINE_KINDS } from "../../shared/timeline";
 import { doseActionSchema } from "../../shared/doses";
 import { notFound, parse } from "../middleware/validate";
 import type { AppEnv } from "../types";
@@ -162,6 +164,16 @@ export const patients = new Hono<AppEnv>()
     const items = await listAlerts(c.var.db, c.var.actor, patientId(c));
     return c.json({ items });
   })
+  // Everything in one feed
+  .get(
+    "/:patientId/timeline",
+    validator("query", (v) => parse(z.object({ before: z.iso.datetime().optional(), kinds: z.string().max(60).optional() }), v)),
+    async (c) => {
+      const q = c.req.valid("query");
+      const kinds = q.kinds?.split(",").filter((k): k is (typeof TIMELINE_KINDS)[number] => (TIMELINE_KINDS as readonly string[]).includes(k));
+      return c.json(await timeline(c.var.db, c.var.actor, patientId(c), { before: q.before ? new Date(q.before) : undefined, kinds }));
+    },
+  )
   // Symptoms
   .get("/:patientId/symptoms", async (c) => {
     const items = await listSymptoms(c.var.db, c.var.actor, patientId(c));
