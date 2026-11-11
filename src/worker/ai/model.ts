@@ -75,6 +75,21 @@ export async function streamChat(env: Env, messages: ChatMessage[], onDone: (r: 
 /** One complete (non-streamed) reply, for short structured tasks. */
 export async function completeChat(env: Env, messages: ChatMessage[], maxTokens = 500): Promise<ChatResult> {
   if (env.AI_MODE === "fake") {
+    const last = messages[messages.length - 1]?.content ?? "";
+    if (last.includes("[fake model failure]")) throw new Error("fake model failure");
+    if (last.includes("Return only JSON")) {
+      // Report reader: echo back "Name: value unit (low-high)" lines as findings.
+      const body = last.slice(last.indexOf("Report text:"));
+      if (body.includes("[fake bad json]")) return { text: "I could not read this.", tokensIn: 10, tokensOut: 10 };
+      const findings = [...body.matchAll(/^([A-Za-z][\w ]+): ([\d.]+) ?([^\s(]*) ?(?:\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\))?$/gm)].map((m) => ({
+        test: m[1],
+        value: m[2],
+        unit: m[3] || null,
+        refLow: m[4] ?? null,
+        refHigh: m[5] ?? null,
+      }));
+      return { text: "Here you go: " + JSON.stringify({ summary: "[test model] Lab report.", findings }), tokensIn: 10, tokensOut: 10 };
+    }
     return { text: "- [test model] How is my blood pressure trend?\n- [test model] Should my medicines be reviewed?", tokensIn: 10, tokensOut: 10 };
   }
   const model = (env.AI_MODEL || DEFAULT_MODEL) as Parameters<Ai["run"]>[0];
@@ -82,5 +97,7 @@ export async function completeChat(env: Env, messages: ChatMessage[], maxTokens 
     response?: unknown;
     usage?: { prompt_tokens?: number; completion_tokens?: number };
   };
-  return { text: typeof out.response === "string" ? out.response : "", tokensIn: out.usage?.prompt_tokens ?? null, tokensOut: out.usage?.completion_tokens ?? null };
+  // When the reply is JSON, Workers AI may hand it back already parsed.
+  const text = typeof out.response === "string" ? out.response : out.response && typeof out.response === "object" ? JSON.stringify(out.response) : "";
+  return { text, tokensIn: out.usage?.prompt_tokens ?? null, tokensOut: out.usage?.completion_tokens ?? null };
 }

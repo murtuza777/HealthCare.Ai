@@ -1,8 +1,9 @@
 import { useMemo, useState, type DragEvent, type FormEvent } from "react";
-import { Download, Eye, FileText, FolderOpen, QrCode, Search, Trash2, Upload, X } from "lucide-react";
+import { Download, Eye, FileText, FolderOpen, ListChecks, QrCode, Search, Trash2, Upload, X } from "lucide-react";
 import { ALLOWED_MIME, MAX_REPORT_BYTES, REPORT_TYPES } from "../../shared/reports";
 import { reportFileUrl, useDeleteReport, useReports, useUploadReport, type Report } from "../lib/queries";
 import { localDate, formatDay } from "../lib/format";
+import { ReportValues } from "../components/ReportValues";
 import { Button, ButtonLink, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 
 // Ported from legacy/app/reports/{add,gallery}. Files go to a private R2 bucket and are only
@@ -10,6 +11,13 @@ import { Button, ButtonLink, Card, EmptyState, ErrorText, Field, inputClass, Loa
 
 export function Reports() {
   const [uploading, setUploading] = useState(false);
+  const [valuesFor, setValuesFor] = useState<string | null>(null);
+  const { data: reports } = useReports();
+  const open = reports?.find((r) => r.id === valuesFor);
+  const showValues = (id: string) => {
+    setValuesFor(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   return (
     <div className="space-y-14">
       <PageHeader
@@ -28,15 +36,23 @@ export function Reports() {
           </div>
         }
       />
-      {uploading && <UploadReport onDone={() => setUploading(false)} />}
-      <Gallery uploading={uploading} onUpload={() => setUploading(true)} />
+      {uploading && (
+        <UploadReport
+          onDone={(id) => {
+            setUploading(false);
+            if (id) setValuesFor(id);
+          }}
+        />
+      )}
+      {open && !uploading && <ReportValues key={open.id} report={open} onClose={() => setValuesFor(null)} />}
+      <Gallery uploading={uploading} onUpload={() => setUploading(true)} onValues={showValues} />
     </div>
   );
 }
 
 const fmtSize = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
-function UploadReport({ onDone }: { onDone: () => void }) {
+function UploadReport({ onDone }: { onDone: (uploadedId?: string) => void }) {
   const upload = useUploadReport();
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -79,7 +95,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
           ...(note.trim() ? { note: note.trim() } : {}),
         },
       },
-      { onSuccess: onDone },
+      { onSuccess: (res) => onDone(res.report.id) },
     );
   }
 
@@ -87,7 +103,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
     <Card boxed>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl">Upload a report</h2>
-        <button onClick={onDone} aria-label="Cancel upload" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+        <button onClick={() => onDone()} aria-label="Cancel upload" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -149,7 +165,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
         </Field>
         <ErrorText error={upload.error} />
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onDone}>
+          <Button type="button" variant="ghost" onClick={() => onDone()}>
             Cancel
           </Button>
           <Button type="submit" disabled={upload.isPending || !file}>
@@ -161,7 +177,7 @@ function UploadReport({ onDone }: { onDone: () => void }) {
   );
 }
 
-function Gallery({ uploading, onUpload }: { uploading: boolean; onUpload: () => void }) {
+function Gallery({ uploading, onUpload, onValues }: { uploading: boolean; onUpload: () => void; onValues: (id: string) => void }) {
   const { data, isPending, error } = useReports();
   const [q, setQ] = useState("");
   const [type, setType] = useState("All");
@@ -207,14 +223,14 @@ function Gallery({ uploading, onUpload }: { uploading: boolean; onUpload: () => 
       {data && data.length > 0 && filtered.length === 0 && <p className="py-6 text-center text-ink-muted">No reports match your search.</p>}
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((r) => (
-          <ReportCard key={r.id} r={r} />
+          <ReportCard key={r.id} r={r} onValues={() => onValues(r.id)} />
         ))}
       </ul>
     </Card>
   );
 }
 
-function ReportCard({ r }: { r: Report }) {
+function ReportCard({ r, onValues }: { r: Report; onValues: () => void }) {
   const del = useDeleteReport();
   const isImage = r.mime.startsWith("image/");
   return (
@@ -233,6 +249,10 @@ function ReportCard({ r }: { r: Report }) {
           {r.reportDate && `, ${formatDay(r.reportDate)}`}. {fmtSize(r.size)}
         </p>
         {(r.doctor || r.facility) && <p className="text-sm text-ink-muted">{[r.doctor, r.facility].filter(Boolean).join(", ")}</p>}
+        <button onClick={onValues} className="mt-1 inline-flex items-center gap-1.5 self-start text-sm font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+          <ListChecks className="h-4 w-4" aria-hidden="true" />
+          {r.extractionStatus === "done" ? "See values" : "Read values"}
+        </button>
         <div className="mt-auto flex gap-2 pt-3">
           <a href={reportFileUrl(r.id)} target="_blank" rel="noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-sheet px-3.5 text-sm font-[540] text-ink transition-[background-color,transform] duration-150 ease-out hover:bg-well/60 active:scale-[0.97]">
             <Eye className="h-4 w-4" aria-hidden="true" /> View

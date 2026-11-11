@@ -232,3 +232,59 @@ export function useAdherence(days = 7) {
 export function usePushStatus() {
   return useQuery({ queryKey: doseKeys.push, queryFn: async () => ok(await api.push.status.$get()) });
 }
+
+// --- Values read from a report ----------------------------------------------
+const findingsKey = (reportId: string) => ["reports", "me", reportId, "findings"] as const;
+
+export function useFindings(reportId: string | null) {
+  return useQuery({
+    queryKey: findingsKey(reportId ?? "none"),
+    enabled: Boolean(reportId),
+    queryFn: async () => (await ok(await p.reports[":id"].findings.$get({ param: { ...me, id: reportId! } }))).items,
+  });
+}
+export type Finding = NonNullable<ReturnType<typeof useFindings>["data"]>[number];
+
+export type ReadOutcome = "ok" | "consent" | "quota" | "unavailable" | "unreadable" | "model";
+
+/** Ask the assistant to read the values printed on a report. Resolves with what happened, never throws for expected refusals. */
+export function useReadReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<ReadOutcome> => {
+      const res = await p.reports[":id"].read.$post({ param: { ...me, id } });
+      const body = (await res.json().catch(() => ({}))) as { kind?: string };
+      const kind = body.kind;
+      if (kind === "ok" || kind === "consent" || kind === "quota" || kind === "unreadable" || kind === "model") return kind;
+      return "unavailable";
+    },
+    onSettled: (_r, _e, id) => {
+      void qc.invalidateQueries({ queryKey: reportKeys.list });
+      void qc.invalidateQueries({ queryKey: findingsKey(id) });
+      void qc.invalidateQueries({ queryKey: ["reports", "me", "out-of-range"] });
+      void qc.invalidateQueries({ queryKey: ["assistant", "status"] });
+    },
+  });
+}
+
+export type FindingEdit = InferRequestType<(typeof p.reports.findings)[":findingId"]["$put"]>["json"];
+export function useSaveFinding(reportId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, json }: { id: string; json: FindingEdit }) => ok(await p.reports.findings[":findingId"].$put({ param: { ...me, findingId: id }, json })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: findingsKey(reportId) }),
+  });
+}
+
+export function useDeleteFinding(reportId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => ok(await p.reports.findings[":findingId"].$delete({ param: { ...me, findingId: id } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: findingsKey(reportId) }),
+  });
+}
+
+/** Report results outside the range printed on the report (for the visit summary). */
+export function useOutOfRange() {
+  return useQuery({ queryKey: ["reports", "me", "out-of-range"], queryFn: async () => (await ok(await p.reports["out-of-range"].$get({ param: me }))).items });
+}

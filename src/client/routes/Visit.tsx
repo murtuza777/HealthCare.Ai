@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ageFrom } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
-import { useAdherence, useLatestVitals, useMedications, useProfile, useSymptoms, useVitals } from "../lib/queries";
+import { useAdherence, useLatestVitals, useMedications, useOutOfRange, useProfile, useSymptoms, useVitals } from "../lib/queries";
 import { useAssistantStatus } from "../lib/assistant";
 import { formatReading, VITAL_LABELS } from "../lib/format";
 import { Button, inputClass, Loading, StatusBadge } from "../components/ui";
@@ -32,6 +32,7 @@ export function Visit() {
   const bp = useVitals("blood_pressure", 200);
   const hr = useVitals("heart_rate", 200);
   const ai = useAssistantStatus();
+  const outOfRange = useOutOfRange();
   const [questions, setQuestions] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [suggesting, setSuggesting] = useState<string | null>(null);
@@ -181,6 +182,28 @@ export function Visit() {
           </ul>
         )}
       </Block>
+
+      {outOfRange.data && outOfRange.data.length > 0 && (
+        <Block title="Report results outside their range" note="Read from uploaded reports by the app and compared with the range printed on each report. Please check against the originals.">
+          <ul className="divide-y divide-line border-y border-line">
+            {outOfRange.data.map((r, i) => (
+              <li key={i} className="flex flex-wrap justify-between gap-x-4 py-2.5">
+                <span>
+                  <span className="font-[540]">{r.test}</span> <span className="figures">{r.value}</span>
+                  {r.unit ? ` ${r.unit}` : ""}
+                  <span className="text-ink-muted">
+                    , {r.flag === "low" ? "below" : "above"} {r.refLow !== null && r.refHigh !== null ? `${r.refLow} to ${r.refHigh}` : r.refHigh !== null ? r.refHigh : r.refLow}
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm text-ink-faint">
+                  {r.report}
+                  {r.reportDate ? `, ${fmtDate(r.reportDate)}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Block>
+      )}
 
       <Block title="Questions to ask">
         {questions.length > 0 && (

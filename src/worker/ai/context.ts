@@ -7,7 +7,7 @@ import type { Db } from "../db/client";
 import type { Actor } from "../dal/authz";
 import { adherence } from "../dal/doses";
 import { listMedications } from "../dal/medications";
-import { listReports } from "../dal/reports";
+import { listReports, outOfRangeFindings } from "../dal/reports";
 import { getProfile } from "../dal/profile";
 import { listSymptoms } from "../dal/symptoms";
 import { latestVitals, listVitals, type Vital } from "../dal/vitals";
@@ -48,7 +48,7 @@ export type PatientContext = { text: string; emergencyNumber: string; firstName:
 
 export async function buildPatientContext(db: Db, actor: Actor, now = new Date()): Promise<PatientContext> {
   const id = actor.userId;
-  const [profile, latest, bp, hr, meds, symptoms, taken, reports] = await Promise.all([
+  const [profile, latest, bp, hr, meds, symptoms, taken, reports, abnormal] = await Promise.all([
     getProfile(db, actor, id),
     latestVitals(db, actor, id),
     listVitals(db, actor, id, { type: "blood_pressure", limit: 30 }),
@@ -57,6 +57,7 @@ export async function buildPatientContext(db: Db, actor: Actor, now = new Date()
     listSymptoms(db, actor, id, 10),
     adherence(db, actor, id, 7, now),
     listReports(db, actor, id),
+    outOfRangeFindings(db, actor, id, 15),
   ]);
   const tz = profile?.timezone || "UTC";
   const lines: string[] = [];
@@ -109,7 +110,15 @@ export async function buildPatientContext(db: Db, actor: Actor, now = new Date()
 
   if (reports.length) {
     const items = reports.slice(0, 10).map((r) => `- ${r.title} (${r.type}${r.reportDate ? `, ${r.reportDate}` : ""})${r.summary ? `: ${r.summary}` : ""}`);
-    lines.push(`Uploaded reports (titles only unless a summary is given; the files themselves aren't read):\n${items.join("\n")}`);
+    lines.push(`Uploaded reports (titles, and a summary where the report has been read):\n${items.join("\n")}`);
+  }
+  if (abnormal.length) {
+    const range = (lo: number | null, hi: number | null) => (lo !== null && hi !== null ? `${lo}-${hi}` : lo !== null ? `above ${lo}` : `below ${hi}`);
+    const rows = abnormal.map(
+      (a) =>
+        `- ${a.test} ${a.value}${a.unit ? ` ${a.unit}` : ""} (${a.flag === "low" ? "below" : "above"} the report's range of ${range(a.refLow, a.refHigh)}), from "${a.report}"${a.reportDate ? `, ${a.reportDate}` : ""}`,
+    );
+    lines.push(`Report results outside the range printed on the report (read from the patient's uploads; worth raising with their doctor):\n${rows.join("\n")}`);
   }
 
   const present = riskFactors(profile, latest, now).filter((f) => f.status === "present");

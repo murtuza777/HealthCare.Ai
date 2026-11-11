@@ -9,7 +9,12 @@ import { medicationInputSchema, medicationUpdateSchema } from "../../shared/medi
 import { symptomInputSchema } from "../../shared/symptoms";
 import { addMedication, deleteMedication, listMedications, setMedicationActive } from "../dal/medications";
 import { getProfile, upsertProfile } from "../dal/profile";
-import { createReport, deleteReport, getReport, listReports } from "../dal/reports";
+import { beginExtraction, createReport, deleteFinding, deleteReport, failExtraction, getReport, listFindings, listReports, outOfRangeFindings, saveExtraction, updateFinding } from "../dal/reports";
+import { findingSchema } from "../../shared/findings";
+import { readReport } from "../ai/reader";
+import { aiAvailable } from "../ai/model";
+import { addTokens, refundQuota, takeQuota } from "../dal/assistant";
+import { consentStatus } from "../dal/account";
 import { createShare, listShares, revokeShare } from "../dal/shares";
 import { shareInputSchema } from "../../shared/reports";
 import { fileResponse, readUpload } from "./files";
@@ -211,6 +216,55 @@ export const patients = new Hono<AppEnv>()
   .get("/:patientId/reports/:id/file", async (c) => {
     const report = (await getReport(c.var.db, c.var.actor, patientId(c), c.req.param("id"))) ?? notFound();
     return fileResponse(c.env.REPORTS, report.r2Key, report.mime, report.title, c.req.query("download") === "1");
+  })
+  .get("/:patientId/reports/out-of-range", async (c) => {
+    const items = await outOfRangeFindings(c.var.db, c.var.actor, patientId(c));
+    return c.json({ items });
+  })
+  // Report reader: the AI model copies out the values; the patient can correct them.
+  .get("/:patientId/reports/:id/findings", async (c) => {
+    const items = (await listFindings(c.var.db, c.var.actor, patientId(c), c.req.param("id"))) ?? notFound();
+    return c.json({ items });
+  })
+  .post("/:patientId/reports/:id/read", async (c) => {
+    const { db, actor } = c.var;
+    const id = patientId(c);
+    if (id !== actor.userId) return c.json({ kind: "forbidden" as const }, 403);
+    if (!aiAvailable(c.env)) return c.json({ kind: "unavailable" as const }, 503);
+    if (!(await consentStatus(db, actor)).ai_processing) return c.json({ kind: "consent" as const }, 403);
+    const report = (await beginExtraction(db, actor, id, c.req.param("id"))) ?? notFound();
+    if (!(await takeQuota(db, actor, Number(c.env.AI_DAILY_LIMIT) || 25))) {
+      await failExtraction(db, report.id);
+      return c.json({ kind: "quota" as const }, 429);
+    }
+    try {
+      const file = await c.env.REPORTS.get(report.r2Key);
+      if (!file) throw new Error("file missing");
+      const result = await readReport(c.env, await file.arrayBuffer(), report.mime);
+      if (!result.ok) {
+        await Promise.all([failExtraction(db, report.id), refundQuota(db, actor)]);
+        return c.json({ kind: result.reason }, 422);
+      }
+      await addTokens(db, actor, result.tokens);
+      const items = await saveExtraction(db, report.id, result);
+      return c.json({ kind: "ok" as const, summary: result.summary, items });
+    } catch (err) {
+      console.error("report reader error", err instanceof Error ? err.name : "unknown");
+      await Promise.all([failExtraction(db, report.id), refundQuota(db, actor)]);
+      return c.json({ kind: "unavailable" as const }, 503);
+    }
+  })
+  .put(
+    "/:patientId/reports/findings/:findingId",
+    validator("json", (v) => parse(findingSchema, v)),
+    async (c) => {
+      const finding = (await updateFinding(c.var.db, c.var.actor, patientId(c), c.req.param("findingId"), c.req.valid("json"))) ?? notFound();
+      return c.json({ finding });
+    },
+  )
+  .delete("/:patientId/reports/findings/:findingId", async (c) => {
+    if (!(await deleteFinding(c.var.db, c.var.actor, patientId(c), c.req.param("findingId")))) notFound();
+    return c.json({ ok: true });
   })
   .delete("/:patientId/reports/:id", async (c) => {
     if (!(await deleteReport(c.var.db, c.env.REPORTS, c.var.actor, patientId(c), c.req.param("id")))) notFound();
