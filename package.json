@@ -2,6 +2,8 @@
   "name": "healthcare-ai",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/murtuza777/HealthCare.Ai.git" },
   "type": "module",
   "description": "AI health companion for people with heart conditions and their caretakers",
   "scripts": {
