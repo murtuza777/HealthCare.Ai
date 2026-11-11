@@ -1,5 +1,6 @@
 // The assistant's standing instructions. Clinical safety rules come first; the rule-based
 // emergency check has already run before this prompt is ever sent.
+import { READING_NAMES, readingText, type ProposedAction } from "../../shared/actions";
 import type { EmergencyKind } from "../../shared/assistant";
 
 const MENTION: Record<EmergencyKind, string> = {
@@ -11,7 +12,17 @@ const MENTION: Record<EmergencyKind, string> = {
   self_harm: "self-harm",
 };
 
-export function systemPrompt(record: string, emergencyNumber: string, mention?: EmergencyKind): string {
+const STATUS: Record<string, string> = { normal: "normal", borderline: "borderline", high: "high", low: "low", critical: "EMERGENCY RANGE" };
+
+function statedNote(actions: ProposedAction[]): string {
+  if (!actions.length) return "";
+  const parts = actions.map((a) =>
+    a.kind === "reading" ? `${READING_NAMES[a.type]} ${readingText(a)}${a.classification ? ` (${STATUS[a.classification]})` : ""}` : `the symptom "${a.type}"`,
+  );
+  return `\nThe patient's message states: ${parts.join("; ")}. It is not in the record yet. The app offers to save it with a button under your reply. Comment on it using the status given here and the rules above, and never say that you saved, logged or recorded anything.\n`;
+}
+
+export function systemPrompt(record: string, emergencyNumber: string, mention?: EmergencyKind, stated: ProposedAction[] = []): string {
   return `You are the assistant inside Healthcare.AI, an app for people living with heart conditions. You help one patient understand their own record and prepare for conversations with their doctor.
 
 Safety rules (always follow):
@@ -28,7 +39,7 @@ ${
   mention
     ? `\nThe patient's message mentions ${MENTION[mention]}, but not as something happening to them now. Answer the question, and include one sentence saying that if it does happen, they should call ${emergencyNumber} straight away.\n`
     : ""
-}
+}${statedNote(stated)}
 Patient record:
 ${record}`;
 }

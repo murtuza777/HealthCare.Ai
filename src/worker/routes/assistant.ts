@@ -3,6 +3,7 @@
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 import { z } from "zod";
+import { proposeActions } from "../../shared/actions";
 import { chatInputSchema, emergencyInText, emergencyReply } from "../../shared/assistant";
 import { buildPatientContext } from "../ai/context";
 import { aiAvailable, completeChat, streamChat, type ChatMessage } from "../ai/model";
@@ -124,7 +125,7 @@ export const assistant = new Hono<AppEnv>()
       // 3. Context, loaded server-side.
       const [ctx, history] = await Promise.all([buildPatientContext(db, actor), recentTurns(db, saved.conversation.id)]);
       const chat: ChatMessage[] = [
-        { role: "system", content: systemPrompt(ctx.text, ctx.emergencyNumber, emergency.mention) },
+        { role: "system", content: systemPrompt(ctx.text, ctx.emergencyNumber, emergency.mention, proposeActions(input.message)) },
         ...history.filter((m) => m.role !== "tool").map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
       ];
 

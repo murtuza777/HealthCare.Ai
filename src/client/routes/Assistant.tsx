@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type Keyb
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react";
+import { proposeActions, type ProposedAction } from "../../shared/actions";
 import { EMERGENCY_REASONS, emergencyInText, emergencyKindOf, SUGGESTED_PROMPTS } from "../../shared/assistant";
 import { emergencyNumber } from "../../shared/emergency";
 import {
@@ -13,10 +14,11 @@ import {
   useDeleteConversation,
   useRateMessage,
 } from "../lib/assistant";
-import { useProfile } from "../lib/queries";
+import { useLatestVitals, useProfile } from "../lib/queries";
 import { timeAgo } from "../lib/format";
 import { Button, Loading } from "../components/ui";
 import { AiConsent } from "../components/Account";
+import { ActionOffers } from "../components/ActionOffers";
 
 // The assistant answers from the patient's own record. Emergencies are caught by fixed rules
 // (in the browser as you type, and again on the server) and never wait for the model.
@@ -32,6 +34,9 @@ export function Assistant() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [showList, setShowList] = useState(false);
   const [draft, setDraft] = useState("");
+  // What the last message offers to save (a stated reading or symptom), shown under its reply.
+  const [offers, setOffers] = useState<{ key: number; actions: ProposedAction[] }>({ key: 0, actions: [] });
+  const latest = useLatestVitals();
   const { data: profile } = useProfile();
   const number = emergencyNumber(profile?.country);
   // The composer is sticky and sits last in the page, so the very bottom of the page shows the
@@ -101,6 +106,7 @@ export function Assistant() {
   function open(id: string | null) {
     abort.current?.abort();
     setPending(null);
+    setOffers((o) => ({ key: o.key + 1, actions: [] }));
     setShowList(false);
     setParams(id ? { c: id } : {}, { replace: false });
   }
@@ -116,6 +122,13 @@ export function Assistant() {
     abort.current = new AbortController();
     follow.current = true;
     setPending({ user: message, reply: "", streaming: true });
+    // Don't offer to save a reading that is already the latest one in the record.
+    const stated = proposeActions(message).filter((a) => {
+      if (a.kind !== "reading") return true;
+      const have = latest.data?.[a.type];
+      return !(have && have.value === a.value && (have.value2 ?? undefined) === a.value2);
+    });
+    setOffers((o) => ({ key: o.key + 1, actions: [] }));
     try {
       const result = await sendMessage(message, activeId, (soFar) => setPending((p) => p && { ...p, reply: soFar }), abort.current.signal);
       if (result.kind === "emergency") {
@@ -135,6 +148,7 @@ export function Assistant() {
         setPending({ user: message, reply: "", streaming: false, error: result.message });
       } else {
         setPending((p) => p && { ...p, streaming: false });
+        setOffers((o) => ({ key: o.key, actions: stated }));
       }
       const id = result.conversationId;
       await Promise.all([
@@ -224,6 +238,7 @@ export function Assistant() {
               )}
             </>
           )}
+          {!busy && offers.actions.length > 0 && <ActionOffers key={offers.key} actions={offers.actions} />}
         </div>
 
         <Composer
