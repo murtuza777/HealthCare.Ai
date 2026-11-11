@@ -8,7 +8,7 @@ changes is "safe and tested", not "clever".
 - **Patients and caretakers:** tell us what's confusing, missing or wrong. Open an issue; no
   technical detail needed. Please don't include real health data or names.
 - **Clinicians:** review the thresholds and red-flag rules in `src/shared/vitals.ts`,
-  `src/shared/symptoms.ts`, `src/shared/assistant.ts` and `src/shared/insights.ts`. A cited
+  `src/shared/symptoms.ts`, `src/shared/assistant.ts`, `src/shared/insights.ts` and `src/shared/findings.ts`. A cited
   correction is the most valuable contribution this project can get.
 - **Translators:** see the open issues labelled `i18n`.
 - **Developers:** pick an issue labelled `good first issue`, or anything on the roadmap in the
