@@ -1,142 +1,208 @@
 # Healthcare.AI
 
-A calm, careful record of your heart, for people living with heart conditions and the family who help them.
+**A shared heart-health record for people living with a heart condition, and for the family member who worries about them from another city.**
 
-> **Planning docs:** [Product Requirements (PRD)](docs/PRD.md) · [Technical Implementation Plan](docs/TECH_PLAN.md) · [Design system](DESIGN.md)
+Log a blood pressure reading and know at once whether it's fine, worth watching or an emergency. Get a reminder for every pill. Let your daughter see that you took them. Walk into the cardiologist's office with one page that has everything on it.
 
-## What it does
+[Live app](https://healthcare-ai.mdmurtuzaali777.workers.dev) · [Product requirements](docs/PRD.md) · [Technical plan](docs/TECH_PLAN.md) · [Design system](DESIGN.md)
 
-1. **Readings, checked as you enter them.** Blood pressure, pulse, oxygen, glucose, temperature, cholesterol and weight, classified against clinical ranges and charted over time.
-2. **Medicines that remind you.** A daily checklist (taken, skipped, missed), 7- and 30-day adherence, and reminders on your phone or computer through Web Push, with a "Taken" button right in the notification.
-3. **An assistant that reads your record.** Questions answered from your own readings, medicines and symptoms (Cloudflare Workers AI). Fixed rules catch emergencies before any model runs, and it never tells you to change a medicine.
-4. **A care team.** Invite family by email and choose what they see. They get alerts for emergency-range readings, urgent symptoms and missed doses, and you can see each time they looked.
-5. **Reports and sharing.** Upload lab results and scans; share chosen reports through a link or QR code that expires and can be revoked.
-6. **Visit summary.** A one-page summary to print or save as PDF for your doctor, with suggested questions.
-7. **Yours to keep or delete.** Download everything as JSON, or delete your account and every file at once.
+> **Status: working beta.** Every feature listed under "What works today" is built, tested and deployed. It hasn't had real users yet, and the clinical thresholds haven't been reviewed by a clinician. Not a medical device.
 
-Installable as an app (PWA) and the emergency button works offline.
+---
 
-## Tech Stack
+## The problem
 
-Runs entirely on Cloudflare's free plan (see [docs/TECH_PLAN.md](docs/TECH_PLAN.md) for why).
+Someone who has had a heart attack, or lives with high blood pressure, heart failure or atrial fibrillation, is usually managing all of this at once:
 
-- **Frontend:** Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Recharts, Lucide icons; installable PWA with a service worker
-- **API:** Hono on Cloudflare Workers, typed end to end (the browser client gets its types from the API)
-- **Data:** Cloudflare D1 (SQLite) with Drizzle ORM and migrations
-- **Auth:** Better Auth with email + password (stretched in the browser, see below), email verification and password reset by code, JWT session cookies and Bearer access tokens, optional Google sign-in and Cloudflare Turnstile
-- **AI:** Cloudflare Workers AI (Llama 3.3 70B by default, `AI_MODEL`), with server-built context, rule-based emergency checks, consent and a daily quota
-- **Notifications:** Web Push implemented on Web Crypto (VAPID + RFC 8291), and email through Resend; both go through an outbox that retries
-- **Jobs:** one cron trigger dispatches dose generation, reminders, missed-dose alerts and the outbox
-- **Validation and clinical rules:** Zod schemas and rule functions in `src/shared`, used by both the API and the browser
-- **Tests:** Vitest running inside Cloudflare's runtime against a real local D1
+- three to six medicines on fixed times,
+- blood pressure and pulse checks morning and evening,
+- lab reports and scans from different clinics,
+- symptoms that might be nothing, or might mean calling an ambulance.
 
-## Getting Started
+Today that lives in a notebook, phone photos and memory. That leaves three gaps:
 
-Requires Node 22+ and a Cloudflare account (free) for deploying.
+| Who | What goes wrong today |
+|---|---|
+| **The patient** | Forgets doses. Can't tell whether 158/96 is worrying. Arrives at appointments without their history. |
+| **The family caretaker**, often an adult child in another city | Has no idea anything is wrong until a phone call from the hospital. |
+| **The doctor**, with 10 minutes per visit | Sees whatever the patient remembered to bring. |
+
+General health apps track steps and sleep. Chatbots can explain what "diastolic" means but know nothing about *you*, and may answer "I have chest pain" with an essay.
+
+## Who it's for
+
+| | Who | What they get |
+|---|---|---|
+| **Primary** | Patients aged 50–75 with a heart condition, comfortable enough with a phone | One record, clear verdicts on readings, medicine reminders, an assistant that knows their numbers |
+| **Primary** | Their caretaker, usually a son or daughter living elsewhere | Alerts when a reading is in the emergency range, an urgent symptom is logged or doses are missed; a read-only view of what the patient chose to share |
+| **Secondary** | Their doctor | A time-limited link or QR code to chosen reports and recent readings, with no account to create |
+| **Secondary** | People with high blood pressure or a family history who want to track it | Trend charts, risk factors explained, a visit summary |
+
+**It's not for** fitness tracking, diagnosis, telemedicine, hospitals or clinics (there's no doctor portal or EHR integration), or replacing emergency services.
+
+## Why it's different
+
+1. **Emergencies never wait for AI.** Dangerous readings (for example BP ≥ 180/120, SpO₂ < 90%) and red-flag symptoms (chest pain, signs of stroke, fainting) are caught by fixed, tested rules. The fixed rules show a red banner with a one-tap call to *your country's* emergency number. The emergency button works offline.
+2. **The family is in the loop, with the patient in control.** The patient invites a caretaker, chooses exactly what they see, can see every time they looked, and can remove them instantly.
+3. **The assistant answers from your record, not the internet.** "Am I taking my medicine regularly?" gets "You missed 2 doses of Amlodipine this week." It never tells you to change a medicine, and it points medicine questions to your pharmacist or doctor.
+4. **Built for older eyes.** Large serif numbers, 16px minimum body text, high contrast, full keyboard and screen-reader support. Red is used only for alerts.
+5. **Your data stays yours.** Export everything as JSON or delete your account and every file in one step. Nothing is sold or used for ads.
+
+## What works today
+
+### For the patient
+- **Readings, checked as you type.** Blood pressure, pulse, oxygen, glucose, temperature, cholesterol and weight. Each reading is classified (normal, borderline, high, emergency range) against clinical ranges, with trend charts.
+- **Medicines with reminders.** A daily checklist (taken, skipped, missed) and 7- and 30-day adherence. Push reminders arrive on your phone or computer with a **Taken** button right in the notification.
+- **Symptoms with red flags.** Severity, duration and accompanying symptoms. Dangerous combinations trigger the emergency banner.
+- **Heart risk snapshot.** Which risk factors you have, and which you can work on. Marked as an estimate, not a diagnosis.
+- **Reports.** Upload lab results, ECGs and scans (PDF or image, up to 10 MB).
+- **Visit summary.** A one-page printable summary for your doctor: current medicines, adherence, reading trends, recent symptoms and AI-suggested questions to ask.
+
+### The AI assistant
+- Answers questions using your own profile, readings, trends, medicines, adherence, symptoms and report titles.
+- Streams replies, keeps conversation history, and lets you rate answers.
+- Safety rules:
+  - Emergencies happening now get a fixed, human-written reply before any model runs.
+  - Questions that only mention an emergency get an answer plus the emergency number.
+  - Readings in the emergency range always come with the same advice the app gives.
+  - Medicine changes are always referred to a doctor or pharmacist.
+- Needs your explicit consent, has a daily limit (25 questions), and returns your question and quota if the model fails.
+
+### For the caretaker
+- Invite by email. The patient picks permissions: readings, medicines and adherence, reports, alerts.
+- A dashboard of the people you care for.
+- Push and email alerts for emergency-range readings, urgent symptoms and missed doses.
+- An access log, so the patient sees every time a caretaker opened their record.
+
+### For the doctor
+- Share chosen reports, optionally with a summary of recent readings, through a link or QR code.
+- The link expires after 1 hour, 24 hours or 7 days, and can be revoked at any time.
+- The patient sees how many times each link was opened.
+
+### Account and security
+- Email and password sign-up with verification and reset codes; optional Google sign-in.
+- The password is stretched in the browser and never reaches the server.
+- Every database access goes through one authorization layer, enforced by a lint rule.
+- Consent records, an audit log, data export and full account deletion.
+- Installable as an app (PWA).
+
+## How far along it is
+
+| Area (from the [PRD](docs/PRD.md)) | Status |
+|---|---|
+| R1: Record (profile, readings, medicines, symptoms, reports, sharing, assistant) | ✅ Done |
+| R2: Reminders, adherence, caretakers, alerts | ✅ Done (sending email to anyone but the owner needs a verified sending domain) |
+| R3: Visit summary | ✅ Done |
+| R3: Assistant that takes actions ("log this reading for me") | ⬜ Not started |
+| R3: Report reader (extract lab values from PDFs and photos) | ⬜ Not started; the assistant sees report titles only |
+| R3: Daily monitoring agent ("your BP has crept up for 2 weeks") | ⬜ Not started |
+| R4: Export, deletion, consent, audit log | ✅ Done |
+| R4: Clinician review of thresholds, compliance review, real users | ⬜ Not started |
+| Smaller gaps | Combined health timeline, caretaker quiet hours, appointment reminders, refill reminders, CSV import, languages other than English |
+
+**By the numbers:**
+
+| | |
+|---|---|
+| Application code | ~9,400 lines of TypeScript across the client, the API and shared rules |
+| Screens | 19 |
+| Tests | 171, run inside Cloudflare's runtime against a real database |
+| Running cost | $0 on Cloudflare's free plan, until roughly 100 active users |
+| Rebuild | 71 commits, Nov 5–10, 2026; it replaced an earlier Next.js + Supabase prototype |
+
+## What would make it valuable
+
+The app is feature-complete for one patient and one caretaker. Its value now depends on things code alone can't settle:
+
+1. **A first group of real users.** For example, 10 cardiac patients and their families from one clinic or support group, to learn whether the caretaker alerts are the reason people stay.
+2. **A clinician advisor** to sign off the emergency thresholds and red-flag rules. Until then, the app can't honestly be offered to patients at scale.
+3. **Less typing.**
+   - The report reader (photo of a lab report → values) and a "log it for me" assistant remove the biggest chore.
+   - Bluetooth BP cuffs and Apple Health / Google Fit sync are the next step after that.
+4. **A launch market.** It decides the emergency numbers, units, language (Hindi/Urdu support matters if India), SMS or WhatsApp alerts, and the compliance regime (DPDP, HIPAA or GDPR).
+
+The sharpest positioning is probably **"peace of mind for the family"**: the caretaker alert is something a notebook or a fitness app can't do, and it's usually the family member who would find, install and set up the app.
+
+---
+
+## Run it yourself
+
+Requires Node 22+ and a free Cloudflare account to deploy.
 
 ```bash
 npm install
 cp .dev.vars.example .dev.vars        # then set BETTER_AUTH_SECRET to a long random string
 npm run db:migrate:local
 npm run dev                           # http://localhost:5173
+npm run check                         # typecheck, lint, tests, build
 ```
 
-Locally `EMAIL_MODE=outbox` keeps emails (verification and reset codes) in the database; read the latest one:
+Locally, emails (verification and reset codes) stay in the database. To read the latest one:
 
 ```bash
 npx wrangler d1 execute DB --local --command "SELECT recipient, payload FROM outbox ORDER BY created_at DESC LIMIT 1"
 ```
 
-Checks:
+### Deploy
 
 ```bash
-npm run check    # typecheck, lint, tests, build
+npx wrangler login              # once
+npm run db:migrate:remote       # apply new migrations first
+npm run deploy                  # build and deploy the Worker
 ```
 
-## Deploying
+Production secrets, set once with `npx wrangler secret put <NAME>`:
 
-Live: https://healthcare-ai.mdmurtuzaali777.workers.dev
-
-```bash
-npx wrangler login                                   # once
-npm run db:migrate:remote                            # apply new migrations first
-npm run deploy                                       # build and deploy the Worker
-```
-
-Production secrets (set once with `npx wrangler secret put <NAME>`):
-- `BETTER_AUTH_SECRET` and `PASSWORD_PEPPER` (both set; never change the pepper once users exist, or every password stops working)
-- `RESEND_API_KEY`: turns on email verification and password reset. Until it's set, sign-up signs people in without verifying their email.
-- `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY`: turn on medicine reminders and caretaker alerts on devices. Generate them with `node scripts/vapid-keys.mjs`. Never change them once people have turned reminders on (their subscriptions would stop working).
-- Optional: `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (redirect URI `<APP_URL>/api/auth/callback/google`), `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`.
-
-The assistant uses the `AI` binding in `wrangler.jsonc` (no key needed). `AI_DAILY_LIMIT` sets questions per person per day; the free Workers AI allowance is shared by everyone, so keep it modest or move to Workers Paid.
-
-CI runs on every push. To deploy automatically from `main`, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets in GitHub.
-
-## Development skills
-
-Agent skills (from [skills.sh](https://skills.sh)) used when building this app, installed per project in `.claude/skills/` (git-ignored, because not every source is licensed for redistribution):
-
-| Skill | Source | Use |
+| Secret | What it turns on | Notes |
 |---|---|---|
-| frontend-design | anthropics/skills @ 2c5958e | Distinctive, intentional visual design |
-| impeccable | pbakaus/impeccable @ 687bc38 (without `scripts/`) | Critique, audit, polish, typeset, layout, onboarding |
-| emil-design-eng | emilkowalski/skill @ c8a7962 | Motion, detail and component craft |
-| web-design-guidelines | vercel-labs/agent-skills @ 1a2c79d | Accessibility and interface rules review |
-| react-best-practices | vercel-labs/agent-skills @ 1a2c79d | React performance patterns |
-| composition-patterns | vercel-labs/agent-skills @ 1a2c79d | Component architecture |
+| `BETTER_AUTH_SECRET`, `PASSWORD_PEPPER` | Required | Never change the pepper once users exist, or every password stops working. |
+| `RESEND_API_KEY` | Email verification, password reset, caretaker emails | Until it's set, sign-up signs people in without verifying email. |
+| `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` | Push reminders and alerts | Generate with `node scripts/vapid-keys.mjs`. Never change them once people have turned reminders on. |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | Google sign-in (optional) | Redirect URI: `<APP_URL>/api/auth/callback/google` |
+| `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | Bot protection (optional) | |
 
-To install on another machine: `npx skills add <source> --skill <name>` (for example `npx skills add anthropics/skills --skill frontend-design`). The impeccable launcher in `scripts/` downloads and runs a binary; it was left out on purpose, and the skill falls back to reading `PRODUCT.md` and `DESIGN.md` directly.
+The assistant uses the Workers AI binding, so it needs no key. `AI_DAILY_LIMIT` sets questions per person per day. The free AI allowance is shared by everyone, so keep it modest or move to Workers Paid ($5/month).
 
-## Project Structure
+## How it's built
+
+Runs entirely on Cloudflare's free plan.
+
+| Layer | Technology |
+|---|---|
+| Frontend | Vite + React 19 single-page app, React Router, TanStack Query, Tailwind CSS, Recharts; installable PWA |
+| API | Hono on Cloudflare Workers, typed end to end (the browser client gets its types from the API) |
+| Data | Cloudflare D1 (SQLite) with Drizzle ORM; R2 for report files |
+| Auth | Better Auth: browser-stretched passwords, email codes, session cookies, EdDSA access tokens, optional Google |
+| AI | Workers AI (Llama 3.3 70B), with server-built context, rule-based emergency checks, consent and a daily quota |
+| Notifications | Web Push implemented on Web Crypto (VAPID + RFC 8291), email through Resend, both through a retrying outbox |
+| Jobs | One cron trigger: dose generation, reminders, missed-dose alerts, outbox |
+| Rules | Zod schemas and clinical rule functions in `src/shared`, used by both the browser and the API |
 
 ```
 src/
 ├── client/      React app: routes/ (screens), components/, lib/ (API client, data hooks)
-├── worker/      Cloudflare Worker: Hono routes, auth, dal/ (the only code that touches the database,
-│                and where every access is authorized), db/schema.ts, jobs/ (cron), notifications/
-└── shared/      Zod schemas and clinical rules used by both sides (vitals, symptoms, risk, emergency)
+├── worker/      Hono routes, auth, ai/, dal/ (the only code that touches the database,
+│                and where every access is authorized), db/schema.ts, jobs/, notifications/
+└── shared/      Clinical rules and schemas: vitals, symptoms, risk, emergency, assistant
 drizzle/         SQL migrations
 tests/           Vitest suites (run in workerd)
-docs/            PRD and technical implementation plan
-(The previous Next.js + Supabase app was removed after the port; it is at commit 2cfbf56 under legacy/.)
+docs/            PRD and technical plan
 ```
 
-Security notes:
-- **Passwords:** the browser stretches the password with PBKDF2-SHA256 (600,000 rounds, salted with the email) and sends only the result. The server stores a salted HMAC of that with a secret pepper (~0.1 ms of CPU, so it fits the free plan). The password itself never reaches the server. Password rules and the Have I Been Pwned check run in the browser.
-- **Sessions and tokens:** an httpOnly session cookie (revocable, in D1) plus a 5-minute signed JWT cookie cache. `GET /api/auth/token` issues 15-minute EdDSA access tokens; `/api/auth/jwks` publishes the public keys; the API accepts `Authorization: Bearer`.
-- D1 has no row-level security, so every query goes through `src/worker/dal`, which checks the caller's access. A lint rule blocks database imports anywhere else.
-- Emergency detection (vital thresholds, symptom red flags) is rule-based and runs without AI. Thresholds are pending clinician review.
+### Security notes
+- **Passwords:** the browser stretches the password with PBKDF2-SHA256 (600,000 rounds, salted with the email) and sends only the result. The server stores a salted HMAC of that with a secret pepper.
+- **Sessions:** an httpOnly, revocable session cookie, plus a 5-minute signed cookie cache. `GET /api/auth/token` issues 15-minute EdDSA access tokens.
+- **Authorization:** D1 has no row-level security, so every query goes through `src/worker/dal`, which checks the caller's access. A lint rule blocks database imports anywhere else.
+- **Emergency detection** is rule-based and runs without AI. The thresholds are still pending clinician review.
 
-## Use Cases
+### Development skills
 
-- **Early Disease Detection**: The system analyzes patient data to detect potential health issues early
-- **Medication Management**: Helps patients stay on top of their medication schedules
-- **Remote Monitoring**: Allows healthcare providers to monitor patients remotely
-- **Health Trends Analysis**: Identify long-term patterns in health data
-- **Care Coordination**: Facilitates communication between patients, caretakers, and healthcare providers
-- **Medical Education**: Provides comprehensive information about health conditions and treatments
+Agent skills from [skills.sh](https://skills.sh) used while building, installed in `.claude/skills/` (git-ignored, because not every source can be redistributed): frontend-design (anthropics/skills), impeccable (pbakaus/impeccable, without `scripts/`), emil-design-eng (emilkowalski/skill), web-design-guidelines, react-best-practices and composition-patterns (vercel-labs/agent-skills). Install one with `npx skills add <source> --skill <name>`.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Issues and pull requests are welcome. Run `npm run check` before opening a PR. Anything that touches emergency rules (`src/shared/vitals.ts`, `symptoms.ts`, `assistant.ts`) needs tests showing it still catches every case in the suite.
 
-## License
+## Disclaimer
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Team
-
-- Project Lead: [Your Name]
-- UI/UX Design: [Designer Name]
-- Frontend Development: [Frontend Dev Name]
-- Backend Development: [Backend Dev Name]
-
-## Acknowledgments
-
-- Medical visualization inspired by professional cardiac monitoring systems
-- Heart animation developed with guidance from medical professionals
+Healthcare.AI helps people keep and understand their own health record. It doesn't diagnose, treat or replace a doctor. In an emergency, call your local emergency number.
