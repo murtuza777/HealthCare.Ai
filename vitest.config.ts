@@ -38,6 +38,9 @@ export default defineConfig(async () => {
     test: {
       include: ["tests/**/*.test.ts"],
       setupFiles: ["./tests/setup.ts"],
+      // Each test signs up real accounts against a local database; a busy machine or CI
+      // runner can take longer than the 5 second default.
+      testTimeout: 20_000,
     },
   };
 });

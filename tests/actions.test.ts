@@ -50,3 +50,15 @@ describe("assistant actions (plain rules, nothing saved without confirmation)", 
     expect(systemPrompt("record", "112")).not.toMatch(/offers to save/);
   });
 });
+
+describe("emergency range is decided by the app, not the model", () => {
+  it("tells the model plainly when no reading is in the emergency range", () => {
+    const high = systemPrompt("- Blood pressure: 152/96 mmHg (high), 11 Nov 2026", "112", undefined, proposeActions("my BP is 158/99"));
+    expect(high).toContain("No reading in the record or in the patient's message is in the emergency range.");
+    expect(high).not.toContain("rule 5 applies");
+  });
+  it("turns rule 5 on for a marked reading in the record or the message", () => {
+    expect(systemPrompt("- Blood pressure: 185/121 mmHg (EMERGENCY RANGE), 11 Nov 2026", "112")).toContain("rule 5 applies");
+    expect(systemPrompt("record", "112", undefined, proposeActions("my BP is 185/121"))).toContain("rule 5 applies");
+  });
+});
