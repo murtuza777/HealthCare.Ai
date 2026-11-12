@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
+import { rememberEmail } from "../lib/pending-email";
 import { Check, X } from "lucide-react";
 import { passwordProblems } from "../../shared/auth";
 import { authClient, useSession } from "../lib/auth-client";
@@ -53,7 +54,8 @@ export function SignUp() {
       return setError(authErrorMessage(error));
     }
     if (config.data?.emailVerification) {
-      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(next)}`, { replace: true });
+      rememberEmail(email);
+      navigate(`/verify-email?next=${encodeURIComponent(next)}`, { replace: true });
     } else {
       navigate(next, { replace: true }); // signed in straight away until email is set up
     }

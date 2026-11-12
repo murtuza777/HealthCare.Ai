@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { forgetEmail, rememberedEmail } from "../lib/pending-email";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "../lib/auth-client";
 import { AuthLayout, authErrorMessage, safeNext } from "../lib/auth-ui";
@@ -10,7 +11,7 @@ export function VerifyEmail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const next = safeNext(params.get("next"));
-  const [email, setEmail] = useState(params.get("email") ?? "");
+  const [email, setEmail] = useState(rememberedEmail);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -23,6 +24,7 @@ export function VerifyEmail() {
     const { error } = await authClient.emailOtp.verifyEmail({ email: email.trim(), otp });
     setBusy(false);
     if (error) return setError(authErrorMessage(error));
+    forgetEmail();
     await queryClient.invalidateQueries();
     navigate(next, { replace: true }); // verification signs you in
   }

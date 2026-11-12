@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { rememberedEmail } from "../lib/pending-email";
 import { passwordProblems } from "../../shared/auth";
 import { authClient } from "../lib/auth-client";
 import { breachCount, derivePasswordKey } from "../lib/password";
@@ -9,11 +10,10 @@ import { buttonClass, inputClass } from "../components/Shell";
 
 // Two steps: request a code by email, then enter it with a new password.
 export function ForgotPassword() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
   const config = useAuthConfig();
   const [step, setStep] = useState<"request" | "reset">("request");
-  const [email, setEmail] = useState(params.get("email") ?? "");
+  const [email, setEmail] = useState(rememberedEmail);
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");

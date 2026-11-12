@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
+import { rememberEmail } from "../lib/pending-email";
 import { authClient, useSession } from "../lib/auth-client";
 import { derivePasswordKey } from "../lib/password";
 import { AuthLayout, authErrorMessage, Divider, GoogleButton, PasswordInput, safeNext, useAuthConfig } from "../lib/auth-ui";
@@ -38,7 +39,8 @@ export function Login() {
     setCaptchaReset((n) => n + 1); // tokens are single-use
     if (error.code === "EMAIL_NOT_VERIFIED") {
       // Email not verified yet: a fresh code is sent on sign-in attempts.
-      return navigate(`/verify-email?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(next)}`);
+      rememberEmail(email);
+      return navigate(`/verify-email?next=${encodeURIComponent(next)}`);
     }
     setError(authErrorMessage(error));
   }
@@ -70,7 +72,7 @@ export function Login() {
         </label>
         <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
         <div className="text-right text-sm">
-          <Link to={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+          <Link to="/forgot-password" onClick={() => email && rememberEmail(email)} className="font-[540] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
             Forgot password?
           </Link>
         </div>
