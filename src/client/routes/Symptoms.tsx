@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Stethoscope, Trash2 } from "lucide-react";
 import { detectRedFlags, SYMPTOM_TYPES, type RedFlag } from "../../shared/symptoms";
 import { useAddSymptom, useDeleteSymptom, useSymptoms } from "../lib/queries";
-import { formatDateTime, timeAgo } from "../lib/format";
+import { formatDateTime, localDateTime, timeAgo } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { CriticalBanner } from "../components/CriticalBanner";
 
@@ -24,7 +24,9 @@ export function Symptoms() {
 
 function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
   const add = useAddSymptom();
-  const [type, setType] = useState<string>(COMMON[0]!);
+  // Nothing is preselected: saving in a hurry must never log "chest pain" by accident.
+  const [type, setType] = useState<string>("");
+  const [when, setWhen] = useState("");
   const [other, setOther] = useState("");
   const [severity, setSeverity] = useState(5);
   const [duration, setDuration] = useState("");
@@ -44,6 +46,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
         accompaniedBy: also,
         ...(duration ? { durationMin: Number(duration) } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(when ? { occurredAt: new Date(when) } : {}),
       },
       {
         onSuccess: (res) => {
@@ -51,6 +54,10 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           setAlso([]);
           setNote("");
           setDuration("");
+          setWhen("");
+          setType("");
+          setOther("");
+          setSeverity(5);
         },
       },
     );
@@ -62,7 +69,10 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
       <form onSubmit={submit} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Main symptom">
-            <select className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
+            <select required className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="" disabled>
+                Choose a symptom
+              </option>
               {SYMPTOM_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {sentence(t)}
@@ -76,7 +86,10 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
             </Field>
           )}
           <Field label="How long? (minutes, optional)">
-            <input type="number" min={0} inputMode="numeric" className={inputClass} value={duration} onChange={(e) => setDuration(e.target.value)} />
+            <input type="number" min={0} max={43200} inputMode="numeric" className={inputClass} value={duration} onChange={(e) => setDuration(e.target.value)} />
+          </Field>
+          <Field label="When? (optional)" hint="Leave empty for now">
+            <input type="datetime-local" className={inputClass} value={when} max={localDateTime()} onChange={(e) => setWhen(e.target.value)} />
           </Field>
         </div>
         <Field label={`Severity: ${severity} of 10`}>
