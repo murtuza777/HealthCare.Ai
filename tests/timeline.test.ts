@@ -41,3 +41,30 @@ describe("timeline", () => {
     expect(seen.items.filter((i) => i.kind === "vital")).toHaveLength(0);
   });
 });
+
+describe("timeline paging", () => {
+  it("never splits readings taken at the same moment across two pages", async () => {
+    const cookie = await signIn("timeline-ties@example.com", "198.51.100.124");
+    const items = [];
+    for (let i = 0; i < 30; i++) {
+      const measuredAt = new Date(Date.UTC(2026, 8, 1 + i, 8)).toISOString();
+      items.push({ type: "blood_pressure", value: 120 + i, value2: 80, measuredAt }, { type: "heart_rate", value: 60 + i, measuredAt });
+    }
+    expect((await call("/api/v1/patients/me/vitals/import", { cookie, body: { items } })).status).toBe(200);
+
+    const seen: string[] = [];
+    let url: string | null = "/api/v1/patients/me/timeline?kinds=vital";
+    let pages = 0;
+    while (url && pages < 10) {
+      const page = (await (await call(url, { cookie })).json()) as { items: { id: string; at: string }[]; next: string | null };
+      seen.push(...page.items.map((i) => i.id));
+      // A page never ends between a blood pressure and the pulse taken with it.
+      expect(page.items.length % 2).toBe(0);
+      url = page.next ? `/api/v1/patients/me/timeline?kinds=vital&before=${encodeURIComponent(page.next)}` : null;
+      pages++;
+    }
+    expect(seen).toHaveLength(60);
+    expect(new Set(seen).size).toBe(60);
+    expect(pages).toBe(2);
+  });
+});

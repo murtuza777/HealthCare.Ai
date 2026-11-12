@@ -17,6 +17,9 @@ export async function timeline(
 ): Promise<{ items: TimelineItem[]; next: Date | null }> {
   await assertAccess(db, actor, patientId, "any");
   const limit = Math.min(opts.limit ?? 40, 100);
+  // Each source is read a little past the page so entries sharing the last timestamp
+  // (a blood pressure and pulse taken together) are never split across two pages.
+  const fetch = limit + 20;
   const before = opts.before ?? new Date(Date.now() + 60_000);
   const wanted = opts.kinds?.length ? opts.kinds : [...TIMELINE_KINDS];
   const allowed = new Set<TimelineKind>();
@@ -24,10 +27,10 @@ export async function timeline(
 
   const [v, s, d, r, a] = await Promise.all([
     allowed.has("vital")
-      ? db.select().from(vitals).where(and(eq(vitals.userId, patientId), lt(vitals.measuredAt, before))).orderBy(desc(vitals.measuredAt)).limit(limit)
+      ? db.select().from(vitals).where(and(eq(vitals.userId, patientId), lt(vitals.measuredAt, before))).orderBy(desc(vitals.measuredAt)).limit(fetch)
       : [],
     allowed.has("symptom")
-      ? db.select().from(symptoms).where(and(eq(symptoms.userId, patientId), lt(symptoms.occurredAt, before))).orderBy(desc(symptoms.occurredAt)).limit(limit)
+      ? db.select().from(symptoms).where(and(eq(symptoms.userId, patientId), lt(symptoms.occurredAt, before))).orderBy(desc(symptoms.occurredAt)).limit(fetch)
       : [],
     allowed.has("dose")
       ? db
@@ -36,17 +39,17 @@ export async function timeline(
           .innerJoin(medications, eq(medications.id, doseEvents.medicationId))
           .where(and(eq(doseEvents.userId, patientId), inArray(doseEvents.status, ["taken", "skipped", "missed"]), lt(doseEvents.scheduledAt, before)))
           .orderBy(desc(doseEvents.scheduledAt))
-          .limit(limit)
+          .limit(fetch)
       : [],
     allowed.has("report")
-      ? db.select().from(reports).where(and(eq(reports.userId, patientId), lt(reports.createdAt, before))).orderBy(desc(reports.createdAt)).limit(limit)
+      ? db.select().from(reports).where(and(eq(reports.userId, patientId), lt(reports.createdAt, before))).orderBy(desc(reports.createdAt)).limit(fetch)
       : [],
     allowed.has("alert")
-      ? db.select().from(alerts).where(and(eq(alerts.userId, patientId), lt(alerts.createdAt, before))).orderBy(desc(alerts.createdAt)).limit(limit)
+      ? db.select().from(alerts).where(and(eq(alerts.userId, patientId), lt(alerts.createdAt, before))).orderBy(desc(alerts.createdAt)).limit(fetch)
       : [],
   ]);
 
-  const items: TimelineItem[] = [
+  const all: TimelineItem[] = [
     ...v.map((x): TimelineItem => ({
       id: `vital:${x.id}`,
       kind: "vital",
@@ -91,11 +94,12 @@ export async function timeline(
       status: null,
       tone: x.severity === "critical" ? "critical" : x.severity === "warning" ? "attention" : "normal",
     })),
-  ]
-    .sort((x, y) => +y.at - +x.at)
-    .slice(0, limit);
+  ].sort((x, y) => +y.at - +x.at);
 
-  // Any source that filled its page may have more; the oldest item shown is the next cursor.
-  const more = [v, s, d, r, a].some((rows) => rows.length === limit) || items.length === limit;
+  let cut = Math.min(limit, all.length);
+  while (cut < all.length && +all[cut]!.at === +all[cut - 1]!.at) cut++;
+  const items = all.slice(0, cut);
+  // More to show if anything was left over, or a source filled what was read from it.
+  const more = all.length > cut || [v, s, d, r, a].some((rows) => rows.length === fetch);
   return { items, next: more && items.length ? items[items.length - 1]!.at : null };
 }

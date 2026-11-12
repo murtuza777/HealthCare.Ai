@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Activity, Bell, FileText, Pill, Stethoscope, type LucideIcon } from "lucide-react";
 import { TIMELINE_KINDS, type TimelineKind } from "../../shared/timeline";
 import type { VitalType } from "../../shared/vitals";
 import { api, ok } from "../lib/api";
@@ -10,12 +9,12 @@ import { Button, EmptyState, ErrorText, Loading, PageHeader, StatusBadge } from 
 
 // Everything in the record in one place, newest first: what a doctor asks for as "the history".
 
-const KIND: Record<TimelineKind, { label: string; icon: LucideIcon }> = {
-  vital: { label: "Readings", icon: Activity },
-  symptom: { label: "Symptoms", icon: Stethoscope },
-  dose: { label: "Medicines", icon: Pill },
-  report: { label: "Reports", icon: FileText },
-  alert: { label: "Alerts", icon: Bell },
+const KIND: Record<TimelineKind, { label: string; one: string }> = {
+  vital: { label: "Readings", one: "Reading" },
+  symptom: { label: "Symptoms", one: "Symptom" },
+  dose: { label: "Medicines", one: "Medicine" },
+  report: { label: "Reports", one: "Report" },
+  alert: { label: "Alerts", one: "Alert" },
 };
 
 const DOSE_TEXT: Record<string, string> = { taken: "Taken", skipped: "Skipped", missed: "Missed" };
@@ -91,27 +90,30 @@ export function Timeline() {
               <h2 className="mb-1 text-sm font-[540] text-ink-faint">{day.label}</h2>
               <ul className="divide-y divide-line border-y border-line">
                 {day.items.map((item) => {
-                  const Icon = KIND[item.kind].icon;
                   const title = item.kind === "vital" ? VITAL_LABELS[item.title as VitalType] ?? item.title : item.title;
                   const detail = item.kind === "dose" ? DOSE_TEXT[item.detail] ?? item.detail : item.detail;
                   return (
-                    <li key={item.id} className="flex gap-4 py-4">
-                      <span
-                        className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full ${item.tone === "critical" ? "bg-danger-soft text-danger" : "bg-well text-ink-muted"}`}
-                      >
-                        <Icon className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="flex flex-wrap items-baseline justify-between gap-x-3">
-                          <span className="font-[540] first-letter:uppercase">{title}</span>
-                          <span className="figures text-sm text-ink-faint">{time(item.at)}</span>
+                    <li key={item.id} className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-x-4 py-3.5 sm:grid-cols-[5.5rem_minmax(0,1fr)_6rem]">
+                      <span className="figures pt-0.5 text-sm text-ink-faint">{time(item.at)}</span>
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                          <span className={`font-[540] first-letter:uppercase ${item.tone === "critical" ? "text-danger" : ""}`}>{title}</span>
+                          {item.kind === "vital" ? (
+                            <>
+                              <span className="figures">{detail}</span>
+                              {item.status && <StatusBadge value={item.status} />}
+                            </>
+                          ) : item.kind === "dose" ? (
+                            <span className={`inline-flex items-center gap-2 text-sm ${item.tone === "attention" ? "text-ink" : "text-ink-muted"}`}>
+                              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${detail === "Taken" ? "bg-status-normal" : detail === "Missed" ? "bg-status-high" : "bg-ink-faint"}`} />
+                              {detail}
+                            </span>
+                          ) : null}
                         </p>
-                        <p className={`mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 ${item.tone === "critical" ? "text-danger" : item.tone === "attention" ? "text-ink" : "text-ink-muted"}`}>
-                          <span className={item.kind === "vital" ? "figures text-ink" : "first-letter:uppercase"}>{detail}</span>
-                          {item.status && <StatusBadge value={item.status} />}
-                        </p>
-                        {item.note && <p className="mt-1 text-sm text-ink-muted">{item.note}</p>}
+                        {item.kind !== "vital" && item.kind !== "dose" && <p className="mt-0.5 max-w-prose text-ink-muted first-letter:uppercase">{detail}</p>}
+                        {item.note && <p className="mt-0.5 max-w-prose text-sm text-ink-muted">{item.note}</p>}
                       </div>
+                      <span className="hidden pt-0.5 text-right text-sm text-ink-faint sm:block">{KIND[item.kind].one}</span>
                     </li>
                   );
                 })}
