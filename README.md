@@ -115,7 +115,7 @@ General health apps track steps and sleep. Chatbots can explain what "diastolic"
 |---|---|
 | Application code | ~11,600 lines of TypeScript across the client, the API and shared rules |
 | Screens | 20 |
-| Tests | 225, run inside Cloudflare's runtime against a real database |
+| Tests | 237, run inside Cloudflare's runtime against a real database |
 | Running cost | $0 on Cloudflare's free plan, until roughly 100 active users |
 | Rebuild | Nov 5–11, 2026; it replaced an earlier Next.js + Supabase prototype |
 

@@ -537,7 +537,7 @@ function Composer({
             disabled={unavailable}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKey}
-            placeholder={unavailable ? "The assistant isn't available right now" : "Ask a question, or tell it a reading"}
+            placeholder={unavailable ? "The assistant isn't available right now" : "Ask about your record"}
             className="max-h-[200px] min-h-11 flex-1 resize-none bg-transparent py-2.5 text-base text-ink outline-none placeholder:text-ink-faint focus-visible:outline-none"
           />
           <Button type="submit" disabled={!draft.trim() || busy || unavailable} className="shrink-0">
