@@ -43,14 +43,16 @@ export function ReportValues({ report, onClose }: { report: Report; onClose: () 
     <Card boxed>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl">Values in “{report.title}”</h2>
-          <p className="mt-1 text-sm text-ink-muted">
-            Read by the AI model from your upload.{" "}
-            <a href={reportFileUrl(report.id)} target="_blank" rel="noopener" className="font-[540] text-ink underline decoration-line-strong underline-offset-4">
-              Open the report
-            </a>{" "}
-            to check them, and correct anything that's wrong.
-          </p>
+          <h2 className="text-xl">{hasRead ? "Values in" : "Read the values in"} “{report.title}”</h2>
+          {hasRead && (
+            <p className="mt-1 text-sm text-ink-muted">
+              Read by the AI model from your upload.{" "}
+              <a href={reportFileUrl(report.id)} target="_blank" rel="noopener" className="font-[540] text-ink underline decoration-line-strong underline-offset-4">
+                Open the report
+              </a>{" "}
+              to check them, and correct anything that's wrong.
+            </p>
+          )}
         </div>
         <button onClick={onClose} aria-label="Close values" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-well hover:text-ink">
           <X className="h-5 w-5" aria-hidden="true" />

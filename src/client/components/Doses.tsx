@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { doseKeys, useAdherence, useDoses, useMarkDose, usePushStatus } from "../lib/queries";
+import { doseKeys, useAdherence, useDoses, useMarkDose, useMedications, usePushStatus } from "../lib/queries";
 import { currentSubscription, disableReminders, enableReminders, pushSupported, sendTestReminder } from "../lib/push";
 import { Button, ErrorText, Loading, SheetHeader } from "./ui";
 
@@ -12,6 +12,8 @@ const STATUS_TEXT = { taken: "Taken", skipped: "Skipped", missed: "Missed", pend
 export function TodayDoses({ compact = false }: { compact?: boolean }) {
   const { data, isPending, error } = useDoses();
   const mark = useMarkDose();
+  const meds = useMedications();
+  const hasMedicines = (meds.data?.length ?? 0) > 0;
 
   return (
     <section>
@@ -30,8 +32,8 @@ export function TodayDoses({ compact = false }: { compact?: boolean }) {
       <ErrorText error={error ?? mark.error} />
       {data && !data.items.length && (
         <p className="text-ink-muted">
-          Nothing scheduled today.{" "}
-          {compact && (
+          {hasMedicines ? "No doses are due today. A medicine added today starts from its next dose." : "Nothing scheduled today."}{" "}
+          {compact && !hasMedicines && (
             <Link to="/app/medications" className="font-[540] text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
               Add a medicine
             </Link>

@@ -71,7 +71,10 @@ function UploadReport({ onDone }: { onDone: (uploadedId?: string) => void }) {
     if (f.size > MAX_REPORT_BYTES) return setFileError("Files can be up to 10 MB.");
     setFileError(null);
     setFile(f);
-    if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").slice(0, 120));
+    if (!title) {
+      const name = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim().slice(0, 120);
+      setTitle(name.charAt(0).toUpperCase() + name.slice(1));
+    }
   }
 
   function onDrop(e: DragEvent) {

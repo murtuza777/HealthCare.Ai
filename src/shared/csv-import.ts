@@ -12,6 +12,8 @@ export type CsvImport = {
   skipped: number;
   /** True when dates like 03/04/2026 could be read either way. */
   ambiguousDates: boolean;
+  /** One such date as written in the file, to ask the patient about. */
+  ambiguousExample?: string;
   problem?: string;
 };
 
@@ -154,6 +156,7 @@ export function readingsFromCsv(text: string, opts: { dayFirst?: boolean } = {})
   const readings: ImportedReading[] = [];
   let skipped = 0;
   let ambiguousDates = false;
+  let ambiguousExample: string | undefined;
   const data = rows.slice(headerAt + 1, headerAt + 1 + MAX_IMPORT_ROWS);
   for (const row of data) {
     const cell = (c: Column) => (index.has(c) ? row[index.get(c)!] : undefined);
@@ -163,6 +166,7 @@ export function readingsFromCsv(text: string, opts: { dayFirst?: boolean } = {})
       continue;
     }
     ambiguousDates ||= when.ambiguous;
+    if (when.ambiguous) ambiguousExample ??= (cell("datetime") ?? cell("date") ?? "").split(/[ T]/)[0];
     const note = cell("note")?.slice(0, 500) || undefined;
     const before = readings.length;
     const add = (type: VitalType, value: number | null, value2?: number | null) => {
@@ -182,5 +186,5 @@ export function readingsFromCsv(text: string, opts: { dayFirst?: boolean } = {})
     if (readings.length === before) skipped++;
   }
   if (!readings.length) return { readings, skipped, ambiguousDates, problem: "No readings could be read from this file. Check that the dates and numbers are in separate columns." };
-  return { readings, skipped, ambiguousDates };
+  return { readings, skipped, ambiguousDates, ambiguousExample };
 }

@@ -47,18 +47,13 @@ export function ComingUp() {
             <li key={r.id} className="flex items-center justify-between gap-3 py-3.5">
               <div className="min-w-0">
                 <p className="font-[540]">{r.title}</p>
-                <p className="text-sm text-ink-muted">
-                  <span className="figures">{when(r.dueAt)}</span>
-                  {r.kind === "appointment" && (
-                    <>
-                      {" · "}
-                      <Link to="/app/visit" className={link}>
-                        Prepare a summary
-                      </Link>
-                    </>
-                  )}
-                </p>
+                <p className="figures text-sm text-ink-muted">{when(r.dueAt)}</p>
               </div>
+              {r.kind === "appointment" && (
+                <Link to="/app/visit" className={`ml-auto shrink-0 text-sm ${link}`}>
+                  Prepare a summary
+                </Link>
+              )}
               <button
                 onClick={() => del.mutate(r.id)}
                 disabled={del.isPending}

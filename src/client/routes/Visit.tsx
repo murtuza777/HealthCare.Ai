@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ageFrom } from "../../shared/risk";
 import type { VitalType } from "../../shared/vitals";
-import { useAdherence, useLatestVitals, useMedications, useOutOfRange, useProfile, useSymptoms, useVitals } from "../lib/queries";
+import { useAdherence, useLatestVitals, useMedications, useMyAlerts, useOutOfRange, useProfile, useSymptoms, useVitals } from "../lib/queries";
 import { useAssistantStatus } from "../lib/assistant";
 import { formatReading, VITAL_LABELS } from "../lib/format";
 import { Button, inputClass, Loading, StatusBadge } from "../components/ui";
@@ -33,6 +33,7 @@ export function Visit() {
   const hr = useVitals("heart_rate", 200);
   const ai = useAssistantStatus();
   const outOfRange = useOutOfRange();
+  const alerts = useMyAlerts();
   const [questions, setQuestions] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [suggesting, setSuggesting] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function Visit() {
   const age = ageFrom(p?.dateOfBirth);
   const bpStats = stats(bp.data ?? [], since);
   const hrStats = stats(hr.data ?? [], since);
+  const changes = (alerts.data ?? []).filter((a) => a.kind.startsWith("insight:") && a.kind !== "insight:no-readings" && +new Date(a.createdAt) >= since);
   const recentSymptoms = (symptoms.data ?? []).filter((s) => +new Date(s.occurredAt) >= since);
 
   async function suggest() {
@@ -162,6 +164,21 @@ export function Visit() {
           note={hrStats.count === 1 ? `1 reading: ${hrStats.avg[0]} bpm.` : `${hrStats.count} readings. Average ${hrStats.avg[0]}, highest ${hrStats.max[0]}, lowest ${hrStats.min[0]} bpm.`}
         >
           {hrStats.count > 1 && <TrendChart points={hrStats.points} unit="bpm" height={180} />}
+        </Block>
+      )}
+
+      {changes.length > 0 && (
+        <Block title="Changes noticed, last 30 days" note="Found by the app's daily check of the readings and doses recorded at home.">
+          <ul className="divide-y divide-line border-y border-line">
+            {changes.map((c) => (
+              <li key={c.id} className="flex flex-wrap justify-between gap-x-4 py-2.5">
+                <span className="min-w-0">
+                  <span className="font-[540]">{c.title}.</span> <span className="text-ink-muted">{c.body.split(". ")[0]}.</span>
+                </span>
+                <span className="shrink-0 text-sm text-ink-faint">{fmtDate(c.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
         </Block>
       )}
 

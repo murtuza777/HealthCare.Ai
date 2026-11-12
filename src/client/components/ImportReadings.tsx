@@ -11,6 +11,14 @@ import { Button, Card, ErrorText } from "./ui";
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const day = (d: Date) => d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
+/** " (3 October)" or " (10 March)" for a date written 03/10/2026, so each choice shows what it means. */
+function example(written: string | undefined, dayFirst: boolean) {
+  const m = written?.match(/^(\d{1,2})[-/.](\d{1,2})[-/.]/);
+  if (!m) return "";
+  const [d, mo] = dayFirst ? [Number(m[1]), Number(m[2])] : [Number(m[2]), Number(m[1])];
+  return ` (${new Date(2024, mo - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "long" })})`;
+}
+
 export function ImportReadings({ onClose }: { onClose: () => void }) {
   const send = useImportVitals();
   const [text, setText] = useState<string | null>(null);
@@ -97,13 +105,15 @@ export function ImportReadings({ onClose }: { onClose: () => void }) {
               {parsed.ambiguousDates && (
                 <fieldset className="mt-4 rounded-control bg-well p-4">
                   <legend className="sr-only">Date format</legend>
-                  <p className="text-sm text-ink">Some dates could be read two ways. Is 03/04 the 3rd of April or March the 4th?</p>
+                  <p className="text-sm text-ink">
+                    Some dates could be read two ways{parsed.ambiguousExample ? `, such as ${parsed.ambiguousExample}` : ""}. Which comes first in this file?
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-5">
                     <label className="flex items-center gap-2">
-                      <input type="radio" name="dayfirst" checked={dayFirst} onChange={() => setDayFirst(true)} className="accent-ink" /> Day first (3 April)
+                      <input type="radio" name="dayfirst" checked={dayFirst} onChange={() => setDayFirst(true)} className="accent-ink" /> The day{example(parsed.ambiguousExample, true)}
                     </label>
                     <label className="flex items-center gap-2">
-                      <input type="radio" name="dayfirst" checked={!dayFirst} onChange={() => setDayFirst(false)} className="accent-ink" /> Month first (March 4)
+                      <input type="radio" name="dayfirst" checked={!dayFirst} onChange={() => setDayFirst(false)} className="accent-ink" /> The month{example(parsed.ambiguousExample, false)}
                     </label>
                   </div>
                 </fieldset>
