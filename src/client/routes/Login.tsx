@@ -45,10 +45,13 @@ export function Login() {
     setError(authErrorMessage(error));
   }
 
+  // Arriving from a caretaker invitation link: say so, or a new caretaker sees only "Welcome back".
+  const invited = next.startsWith("/app/care/accept/");
+
   return (
     <AuthLayout
-      title="Sign in"
-      subtitle="Welcome back."
+      title={invited ? "You've been invited" : "Sign in"}
+      subtitle={invited ? "Someone has invited you to follow their health. Sign in to accept, or create an account with the email address the invitation was sent to." : "Welcome back."}
       footer={
         <>
           New to Healthcare.AI?{" "}

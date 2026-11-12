@@ -24,7 +24,7 @@ const NAV: { to: string; label: string; short: string; icon: LucideIcon; end?: b
   { to: "/app/reports", label: "Reports", short: "Reports", icon: FileText },
 ];
 
-const CARE_TAB = { to: "/app/care", label: "Caring for", short: "Caring", icon: UserRound, end: false };
+const CARE_TAB = { to: "/app/care", label: "Caring", short: "Caring", icon: UserRound, end: false };
 
 export function AppLayout() {
   const { data: session, isPending } = useSession();
@@ -57,21 +57,22 @@ export function AppLayout() {
         Skip to content
       </a>
       <header className="sticky top-0 z-30 print:hidden border-b border-line bg-ground/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-5 sm:px-8 lg:gap-8">
+        <div className="mx-auto flex h-16 max-w-5xl items-center gap-4 px-5 sm:px-8 lg:gap-6">
           <Link to="/app" className="inline-flex items-center gap-2 rounded-md text-ink" aria-label="Healthcare.AI, overview">
             <HeartMark />
-            <span className="hidden font-serif text-[1.3125rem] leading-none tracking-[-0.02em] sm:inline">Healthcare.AI</span>
+            {/* With the seventh tab (Caring) the bar has no room for the wordmark; the mark stays. */}
+            <span className={`hidden font-serif text-[1.3125rem] leading-none tracking-[-0.02em] sm:inline ${caring.data?.length ? "md:hidden" : ""}`}>Healthcare.AI</span>
           </Link>
 
           <nav aria-label="Sections" className="hidden md:block">
-            <ul className="flex items-center gap-1">
+            <ul className="flex items-center gap-0.5 lg:gap-1">
               {[...NAV, ...(caring.data?.length ? [CARE_TAB] : [])].map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
                     end={item.end}
                     className={({ isActive }) =>
-                      `inline-flex h-9 items-center rounded-full px-3.5 text-[0.9375rem] transition-colors duration-150 ${
+                      `inline-flex h-9 items-center whitespace-nowrap rounded-full px-2.5 text-[0.9375rem] transition-colors duration-150 lg:px-3 ${
                         isActive ? "bg-ink/[0.06] font-[560] text-ink" : "font-[460] text-ink-muted hover:text-ink"
                       }`
                     }
@@ -102,10 +103,9 @@ export function AppLayout() {
               </span>
               <span className="sr-only min-[1400px]:hidden">Profile</span>
             </NavLink>
-            <button onClick={signOut} className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[0.9375rem] text-ink-muted transition-colors duration-150 hover:text-ink">
-              <LogOut className="h-[1.125rem] w-[1.125rem] sm:hidden" aria-hidden="true" />
-              <span className="hidden sm:inline">Sign out</span>
-              <span className="sr-only sm:hidden">Sign out</span>
+            <button onClick={signOut} title="Sign out" className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-2.5 text-[0.9375rem] text-ink-muted transition-colors duration-150 hover:text-ink">
+              <LogOut className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
+              <span className="sr-only">Sign out</span>
             </button>
           </div>
         </div>

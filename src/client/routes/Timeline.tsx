@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { TIMELINE_KINDS, type TimelineKind } from "../../shared/timeline";
 import type { VitalType } from "../../shared/vitals";
 import { api, ok } from "../lib/api";
+import { usePatientsCaredFor } from "../lib/care";
 import { VITAL_LABELS } from "../lib/format";
 import { Button, EmptyState, ErrorText, Loading, PageHeader, StatusBadge } from "../components/ui";
 
@@ -44,6 +45,10 @@ export function Timeline() {
   const [params] = useSearchParams();
   const patientId = params.get("p") || "me";
   const [kinds, setKinds] = useState<TimelineKind[]>([]);
+  // A caretaker looking at someone else's history sees whose it is, and a way back.
+  const cared = usePatientsCaredFor();
+  const other = patientId === "me" ? null : cared.data?.find((p) => p.patientId === patientId);
+  const first = other?.name.split(" ")[0] || other?.name;
   const q = useTimeline(patientId, kinds);
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
 
@@ -59,7 +64,17 @@ export function Timeline() {
 
   return (
     <div>
-      <PageHeader title="History" subtitle="Every reading, symptom, dose, report and alert, newest first." />
+      {other && (
+        <p className="mb-2 text-sm text-ink-muted">
+          <Link to={`/app/care/${patientId}`} className="hover:text-ink">
+            {other.name}
+          </Link>
+        </p>
+      )}
+      <PageHeader
+        title={first ? `${first}'s history` : "History"}
+        subtitle={first ? `What ${first} has chosen to share with you, newest first.` : "Every reading, symptom, dose, report and alert, newest first."}
+      />
 
       <div className="mb-10 flex flex-wrap gap-2" role="group" aria-label="Show">
         {TIMELINE_KINDS.map((k) => {

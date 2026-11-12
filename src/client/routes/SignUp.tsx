@@ -70,7 +70,11 @@ export function SignUp() {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Your health records stay private: only you, and people you invite, can see them."
+      subtitle={
+        next.startsWith("/app/care/accept/")
+          ? "Use the email address your invitation was sent to. You'll accept it right after."
+          : "Your health records stay private: only you, and people you invite, can see them."
+      }
       footer={
         <>
           Already have an account?{" "}

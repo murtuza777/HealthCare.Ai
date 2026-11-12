@@ -7,7 +7,15 @@ export const CARE_PERMISSION_LABELS: Record<CarePermissionName, { label: string;
   vitals: { label: "Readings and symptoms", detail: "See your readings, trends and symptoms." },
   meds: { label: "Medicines", detail: "See your medicines and whether doses were taken." },
   reports: { label: "Reports", detail: "See and download your uploaded reports." },
-  alerts: { label: "Alerts", detail: "Be notified about emergency-range readings, urgent symptoms and missed doses." },
+  alerts: { label: "Alerts", detail: "Be notified about emergency-range readings, urgent symptoms, missed doses and worrying trends." },
+};
+
+/** The same permissions, worded for the caretaker reading an invitation. */
+export const CARE_PERMISSION_FOR_CARETAKER: Record<CarePermissionName, string> = {
+  vitals: "See their readings, trends and symptoms.",
+  meds: "See their medicines and whether doses were taken.",
+  reports: "See and download their uploaded reports.",
+  alerts: "Be notified about emergency-range readings, urgent symptoms, missed doses and worrying trends.",
 };
 
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;

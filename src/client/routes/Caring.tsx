@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { CARE_PERMISSION_LABELS, type CarePermissionName } from "../../shared/care";
+import { CARE_PERMISSION_FOR_CARETAKER, CARE_PERMISSION_LABELS, type CarePermissionName } from "../../shared/care";
 import type { VitalType } from "../../shared/vitals";
 import { useAcceptInvite, useAcknowledgeAlert, useCareSummary, useInvitePreview, usePatientsCaredFor, useRemoveCareLink, useSetQuietHours } from "../lib/care";
 import { useSession } from "../lib/auth-client";
@@ -278,7 +278,7 @@ export function AcceptInvite() {
         {permissions.map((p) => (
           <li key={p} className="py-3">
             <span className="block font-[540]">{CARE_PERMISSION_LABELS[p as CarePermissionName].label}</span>
-            <span className="block text-sm text-ink-muted">{CARE_PERMISSION_LABELS[p as CarePermissionName].detail}</span>
+            <span className="block text-sm text-ink-muted">{CARE_PERMISSION_FOR_CARETAKER[p as CarePermissionName]}</span>
           </li>
         ))}
       </ul>
