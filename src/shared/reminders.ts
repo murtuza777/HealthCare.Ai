@@ -9,7 +9,10 @@ export type ReminderKind = (typeof REMINDER_KINDS)[number];
 export const reminderInputSchema = z.object({
   kind: z.enum(REMINDER_KINDS),
   title: z.string().trim().min(1, "Say what it's for").max(120),
-  dueAt: z.coerce.date().refine((d) => d.getTime() > Date.now() - 60_000, "Choose a time in the future"),
+  dueAt: z.coerce
+    .date({ error: "Choose a valid date and time" })
+    .refine((d) => d.getTime() > Date.now() - 60_000, "Choose a time in the future")
+    .refine((d) => d.getTime() < Date.now() + 2 * 366 * 86_400_000, "Choose a date within the next two years"),
 });
 export type ReminderInput = z.infer<typeof reminderInputSchema>;
 

@@ -27,7 +27,11 @@ export const symptomInputSchema = z.object({
   durationMin: z.number().int().min(0).max(60 * 24 * 30).optional(),
   accompaniedBy: z.array(z.string().trim().min(1).max(100)).max(20).default([]),
   note: z.string().trim().max(1000).optional(),
-  occurredAt: z.coerce.date().optional(),
+  occurredAt: z.coerce
+    .date()
+    .refine((d) => d.getTime() <= Date.now() + 5 * 60 * 1000, "Can't be in the future")
+    .refine((d) => d.getFullYear() >= 1970, "That date is too long ago")
+    .optional(),
 });
 export type SymptomInput = z.input<typeof symptomInputSchema>;
 

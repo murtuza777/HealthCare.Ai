@@ -55,7 +55,12 @@ export const vitalInputSchema = z
     if (v.measuredAt && v.measuredAt.getTime() > Date.now() + 5 * 60 * 1000) {
       ctx.addIssue({ code: "custom", path: ["measuredAt"], message: "Can't be in the future" });
     }
-  });
+    if (v.measuredAt && v.measuredAt.getFullYear() < 1970) {
+      ctx.addIssue({ code: "custom", path: ["measuredAt"], message: "That date is too long ago" });
+    }
+  })
+  // No home monitor measures finer than one decimal place.
+  .transform((v) => ({ ...v, value: Math.round(v.value * 10) / 10, ...(v.value2 === undefined ? {} : { value2: Math.round(v.value2 * 10) / 10 }) }));
 export type VitalInput = z.infer<typeof vitalInputSchema>;
 
 /** Classify a reading. Returns null for types without clinical thresholds (weight). */

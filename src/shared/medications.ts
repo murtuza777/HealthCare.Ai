@@ -9,8 +9,18 @@ export const medicationInputSchema = z
     form: z.string().trim().max(50).optional(),
     instructions: z.string().trim().max(500).optional(),
     schedule: z.object({
-      times: z.array(time).min(1, "Add at least one time").max(8),
-      days: z.array(z.number().int().min(0).max(6)).max(7).optional(), // omitted = every day
+      // The same time or day entered twice is one dose, not two.
+      times: z
+        .array(time)
+        .min(1, "Add at least one time")
+        .max(24)
+        .transform((t) => [...new Set(t)].sort())
+        .refine((t) => t.length <= 8, "At most 8 times a day"),
+      days: z
+        .array(z.number().int().min(0).max(6))
+        .max(14)
+        .transform((d) => [...new Set(d)].sort())
+        .optional(), // omitted = every day
     }),
     startDate: z.iso.date(),
     endDate: z.iso.date().nullable().optional(),
