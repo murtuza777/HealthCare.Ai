@@ -1,7 +1,7 @@
 // Alerts: things a patient's caretakers should know about. Raised by fixed rules, never by AI.
 // Each alert is stored once and pushed (and emailed, when email is set up) to caretakers who
 // have the "alerts" permission.
-import { and, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { alerts, outbox } from "../db/schema";
 import { assertAccess, type Actor } from "./authz";
@@ -52,12 +52,18 @@ export async function listAlerts(db: Db, actor: Actor, patientId: string, limit 
   return db.select().from(alerts).where(eq(alerts.userId, patientId)).orderBy(desc(alerts.createdAt)).limit(limit);
 }
 
+/**
+ * Mark an alert as seen. The patient and their caretakers each have their own mark: a
+ * caretaker's "seen" must not hide a finding from the patient, or the other way round.
+ */
 export async function acknowledgeAlert(db: Db, actor: Actor, patientId: string, alertId: string) {
   await assertAccess(db, actor, patientId, "alerts");
-  const rows = await db
-    .update(alerts)
-    .set({ acknowledgedAt: new Date() })
-    .where(and(eq(alerts.id, alertId), eq(alerts.userId, patientId), isNull(alerts.acknowledgedAt)))
-    .returning({ id: alerts.id });
-  return rows.length > 0;
+  const alert = await db.select().from(alerts).where(and(eq(alerts.id, alertId), eq(alerts.userId, patientId))).get();
+  if (!alert) return false;
+  if (actor.userId === patientId) {
+    await db.update(alerts).set({ data: { ...(alert.data ?? {}), patientSeenAt: new Date().toISOString() } }).where(eq(alerts.id, alertId));
+  } else if (!alert.acknowledgedAt) {
+    await db.update(alerts).set({ acknowledgedAt: new Date() }).where(eq(alerts.id, alertId));
+  }
+  return true;
 }

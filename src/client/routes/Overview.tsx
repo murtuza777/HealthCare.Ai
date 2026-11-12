@@ -275,7 +275,7 @@ function Insights() {
   const dismiss = useDismissAlert();
   // Fixed when the card first shows, so the two-week window doesn't move during a render.
   const [since] = useState(() => Date.now() - 14 * 86_400_000);
-  const recent = (data ?? []).filter((a) => a.kind.startsWith("insight:") && !a.acknowledgedAt && +new Date(a.createdAt) >= since);
+  const recent = (data ?? []).filter((a) => a.kind.startsWith("insight:") && !(a.data as { patientSeenAt?: string } | null)?.patientSeenAt && +new Date(a.createdAt) >= since);
   if (!recent.length) return null;
   return (
     <section aria-label="Worth a look">

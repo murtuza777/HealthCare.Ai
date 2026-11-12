@@ -319,7 +319,7 @@ function useSuggestions(): string[] {
   const meds = useMedications();
   const outOfRange = useOutOfRange();
 
-  const open = new Set((alerts.data ?? []).filter((a) => !a.acknowledgedAt).map((a) => a.kind));
+  const open = new Set((alerts.data ?? []).filter((a) => !(a.data as { patientSeenAt?: string } | null)?.patientSeenAt).map((a) => a.kind));
   // The list only holds what is still coming up, soonest first.
   const visit = (reminders.data ?? []).find((r) => r.kind === "appointment");
   const out: string[] = [];

@@ -141,3 +141,34 @@ describe("daily review", () => {
     expect(await pushes()).toBe(2);
   });
 });
+
+describe("seen marks", () => {
+  it("keeps the patient's and the caretaker's marks apart", async () => {
+    const patient = await signIn("seen-p@example.com", "198.51.100.144");
+    const pid = await userId(patient);
+    const inv = (await (await call("/api/v1/care/caretakers", { cookie: patient, body: { email: "seen-c@example.com", permissions: ["alerts"], relation: "Son" } })).json()) as { inviteUrl: string };
+    const caretaker = await signIn("seen-c@example.com", "198.51.100.145");
+    await call("/api/v1/care/accept", { cookie: caretaker, body: { token: inv.inviteUrl.split("/care/accept/")[1] } });
+    const alert = (await raiseAlert(env, db, pid, { severity: "warning", kind: "insight:bp-high", title: "Blood pressure has stayed high this week", body: "x" }))!;
+
+    type Row = { id: string; acknowledgedAt: string | null; data: { patientSeenAt?: string } | null };
+    const mine = async () => ((await (await call("/api/v1/patients/me/alerts", { cookie: patient })).json()) as { items: Row[] }).items.find((a) => a.id === alert.id)!;
+
+    // The caretaker marks it as seen: the patient still has it.
+    expect((await call(`/api/v1/care/patients/${pid}/alerts/${alert.id}/ack`, { cookie: caretaker, method: "POST" })).status).toBe(200);
+    let row = await mine();
+    expect(row.acknowledgedAt).not.toBeNull();
+    expect(row.data?.patientSeenAt).toBeUndefined();
+
+    // The patient dismisses it: that is their own mark.
+    expect((await call(`/api/v1/patients/me/alerts/${alert.id}/ack`, { cookie: patient, method: "POST" })).status).toBe(200);
+    row = await mine();
+    expect(row.data?.patientSeenAt).toBeTruthy();
+
+    // And the other way round: a patient's dismissal doesn't mark it seen for caretakers.
+    const second = (await raiseAlert(env, db, pid, { severity: "warning", kind: "insight:pulse-high", title: "Resting pulse has been fast this week", body: "x" }))!;
+    await call(`/api/v1/patients/me/alerts/${second.id}/ack`, { cookie: patient, method: "POST" });
+    const all = ((await (await call("/api/v1/patients/me/alerts", { cookie: patient })).json()) as { items: Row[] }).items;
+    expect(all.find((a) => a.id === second.id)!.acknowledgedAt).toBeNull();
+  });
+});
