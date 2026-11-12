@@ -103,3 +103,19 @@ describe("report reader API", () => {
     expect((await call(`/api/v1/patients/me/reports/${id}/read`, { cookie: other, method: "POST" })).status).toBe(404);
   });
 });
+
+describe("shared reports", () => {
+  it("show the doctor the out-of-range values of the shared report, and nothing from other reports", async () => {
+    const cookie = await signIn("reader-share@example.com", "198.51.100.133");
+    await consent(cookie);
+    const shared = await upload(cookie, "LDL cholesterol: 162 mg/dL (0-100)\nHemoglobin: 13.5 g/dL (12-16)", "Lipids");
+    const other = await upload(cookie, "Creatinine: 2.4 mg/dL (0-1)", "Kidney");
+    for (const id of [shared, other]) expect((await call(`/api/v1/patients/me/reports/${id}/read`, { cookie, method: "POST" })).status).toBe(200);
+
+    const made = (await (await call("/api/v1/patients/me/shares", { cookie, body: { reportIds: [shared], expiresIn: "1h" } })).json()) as { url: string };
+    const view = (await (await call(`/api/public/shares/${made.url.split("/share/")[1]}`)).json()) as { reports: { title: string; outOfRange: { test: string; flag: string }[] }[] };
+    expect(view.reports).toHaveLength(1);
+    expect(view.reports[0]!.outOfRange).toEqual([expect.objectContaining({ test: "LDL cholesterol", value: "162", flag: "high" })]);
+    expect(JSON.stringify(view)).not.toContain("Creatinine");
+  });
+});

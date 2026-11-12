@@ -3,7 +3,7 @@
 import { and, count, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { SHARE_DURATIONS, type ShareInput } from "../../shared/reports";
 import type { Db } from "../db/client";
-import { reports, shareAccessLog, shareItems, shares, user } from "../db/schema";
+import { reports, shareAccessLog, shareItems, shares, user, reportFindings } from "../db/schema";
 import { assertAccess, type Actor } from "./authz";
 import { latestVitalsFor } from "./vitals";
 
@@ -79,7 +79,7 @@ async function activeShare(db: Db, token: string, now: Date) {
   );
 }
 
-/** What a recipient (e.g. a doctor) sees. Only metadata of the shared reports, never other data. */
+/** What a recipient (e.g. a doctor) sees: the shared reports, their out-of-range values, and readings if the patient included them. */
 export async function viewShare(db: Db, token: string, visitor: { ipHash: string | null; userAgent: string | null }, now = new Date()) {
   const share = await activeShare(db, token, now);
   if (!share) return null;
@@ -98,7 +98,16 @@ export async function viewShare(db: Db, token: string, visitor: { ipHash: string
     const latest = await latestVitalsFor(db, share.userId);
     vitals = Object.values(latest).map((v) => ({ type: v.type, value: v.value, value2: v.value2, unit: v.unit, measuredAt: v.measuredAt, classification: v.classification }));
   }
-  return { patientName: owner[0]?.name ?? "Patient", expiresAt: share.expiresAt, reports: shared, vitals };
+  // Results the app read from these same reports that fall outside the printed range, so the
+  // recipient sees what stands out without opening every file. Nothing beyond the shared reports.
+  const flagged = shared.length
+    ? await db
+        .select({ reportId: reportFindings.reportId, test: reportFindings.test, value: reportFindings.value, unit: reportFindings.unit, refLow: reportFindings.refLow, refHigh: reportFindings.refHigh, flag: reportFindings.flag })
+        .from(reportFindings)
+        .where(and(inArray(reportFindings.reportId, shared.map((r) => r.id)), inArray(reportFindings.flag, ["low", "high"])))
+    : [];
+  const withValues = shared.map((r) => ({ ...r, outOfRange: flagged.filter((x) => x.reportId === r.id).map(({ reportId: _id, ...rest }) => rest) }));
+  return { patientName: owner[0]?.name ?? "Patient", expiresAt: share.expiresAt, reports: withValues, vitals };
 }
 
 /** A report file reachable through a valid share token, or null. */

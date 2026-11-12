@@ -63,7 +63,8 @@ export function SharedView() {
               <h2 className="mb-4 text-xl">Reports</h2>
               <ul className="divide-y divide-line border-y border-line">
                 {q.data.reports.map((r) => (
-                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <li key={r.id} className="py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <FileText className="mt-0.5 h-5 w-5 text-ink-faint" aria-hidden="true" />
                       <div>
@@ -83,6 +84,26 @@ export function SharedView() {
                         <Download className="h-4 w-4" aria-hidden="true" /> Download
                       </a>
                     </div>
+                    </div>
+                    {r.outOfRange.length > 0 && (
+                      <div className="mt-3 pl-8">
+                        <p className="text-sm text-ink-muted">Outside the range printed on the report (read by the app; check against the file):</p>
+                        <ul className="mt-1.5 space-y-1">
+                          {r.outOfRange.map((v, i) => (
+                            <li key={i} className="flex flex-wrap items-baseline gap-x-3">
+                              <span className="font-[540]">{v.test}</span>
+                              <span className="figures">
+                                {v.value}
+                                {v.unit ? ` ${v.unit}` : ""}
+                              </span>
+                              <span className="text-sm text-ink-muted">
+                                {v.flag === "low" ? "below" : "above"} {v.refLow !== null && v.refHigh !== null ? `${v.refLow} to ${v.refHigh}` : (v.refHigh ?? v.refLow)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
