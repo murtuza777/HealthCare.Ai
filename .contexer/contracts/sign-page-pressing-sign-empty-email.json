@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "id": "sign-page-pressing-sign-empty-email",
+  "goal": "On the sign-in page, pressing Sign in with an empty email, or with an email that has no @, shows a visible message on the page itself (not only the browser's own tooltip): 'Enter your email address.' for an empty one and 'Enter a valid email address, like name@example.com.' for a malformed one. The visitor stays on the sign-in page and is not signed in. A well-formed email shows neither message.",
+  "summary": "Drafted by the Intent agent from the goal.",
+  "source": "llm",
+  "created_at": "2026-11-19T14:17:45Z",
+  "origin": "",
+  "approval": {
+    "by": "murtuza777",
+    "at": "2026-11-19T14:17:45Z",
+    "sha256": "a4cf53f47e6054f93ab0f80287a382bf22de262a5acdc2caf612616ef27f127a"
+  },
+  "criteria": [
+    {
+      "id": "empty-email-shows-page-message",
+      "description": "Submitting sign-in with an empty email shows the empty-email message on the sign-in page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/login"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Sign in"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "Enter your email address."
+            }
+          },
+          {
+            "kind": "url",
+            "contains": "/login"
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "malformed-email-shows-page-message",
+      "description": "Submitting sign-in with an email missing @ shows the malformed-email message on the sign-in page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/login"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Email"
+            },
+            "value": "invalid-email-malformed-email-shows-page-message"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Sign in"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "Enter a valid email address, like name@example.com."
+            }
+          },
+          {
+            "kind": "url",
+            "contains": "/login"
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "well-formed-email-shows-neither-email",
+      "description": "Submitting sign-in with a well-formed email shows neither email validation message.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/login"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Email"
+            },
+            "value": "valid-well-formed-email-shows-neither-email-message@example.com"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Sign in"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "hidden",
+            "target": {
+              "text": "Enter your email address."
+            }
+          },
+          {
+            "kind": "hidden",
+            "target": {
+              "text": "Enter a valid email address, like name@example.com."
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    }
+  ]
+}
