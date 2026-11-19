@@ -104,8 +104,15 @@ export function useDeleteMedication() {
 }
 
 // --- Symptoms --------------------------------------------------------------
+const symptomsQuery = { queryKey: keys.symptoms, queryFn: async () => ok(await p.symptoms.$get({ param: me })) };
+
 export function useSymptoms() {
-  return useQuery({ queryKey: keys.symptoms, queryFn: async () => (await ok(await p.symptoms.$get({ param: me }))).items });
+  return useQuery({ ...symptomsQuery, select: (d) => d.items });
+}
+
+/** Server-side count of symptoms in the last 7 days; shares the list's request, so it refreshes with it. */
+export function useSymptomsLast7Days() {
+  return useQuery({ ...symptomsQuery, select: (d) => d.last7Days });
 }
 
 export type SymptomNew = InferRequestType<typeof p.symptoms.$post>["json"];

@@ -18,7 +18,7 @@ import { consentStatus } from "../dal/account";
 import { createShare, listShares, revokeShare } from "../dal/shares";
 import { shareInputSchema } from "../../shared/reports";
 import { fileResponse, readUpload } from "./files";
-import { addSymptom, deleteSymptom, listSymptoms } from "../dal/symptoms";
+import { addSymptom, countRecentSymptoms, deleteSymptom, listSymptoms } from "../dal/symptoms";
 import { addVital, deleteVital, importVitals, latestVitals, listVitals } from "../dal/vitals";
 import { adherence, dosesForDay, markDose } from "../dal/doses";
 import { acknowledgeAlert, listAlerts, raiseAlert } from "../dal/alerts";
@@ -205,7 +205,8 @@ export const patients = new Hono<AppEnv>()
   // Symptoms
   .get("/:patientId/symptoms", async (c) => {
     const items = await listSymptoms(c.var.db, c.var.actor, patientId(c));
-    return c.json({ items });
+    const last7Days = await countRecentSymptoms(c.var.db, c.var.actor, patientId(c));
+    return c.json({ items, last7Days });
   })
   .post(
     "/:patientId/symptoms",

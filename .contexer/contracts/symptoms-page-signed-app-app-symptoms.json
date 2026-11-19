@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "id": "symptoms-page-signed-app-app-symptoms",
+  "goal": "On the Symptoms page of the signed-in app (/app/symptoms), above the list of logged symptoms, show how many symptoms were logged in the last 7 days: 'No symptoms logged in the last 7 days.' when there are none, '1 symptom logged in the last 7 days.' for exactly one, and 'N symptoms logged in the last 7 days.' for more. The number comes from the server: add it to the Worker's API (a new endpoint or a field on the existing symptoms response), do not count the rows the page happens to show. It updates right after a symptom is logged or deleted, without reloading the page.",
+  "summary": "Drafted by the Intent agent from the goal.",
+  "source": "llm",
+  "created_at": "2026-11-19T15:22:59Z",
+  "origin": "",
+  "approval": {
+    "by": "murtuza777",
+    "at": "2026-11-19T15:22:59Z",
+    "sha256": "5d0e0e5587cfad1006612036096bf29225003e9341689e881f194cdebf922202"
+  },
+  "criteria": [
+    {
+      "id": "symptoms-last-7-days-zero",
+      "description": "The Symptoms page shows the zero-state summary when the server returns no symptoms logged in the last 7 days.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "No symptoms logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-singular",
+      "description": "Logging one symptom updates the summary to the singular last-7-days message without reloading the page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Symptom"
+            },
+            "value": "symptoms-last-7-days-singular"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Log"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "1 symptom logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-singular"
+            }
+          },
+          {
+            "kind": "url",
+            "contains": "/app/symptoms"
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-plural",
+      "description": "Logging more than one symptom updates the summary to the plural last-7-days message with the server count.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Symptom"
+            },
+            "value": "symptoms-last-7-days-plural-a"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Log"
+            }
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Symptom"
+            },
+            "value": "symptoms-last-7-days-plural-b"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Log"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "2 symptoms logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-plural-a"
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-plural-b"
+            }
+          },
+          {
+            "kind": "url",
+            "contains": "/app/symptoms"
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-updates-after",
+      "description": "Deleting a logged symptom updates the last-7-days summary without reloading the page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Symptom"
+            },
+            "value": "symptoms-last-7-days-updates-after-delete-a"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Log"
+            }
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Symptom"
+            },
+            "value": "symptoms-last-7-days-updates-after-delete-b"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Log"
+            }
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Delete symptoms-last-7-days-updates-after-delete-b"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "1 symptom logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-updates-after-delete-a"
+            }
+          },
+          {
+            "kind": "hidden",
+            "target": {
+              "text": "symptoms-last-7-days-updates-after-delete-b"
+            }
+          },
+          {
+            "kind": "url",
+            "contains": "/app/symptoms"
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    }
+  ]
+}

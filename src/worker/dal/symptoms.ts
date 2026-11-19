@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
 import { detectRedFlags, type RedFlag } from "../../shared/symptoms";
 import type { Db } from "../db/client";
 import { symptoms } from "../db/schema";
@@ -24,6 +24,17 @@ export async function listSymptoms(db: Db, actor: Actor, patientId: string, limi
     .where(eq(symptoms.userId, patientId))
     .orderBy(desc(symptoms.occurredAt))
     .limit(Math.min(limit, 200));
+}
+
+/** How many symptoms happened in the last 7 days. Counted in the database, not from a page of rows. */
+export async function countRecentSymptoms(db: Db, actor: Actor, patientId: string, days = 7): Promise<number> {
+  await assertAccess(db, actor, patientId, "vitals");
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const [row] = await db
+    .select({ n: count() })
+    .from(symptoms)
+    .where(and(eq(symptoms.userId, patientId), gte(symptoms.occurredAt, since)));
+  return row?.n ?? 0;
 }
 
 export async function addSymptom(

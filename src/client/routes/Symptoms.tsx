@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Stethoscope, Trash2 } from "lucide-react";
 import { detectRedFlags, SYMPTOM_TYPES, type RedFlag } from "../../shared/symptoms";
-import { useAddSymptom, useDeleteSymptom, useSymptoms } from "../lib/queries";
+import { useAddSymptom, useDeleteSymptom, useSymptoms, useSymptomsLast7Days } from "../lib/queries";
 import { formatDateTime, localDateTime, timeAgo } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { CriticalBanner } from "../components/CriticalBanner";
@@ -27,13 +27,12 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
   // Nothing is preselected: saving in a hurry must never log "chest pain" by accident.
   const [type, setType] = useState<string>("");
   const [when, setWhen] = useState("");
-  const [other, setOther] = useState("");
   const [severity, setSeverity] = useState(5);
   const [duration, setDuration] = useState("");
   const [also, setAlso] = useState<string[]>([]);
   const [note, setNote] = useState("");
 
-  const mainType = type === "other" ? other.trim() : type;
+  const mainType = type.trim();
   // Same rules as the server, so the warning appears before saving too.
   const livePreview = mainType ? detectRedFlags({ type: mainType, accompaniedBy: also, severity }) : null;
 
@@ -56,7 +55,6 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
           setDuration("");
           setWhen("");
           setType("");
-          setOther("");
           setSeverity(5);
         },
       },
@@ -68,23 +66,14 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
       <h2 className="text-xl">Log a symptom</h2>
       <form onSubmit={submit} className="mt-4 space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Main symptom">
-            <select required className={inputClass} value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="" disabled>
-                Choose a symptom
-              </option>
-              {SYMPTOM_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {sentence(t)}
-                </option>
+          <Field label="Symptom">
+            <input required maxLength={100} list="symptom-types" autoComplete="off" className={inputClass} value={type} onChange={(e) => setType(e.target.value)} placeholder="Choose or describe" />
+            <datalist id="symptom-types">
+              {COMMON.map((t) => (
+                <option key={t} value={t} />
               ))}
-            </select>
+            </datalist>
           </Field>
-          {type === "other" && (
-            <Field label="Describe it">
-              <input required className={inputClass} value={other} onChange={(e) => setOther(e.target.value)} />
-            </Field>
-          )}
           <Field label="How long? (minutes, optional)">
             <input type="number" min={0} max={43200} inputMode="numeric" className={inputClass} value={duration} onChange={(e) => setDuration(e.target.value)} />
           </Field>
@@ -98,7 +87,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
         <fieldset>
           <legend className="mb-2 text-sm font-[540] text-ink">Also feeling</legend>
           <div className="flex flex-wrap gap-2">
-            {COMMON.filter((t) => t !== type).map((t) => (
+            {COMMON.filter((t) => t !== mainType).map((t) => (
               <label key={t} className={`cursor-pointer select-none rounded-full px-3.5 py-1.5 text-sm font-[500] transition-colors duration-150 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-action has-[:focus-visible]:ring-offset-2 ${also.includes(t) ? "border border-ink bg-ink text-white" : "border border-line-strong bg-sheet text-ink hover:border-ink/30"}`}>
                 <input type="checkbox" className="sr-only" checked={also.includes(t)} onChange={() => setAlso(also.includes(t) ? also.filter((x) => x !== t) : [...also, t])} />
                 {sentence(t)}
@@ -117,7 +106,7 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
         <ErrorText error={add.error} />
         <div className="flex justify-end">
           <Button type="submit" disabled={add.isPending || !mainType}>
-            {add.isPending ? "Saving…" : "Save symptom"}
+            {add.isPending ? "Saving…" : "Log"}
           </Button>
         </div>
       </form>
@@ -127,12 +116,18 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
 
 function SymptomList() {
   const { data, isPending, error } = useSymptoms();
+  const last7Days = useSymptomsLast7Days().data;
   const del = useDeleteSymptom();
   return (
     <Card>
       <h2 className="mb-4 text-xl">History</h2>
       {isPending && <Loading />}
       <ErrorText error={error} />
+      {last7Days !== undefined && (
+        <p className="mb-4 text-ink-muted" aria-live="polite">
+          {last7Days === 0 ? "No symptoms logged in the last 7 days." : `${last7Days} ${last7Days === 1 ? "symptom" : "symptoms"} logged in the last 7 days.`}
+        </p>
+      )}
       {data?.length === 0 && <EmptyState icon={<Stethoscope className="h-10 w-10" />} title="No symptoms logged" body="Symptoms you log will appear here." />}
       <ul className="divide-y divide-line border-y border-line">
         {data?.map((s) => (
@@ -148,15 +143,9 @@ function SymptomList() {
               {s.accompaniedBy.length > 0 && <p className="text-sm text-ink-muted">Also: {s.accompaniedBy.join(", ")}</p>}
               {s.note && <p className="text-sm text-ink-muted">{s.note}</p>}
             </div>
-            <Button
-              variant="danger-quiet"
-              aria-label={`Delete ${s.type} entry`}
-              disabled={del.isPending}
-              onClick={() => {
-                if (confirm("Delete this symptom entry?")) del.mutate(s.id);
-              }}
-            >
+            <Button variant="danger-quiet" disabled={del.isPending} onClick={() => del.mutate(s.id)}>
               <Trash2 className="h-4 w-4" aria-hidden="true" />
+              <span className="sr-only">Delete {s.type}</span>
             </Button>
           </li>
         ))}
