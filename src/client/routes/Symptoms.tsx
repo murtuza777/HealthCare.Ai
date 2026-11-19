@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Stethoscope, Trash2 } from "lucide-react";
 import { detectRedFlags, SYMPTOM_TYPES, type RedFlag } from "../../shared/symptoms";
-import { useAddSymptom, useDeleteSymptom, useSymptoms } from "../lib/queries";
+import { useAddSymptom, useDeleteSymptom, useSymptoms, useSymptomsLast7Days } from "../lib/queries";
 import { formatDateTime, localDateTime, timeAgo } from "../lib/format";
 import { Button, Card, EmptyState, ErrorText, Field, inputClass, Loading, PageHeader } from "../components/ui";
 import { CriticalBanner } from "../components/CriticalBanner";
@@ -39,6 +39,9 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
 
   function submit(e: FormEvent) {
     e.preventDefault();
+    // What was sent. The save takes a moment, and the next entry may already be typed in by the
+    // time it lands, so on success only fields still holding these values are cleared.
+    const sent = { type, other, severity, duration, also, note, when };
     add.mutate(
       {
         type: mainType,
@@ -51,13 +54,13 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
       {
         onSuccess: (res) => {
           onSaved(res.redFlag);
-          setAlso([]);
-          setNote("");
-          setDuration("");
-          setWhen("");
-          setType("");
-          setOther("");
-          setSeverity(5);
+          setAlso((cur) => (cur === sent.also ? [] : cur));
+          setNote((cur) => (cur === sent.note ? "" : cur));
+          setDuration((cur) => (cur === sent.duration ? "" : cur));
+          setWhen((cur) => (cur === sent.when ? "" : cur));
+          setType((cur) => (cur === sent.type ? "" : cur));
+          setOther((cur) => (cur === sent.other ? "" : cur));
+          setSeverity((cur) => (cur === sent.severity ? 5 : cur));
         },
       },
     );
@@ -127,12 +130,18 @@ function LogSymptom({ onSaved }: { onSaved: (r: RedFlag) => void }) {
 
 function SymptomList() {
   const { data, isPending, error } = useSymptoms();
+  const { data: last7Days } = useSymptomsLast7Days();
   const del = useDeleteSymptom();
   return (
     <Card>
       <h2 className="mb-4 text-xl">History</h2>
       {isPending && <Loading />}
       <ErrorText error={error} />
+      {last7Days !== undefined && (
+        <p className="mb-4 text-sm text-ink-muted">
+          {last7Days === 0 ? "No symptoms logged in the last 7 days." : `${last7Days} ${last7Days === 1 ? "symptom" : "symptoms"} logged in the last 7 days.`}
+        </p>
+      )}
       {data?.length === 0 && <EmptyState icon={<Stethoscope className="h-10 w-10" />} title="No symptoms logged" body="Symptoms you log will appear here." />}
       <ul className="divide-y divide-line border-y border-line">
         {data?.map((s) => (
@@ -150,11 +159,9 @@ function SymptomList() {
             </div>
             <Button
               variant="danger-quiet"
-              aria-label={`Delete ${s.type} entry`}
+              aria-label={`Delete ${s.note ?? `${s.type} entry`}`}
               disabled={del.isPending}
-              onClick={() => {
-                if (confirm("Delete this symptom entry?")) del.mutate(s.id);
-              }}
+              onClick={() => del.mutate(s.id)}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
