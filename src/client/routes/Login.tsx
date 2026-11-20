@@ -25,6 +25,11 @@ export function Login() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    // Checked here rather than by the browser, so the message is on the page and not only in a tooltip.
+    const address = email.trim();
+    if (!address) return setError("Enter your email address.");
+    if (!/^[^\s@]+@[^\s@]+$/.test(address)) return setError("Enter a valid email address, like name@example.com.");
+    if (!password) return setError("Enter your password.");
     if (needsCaptcha && !captcha) return setError("Please complete the security check.");
     setError(null);
     setBusy("securing");
@@ -67,7 +72,7 @@ export function Login() {
           <Divider />
         </>
       )}
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} noValidate className="space-y-4">
         {params.get("reset") === "1" && <p className="text-sm text-status-normal">Password updated. Sign in with your new password.</p>}
         <label className="block text-sm font-[540] text-ink">
           Email
