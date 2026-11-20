@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "id": "symptoms-page-signed-app-app-symptoms",
+  "goal": "On the Symptoms page of the signed-in app (/app/symptoms), above the list of logged symptoms, show how many symptoms were logged in the last 7 days: 'No symptoms logged in the last 7 days.' when there are none, '1 symptom logged in the last 7 days.' for exactly one, and 'N symptoms logged in the last 7 days.' for more. The number comes from the server: add it to the Worker's API (a new endpoint or a field on the existing symptoms response), do not count the rows the page happens to show. It updates right after a symptom is logged or deleted, without reloading the page.",
+  "summary": "Drafted by the Intent agent from the goal.",
+  "source": "llm",
+  "created_at": "2026-11-19T15:32:40Z",
+  "origin": "",
+  "approval": {
+    "by": "murtuza777",
+    "at": "2026-11-19T15:32:40Z",
+    "sha256": "42204f65bc1af985f848ae07532b3d183c0c01aa7b134a68f4d88bae91bc3fcf"
+  },
+  "criteria": [
+    {
+      "id": "symptoms-last-7-days-zero",
+      "description": "The Symptoms page shows the zero-state summary when the server returns no symptoms logged in the last 7 days.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "No symptoms logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-singular",
+      "description": "Logging one symptom updates the summary to the singular last-7-days message without reloading the page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "select",
+            "target": {
+              "label": "Main symptom"
+            },
+            "value": "Headache"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Notes (optional)"
+            },
+            "value": "symptoms-last-7-days-singular"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Save symptom"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "1 symptom logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-singular"
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-plural",
+      "description": "Logging more than one symptom updates the summary to the plural last-7-days message with the server count.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "select",
+            "target": {
+              "label": "Main symptom"
+            },
+            "value": "Headache"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Notes (optional)"
+            },
+            "value": "symptoms-last-7-days-plural-a"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Save symptom"
+            }
+          },
+          {
+            "action": "select",
+            "target": {
+              "label": "Main symptom"
+            },
+            "value": "Nausea"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Notes (optional)"
+            },
+            "value": "symptoms-last-7-days-plural-b"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Save symptom"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "2 symptoms logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-plural-a"
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-plural-b"
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    },
+    {
+      "id": "symptoms-last-7-days-updates-after",
+      "description": "Deleting a logged symptom updates the last-7-days summary without reloading the page.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [
+          {
+            "action": "goto",
+            "value": "/app/symptoms"
+          },
+          {
+            "action": "select",
+            "target": {
+              "label": "Main symptom"
+            },
+            "value": "Headache"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Notes (optional)"
+            },
+            "value": "symptoms-last-7-days-updates-after-a"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Save symptom"
+            }
+          },
+          {
+            "action": "select",
+            "target": {
+              "label": "Main symptom"
+            },
+            "value": "Nausea"
+          },
+          {
+            "action": "fill",
+            "target": {
+              "label": "Notes (optional)"
+            },
+            "value": "symptoms-last-7-days-updates-after-b"
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Save symptom"
+            }
+          },
+          {
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Delete symptoms-last-7-days-updates-after-b"
+            }
+          }
+        ],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "text": "1 symptom logged in the last 7 days."
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "symptoms-last-7-days-updates-after-a"
+            }
+          },
+          {
+            "kind": "hidden",
+            "target": {
+              "text": "symptoms-last-7-days-updates-after-b"
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    }
+  ]
+}
