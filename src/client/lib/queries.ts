@@ -104,8 +104,15 @@ export function useDeleteMedication() {
 }
 
 // --- Symptoms --------------------------------------------------------------
+const fetchSymptoms = async () => ok(await p.symptoms.$get({ param: me }));
+
 export function useSymptoms() {
-  return useQuery({ queryKey: keys.symptoms, queryFn: async () => (await ok(await p.symptoms.$get({ param: me }))).items });
+  return useQuery({ queryKey: keys.symptoms, queryFn: fetchSymptoms, select: (d) => d.items });
+}
+
+/** Server-side count of symptoms in the last 7 days; shares the symptoms query, so it refreshes with it. */
+export function useSymptomsLast7Days() {
+  return useQuery({ queryKey: keys.symptoms, queryFn: fetchSymptoms, select: (d) => d.last7Days });
 }
 
 export type SymptomNew = InferRequestType<typeof p.symptoms.$post>["json"];
@@ -113,7 +120,10 @@ export function useAddSymptom() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (json: SymptomNew) => ok(await p.symptoms.$post({ param: me, json })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.symptoms }),
+    // Not awaited: the form is free for the next entry as soon as the save lands, while the list refreshes.
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.symptoms });
+    },
   });
 }
 
