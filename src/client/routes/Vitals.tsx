@@ -67,6 +67,7 @@ function LogReading({ type, onTypeChange }: { type: VitalType; onTypeChange: (t:
       {add.data?.classification === "critical" && <CriticalBanner kind="reading" />}
       <Card boxed>
         <h2 className="text-xl">Log a reading</h2>
+        <p className="mt-1 text-sm text-ink-muted">Readings are private to you and the people you invite.</p>
         <form onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <Field label="Type">
             <select value={type} onChange={(e) => onTypeChange(e.target.value as VitalType)} className={inputClass}>
