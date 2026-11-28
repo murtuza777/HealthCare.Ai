@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "id": "readings-page-signed-app-directly-under",
+  "goal": "On the Readings page of the signed-in app, directly under the 'Log a reading' heading, show the helper text 'Readings are private to you and the people you invite.'",
+  "summary": "Drafted by the Intent agent from the goal.",
+  "source": "llm",
+  "created_at": "2026-11-28T18:10:24Z",
+  "origin": "",
+  "approval": {
+    "by": "--yes (not reviewed by a person)",
+    "at": "2026-11-28T18:10:24Z",
+    "sha256": "54b69910c8009f2e4b4896c3ebc37b1e543e92d64b7926d81060a74e86e305e3"
+  },
+  "criteria": [
+    {
+      "id": "readings-helper-text-under-log-reading",
+      "description": "The Readings page shows the specified helper text directly under the 'Log a reading' heading.",
+      "verification_method": "interactive_test",
+      "check": {
+        "steps": [],
+        "expect": [
+          {
+            "kind": "visible",
+            "target": {
+              "role": "heading",
+              "name": "Log a reading"
+            }
+          },
+          {
+            "kind": "visible",
+            "target": {
+              "text": "Readings are private to you and the people you invite."
+            }
+          },
+          {
+            "kind": "no_errors"
+          }
+        ]
+      }
+    }
+  ]
+}
